@@ -21,9 +21,12 @@ mcp-learning/
 │   ├── 05-server-development.md # Server development guide
 │   ├── 06-client-development.md # Client development guide
 │   ├── 07-sdk-reference.md     # SDK documentation
+│   ├── 08-security.md          # Security considerations
 │   └── 09-examples.md          # Example implementations
 ├── virtual-library-mcp/         # Virtual Library MCP Server (to be created)
-├── virtual-library-implementation-plan.md  # Detailed 25-step implementation plan
+├── .claude/                     # Claude Code configuration
+│   └── agents/                  # Custom agents
+│       └── mcp-protocol-mentor.md  # MCP implementation guidance
 ├── CLAUDE.md                    # Claude Code guidance file
 └── README.md                    # This file
 ```
@@ -77,21 +80,21 @@ The main project is a Virtual Library MCP Server that simulates a complete libra
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/yourusername/mcp-learning.git
+   git clone https://github.com/willtech3/mcp-learning.git
    cd mcp-learning
    ```
 
 2. **Review the documentation**:
    - Start with `docs/mcp/01-overview.md` for MCP introduction
-   - Read `virtual-library-implementation-plan.md` for project details
+   - Check the [GitHub Issues](https://github.com/willtech3/mcp-learning/issues) for the implementation roadmap
 
-3. **Follow the implementation plan**:
-   The project follows a structured 25-step implementation plan divided into 5 phases:
-   - Phase 1: Project Setup (Steps 1-5)
-   - Phase 2: Data Models and Database (Steps 6-10)
-   - Phase 3: MCP Server Core (Steps 11-15)
-   - Phase 4: Advanced Features (Steps 16-20)
-   - Phase 5: Testing and Documentation (Steps 21-25)
+3. **Follow the implementation roadmap**:
+   The project is organized into 5 epic phases with 25 total implementation steps tracked as GitHub issues:
+   - **[Epic #1](https://github.com/willtech3/mcp-learning/issues/1)**: Phase 1 - Foundation (Project Setup)
+   - **[Epic #2](https://github.com/willtech3/mcp-learning/issues/2)**: Phase 2 - Data Layer (Models & Database)
+   - **[Epic #3](https://github.com/willtech3/mcp-learning/issues/3)**: Phase 3 - Core MCP (Basic Server)
+   - **[Epic #4](https://github.com/willtech3/mcp-learning/issues/4)**: Phase 4 - Advanced MCP (Subscriptions, Progress, Prompts)
+   - **[Epic #5](https://github.com/willtech3/mcp-learning/issues/5)**: Phase 5 - Production Ready (Testing & Documentation)
 
 ## 🧪 Development Workflow
 
@@ -109,7 +112,7 @@ just format       # Format code
 ## 📖 Learning Path
 
 1. **Understand MCP**: Read the documentation in `docs/mcp/`
-2. **Follow the Plan**: Work through each step in the implementation plan
+2. **Follow the Issues**: Work through each GitHub issue in order, starting with [Issue #6](https://github.com/willtech3/mcp-learning/issues/6)
 3. **Test Everything**: Write tests as you implement features
 4. **Experiment**: Use the server to explore MCP capabilities
 5. **Extend**: Add your own features once comfortable
@@ -122,6 +125,7 @@ This is a learning repository. Feel free to:
 - Share your learning experiences
 - Contribute improvements to documentation
 - Add example use cases
+- Pick up any open issue and submit a PR
 
 ## 📝 Important Notes
 
