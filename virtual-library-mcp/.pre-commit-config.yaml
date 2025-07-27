@@ -1,0 +1,145 @@
+# Pre-commit hooks for MCP server development
+# Ensures code quality before commits
+
+# Minimum pre-commit version
+minimum_pre_commit_version: 3.0.0
+
+# Default stages for hooks
+default_stages: [commit]
+
+repos:
+  # Basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Security: Prevent committing secrets
+      - id: detect-private-key
+        name: Detect Private Keys
+      
+      # Prevent committing large files (logs, data dumps)
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+        exclude: '^data/fixtures/|^tests/fixtures/'
+      
+      # Ensure files end with newline (POSIX compliance)
+      - id: end-of-file-fixer
+      
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+      
+      # Fix mixed line endings
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      
+      # Python syntax check (quick first pass)
+      - id: check-ast
+        name: Check Python AST
+      
+      # JSON syntax validation (for MCP protocol tests)
+      - id: check-json
+        exclude: '^tests/fixtures/invalid/'
+      
+      # YAML syntax validation (for configs)
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom tags
+      
+      # Check for merge conflicts
+      - id: check-merge-conflict
+      
+      # Check for debugger imports
+      - id: debug-statements
+        name: Check for Debugger Imports
+      
+      # Ensure __init__.py files are not empty
+      - id: check-docstring-first
+      
+      # Case sensitivity issues
+      - id: check-case-conflict
+      
+      # Ensure executables have shebangs
+      - id: check-executables-have-shebangs
+      
+      # Ensure shebangs are executable
+      - id: check-shebang-scripts-are-executable
+
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      # Linting must run before formatting
+      - id: ruff
+        name: Ruff Linter
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi, jupyter]
+      
+      # Format code after linting
+      - id: ruff-format
+        name: Ruff Formatter
+        types_or: [python, pyi, jupyter]
+
+  # Type checking with pyright
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.350
+    hooks:
+      - id: pyright
+        name: Pyright Type Checker
+        # Only run on changed files for speed
+        pass_filenames: true
+        # Additional dependencies needed for type checking
+        additional_dependencies:
+          - fastmcp>=2.0.0
+          - pydantic>=2.0.0
+          - sqlalchemy>=2.0.0
+
+  # Security vulnerability scanning
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        name: Bandit Security Scanner
+        args: [-r, src/, --severity-level, medium]
+        exclude: ^tests/
+
+  # Check for common security issues
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: '^(tests/|\.git/|\.env\.example)'
+
+  # Markdown linting (for documentation)
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        name: Markdown Linter
+        args: ['--fix']
+        exclude: '^\.github/|^docs/api/'
+
+  # Check dependencies for known vulnerabilities
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.6.3
+    hooks:
+      - id: pip-audit
+        name: Pip Vulnerability Audit
+        # Only check production dependencies
+        args: [--fix, --desc, --require-hashes]
+
+# Configuration for specific hooks
+files: '^src/|^tests/|^scripts/'
+exclude: '^(\.git/|\.venv/|venv/|build/|dist/|.*\.egg-info/)'
+
+# Skip these hooks in CI (they're run separately)
+ci:
+  skip: [pyright, pip-audit]
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from hooks
+    
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  submodules: false
