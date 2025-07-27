@@ -118,6 +118,7 @@ log/
 .env.*
 !.env.example
 !.env.template
+!.env.sample
 
 # MacOS
 .DS_Store
