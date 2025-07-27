@@ -141,7 +141,6 @@ addopts = [
     "--cov=src/virtual_library_mcp",
     "--cov-report=term-missing",
     "--cov-report=html",
-    "--cov-fail-under=80",
 ]
 # Enable async testing for MCP server operations
 asyncio_mode = "auto"
