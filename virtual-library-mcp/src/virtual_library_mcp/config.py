@@ -78,20 +78,20 @@ class ServerConfig(BaseSettings):
     transport: str = Field(
         default="stdio",
         description="Primary transport mechanism",
-        # We start with stdio, but design for extensibility
-        pattern=r"^(stdio|sse|websocket)$",
+        # We start with stdio, but design for extensibility to Streamable HTTP
+        pattern=r"^(stdio|streamable_http)$",
     )
     
-    # HTTP/SSE configuration (for future use)
+    # Streamable HTTP configuration (for future use)
     # Demonstrates forward-thinking design
     http_host: str = Field(
         default="127.0.0.1",
-        description="HTTP server host for SSE transport",
+        description="HTTP server host for Streamable HTTP transport",
     )
     
     http_port: int = Field(
         default=8080,
-        description="HTTP server port for SSE transport",
+        description="HTTP server port for Streamable HTTP transport",
         ge=1024,  # Avoid privileged ports
         le=65535,
     )

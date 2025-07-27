@@ -4,7 +4,7 @@
 - [Overview](#overview)
 - [Transport Requirements](#transport-requirements)
 - [stdio Transport](#stdio-transport)
-- [HTTP with SSE Transport](#http-with-sse-transport)
+- [HTTP with SSE Transport (DEPRECATED)](#http-with-sse-transport-deprecated)
 - [Streamable HTTP Transport](#streamable-http-transport)
 - [Transport Selection](#transport-selection)
 - [Message Framing](#message-framing)
@@ -15,7 +15,13 @@
 
 ## Overview
 
-The Model Context Protocol supports multiple transport mechanisms for communication between clients and servers. Each transport provides different trade-offs in terms of complexity, performance, and deployment scenarios. All transports carry the same JSON-RPC 2.0 messages defined in the protocol specification.
+The Model Context Protocol currently supports two transport mechanisms for communication between clients and servers:
+- **stdio**: For local process communication
+- **Streamable HTTP**: For network communication with optional streaming support
+
+Note: SSE (Server-Sent Events) as a standalone transport is deprecated. The Streamable HTTP transport can use SSE internally for streaming responses when appropriate.
+
+Each transport provides different trade-offs in terms of complexity, performance, and deployment scenarios. All transports carry the same JSON-RPC 2.0 messages defined in the protocol specification.
 
 ## Transport Requirements
 
@@ -123,9 +129,11 @@ server.stdout.on('data', (data) => {
 - Local AI assistants
 - Command-line interfaces
 
-## HTTP with SSE Transport
+## HTTP with SSE Transport (DEPRECATED)
 
-HTTP with Server-Sent Events provides a web-friendly transport suitable for browser-based clients and remote servers.
+**Note: SSE as a standalone transport is deprecated. Use Streamable HTTP transport instead, which can optionally use SSE internally for streaming responses.**
+
+HTTP with Server-Sent Events was a web-friendly transport suitable for browser-based clients and remote servers.
 
 ### Overview
 - Client sends HTTP POST requests
@@ -374,27 +382,27 @@ app.post('/mcp', async (req, res) => {
 
 ### Decision Matrix
 
-| Transport | Local | Remote | Browser | Streaming | Complexity |
-|-----------|-------|--------|---------|-----------|------------|
-| stdio | ✓ | ✗ | ✗ | ✓ | Low |
-| HTTP+SSE | ✓ | ✓ | ✓ | ✓ | Medium |
-| Streamable HTTP | ✓ | ✓ | ✓ | ✓ | High |
+| Transport | Local | Remote | Browser | Streaming | Complexity | Status |
+|-----------|-------|--------|---------|-----------|------------|---------|
+| stdio | ✓ | ✗ | ✗ | ✓ | Low | Current |
+| Streamable HTTP | ✓ | ✓ | ✓ | ✓ | High | Current |
+| HTTP+SSE | ✓ | ✓ | ✓ | ✓ | Medium | Deprecated |
 
 ### Selection Criteria
 
 1. **Deployment Environment**
    - Local only → stdio
-   - Web/remote → HTTP variants
+   - Web/remote → Streamable HTTP
    - Mixed → Multiple transports
 
 2. **Performance Requirements**
    - Low latency → stdio
    - High throughput → Streamable HTTP
-   - Progress updates → HTTP+SSE
+   - Progress updates → Streamable HTTP (with SSE internally)
 
 3. **Client Capabilities**
    - Simple clients → stdio
-   - Web browsers → HTTP+SSE
+   - Web browsers → Streamable HTTP
    - Advanced clients → Streamable HTTP
 
 ## Message Framing
@@ -551,26 +559,31 @@ class TransportClient {
 
 ## Future Transports
 
+The following transports are being considered for future versions of MCP but are not currently part of the protocol specification:
+
 ### WebSocket
 - Full duplex communication
 - Lower latency than HTTP
 - Better for real-time applications
+- **Status**: Future consideration, not currently supported
 
 ### gRPC
 - Binary protocol
 - Schema-driven
 - Built-in streaming
+- **Status**: Under evaluation
 
 ### WebTransport
 - Next-generation web protocol
 - UDP and reliable streams
 - Better performance than WebSocket
+- **Status**: Experimental
 
 ### Implementation Roadmap
-1. **Phase 1**: Core transports (stdio, HTTP)
-2. **Phase 2**: WebSocket support
-3. **Phase 3**: gRPC integration
-4. **Phase 4**: Experimental transports
+1. **Phase 1**: Core transports (stdio, Streamable HTTP) - COMPLETE
+2. **Phase 2**: WebSocket support - FUTURE
+3. **Phase 3**: gRPC integration - FUTURE
+4. **Phase 4**: Experimental transports - FUTURE
 
 ## Best Practices
 

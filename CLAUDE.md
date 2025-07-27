@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. **Never use `git add .`** - Always add files specifically by name to avoid accidentally committing unwanted files.
 3. **Never commit secrets** - Double-check that no API keys, tokens, passwords, or sensitive data are included in any commits.
 4. **Use MCP Protocol Mentor for MCP implementations** - When implementing MCP features, use the mcp-protocol-mentor agent defined in `.claude/agents/mcp-protocol-mentor.md` (non-negotiable). This ensures proper understanding and implementation of MCP concepts.
+5. **Read protocol specs before implementing** - Always use Context7 to read the latest MCP protocol specification from `/modelcontextprotocol/specification` before implementing any MCP features. This ensures compliance with the current protocol version.
 
 ## Repository Overview
 
@@ -49,7 +50,7 @@ The `docs/mcp/` directory contains comprehensive MCP documentation:
 - `01-overview.md`: Introduction to MCP, key features, industry adoption
 - `02-architecture.md`: Technical architecture details
 - `03-protocol-specification.md`: JSON-RPC 2.0 protocol details
-- `04-transport-layer.md`: Transport options (stdio, HTTP/SSE)
+- `04-transport-layer.md`: Transport options (stdio, Streamable HTTP)
 - `05-server-development.md`: Comprehensive server development guide
 - `06-client-development.md`: Client implementation guide
 - `07-sdk-reference.md`: SDK documentation for all languages

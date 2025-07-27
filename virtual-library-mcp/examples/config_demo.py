@@ -49,12 +49,9 @@ def demonstrate_configuration():
     if config.transport == "stdio":
         print("   Using stdio transport (process communication)")
         print("   Perfect for: CLI tools, local development")
-    elif config.transport == "sse":
-        print(f"   Using Server-Sent Events on {config.http_host}:{config.http_port}")
-        print("   Perfect for: Web clients, remote access")
-    elif config.transport == "websocket":
-        print(f"   Using WebSocket on {config.http_host}:{config.http_port}")
-        print("   Perfect for: Real-time bidirectional communication")
+    elif config.transport == "streamable_http":
+        print(f"   Using Streamable HTTP on {config.http_host}:{config.http_port}")
+        print("   Perfect for: Web clients, remote access, optional streaming")
     print()
     
     # 5. Security Configuration
@@ -158,7 +155,7 @@ def demonstrate_mcp_use_cases():
     # Use Case 2: Web Service
     print("2. Web Service Configuration:")
     web_config = ServerConfig(
-        transport="sse",
+        transport="streamable_http",
         http_host="0.0.0.0",  # Listen on all interfaces
         http_port=8080,
         enable_subscriptions=True,

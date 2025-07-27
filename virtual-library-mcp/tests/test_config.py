@@ -112,7 +112,7 @@ class TestServerConfig:
     def test_transport_validation(self):
         """Test transport mechanism validation."""
         # MCP supports multiple transports
-        valid_transports = ["stdio", "sse", "websocket"]
+        valid_transports = ["stdio", "streamable_http"]
         
         for transport in valid_transports:
             config = ServerConfig(transport=transport)
@@ -121,9 +121,13 @@ class TestServerConfig:
         # Invalid transports
         with pytest.raises(ValidationError):
             ServerConfig(transport="http")  # Not a valid MCP transport
+        with pytest.raises(ValidationError):
+            ServerConfig(transport="sse")  # SSE is deprecated
+        with pytest.raises(ValidationError):
+            ServerConfig(transport="websocket")  # WebSocket is future transport
     
     def test_port_validation(self):
-        """Test HTTP port validation for SSE transport."""
+        """Test HTTP port validation for Streamable HTTP transport."""
         # Valid ports
         config = ServerConfig(http_port=8080)
         assert config.http_port == 8080
