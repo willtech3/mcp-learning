@@ -1,0 +1,182 @@
+[project]
+name = "virtual-library-mcp"
+version = "0.1.0"
+description = "A comprehensive MCP server demonstrating library management system with all MCP protocol features"
+authors = [
+    {name = "MCP Learning Project", email = "example@example.com"}
+]
+# readme = "README.md"  # Will be created in Phase 5
+license = {text = "MIT"}
+requires-python = ">=3.12"
+keywords = ["mcp", "model-context-protocol", "library", "education", "server"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Education",
+]
+
+# Core dependencies for MCP server functionality
+dependencies = [
+    # MCP framework - provides the server foundation
+    "fastmcp>=2.0.0",
+    
+    # Data validation and serialization - critical for MCP protocol compliance
+    "pydantic>=2.0.0",
+    
+    # Database ORM for persistent data storage
+    "sqlalchemy>=2.0.0",
+    
+    # Test data generation for realistic library catalog
+    "faker>=24.0.0",
+    
+    # Environment variable management for configuration
+    "python-dotenv>=1.0.0",
+    
+    # HTTP client for external API integrations (future use)
+    "httpx>=0.26.0",
+]
+
+[project.optional-dependencies]
+# Development tools - separate from runtime dependencies
+dev = [
+    # Testing framework
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.23.0",
+    
+    # Code formatting and linting
+    "ruff>=0.3.0",
+    
+    # Type checking - crucial for MCP protocol implementation
+    "pyright>=1.1.350",
+    
+    # Development server utilities
+    "watchdog>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/example/virtual-library-mcp"
+Repository = "https://github.com/example/virtual-library-mcp"
+Documentation = "https://github.com/example/virtual-library-mcp/docs"
+Issues = "https://github.com/example/virtual-library-mcp/issues"
+
+[project.scripts]
+# Entry point for running the MCP server
+virtual-library-mcp = "virtual_library_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Tool configurations for development workflow
+
+[tool.ruff]
+# Python version compatibility
+target-version = "py312"
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+# Enable comprehensive linting rules for MCP development
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings  
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I",   # isort
+    "N",   # pep8-naming
+    "C4",  # flake8-comprehensions
+    "TCH", # flake8-type-checking
+    "T20", # flake8-print (avoid print statements in production)
+]
+
+# Ignore rules that conflict with Black or are too strict for educational code
+ignore = [
+    "E501",  # line too long (handled by line-length setting)
+    "T20",   # Allow print statements for educational/debugging purposes
+]
+
+[tool.ruff.format]
+# Use double quotes for consistency with MCP protocol JSON strings
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pyright]
+# Type checking configuration - essential for MCP protocol implementation
+include = ["src", "tests"]
+exclude = ["**/__pycache__"]
+pythonVersion = "3.12"
+pythonPlatform = "All"
+
+# Strict type checking helps catch MCP protocol violations early
+typeCheckingMode = "standard"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportUnusedImport = true
+reportUnusedVariable = true
+reportDuplicateImport = true
+reportUntypedFunctionDecorator = true
+reportUntypedClassDecorator = true
+
+[tool.pytest.ini_options]
+# Testing configuration for MCP server
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    # Coverage reporting helps ensure MCP protocol compliance
+    "--cov=src/virtual_library_mcp",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-fail-under=80",
+]
+# Enable async testing for MCP server operations
+asyncio_mode = "auto"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.403",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
+    "watchdog>=6.0.0",
+]
