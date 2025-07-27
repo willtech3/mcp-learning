@@ -53,28 +53,33 @@ The stdio (standard input/output) transport is the simplest transport mechanism,
 ### Implementation Details
 
 #### Server Implementation
-```typescript
-// Read messages from stdin
-const readline = require('readline');
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+```python
+import sys
+import json
+import asyncio
+from typing import Dict, Any
 
-rl.on('line', (line) => {
-  try {
-    const message = JSON.parse(line);
-    handleMessage(message);
-  } catch (error) {
-    sendError('Parse error', -32700);
-  }
-});
+async def read_stdin():
+    """Read messages from stdin"""
+    loop = asyncio.get_event_loop()
+    reader = asyncio.StreamReader()
+    protocol = asyncio.StreamReaderProtocol(reader)
+    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+    
+    while True:
+        line = await reader.readline()
+        if not line:
+            break
+        
+        try:
+            message = json.loads(line.decode().strip())
+            await handle_message(message)
+        except json.JSONDecodeError:
+            send_error('Parse error', -32700)
 
-// Write messages to stdout
-function sendMessage(message) {
-  process.stdout.write(JSON.stringify(message) + '\n');
-}
+def send_message(message: Dict[str, Any]):
+    """Write messages to stdout"""
+    print(json.dumps(message), flush=True)
 ```
 
 #### Client Implementation

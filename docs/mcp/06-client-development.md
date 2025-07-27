@@ -28,35 +28,8 @@ MCP clients are applications that connect to MCP servers to access resources and
 
 ### Quick Start
 
-#### TypeScript/JavaScript
 ```bash
-npm install @modelcontextprotocol/sdk
-```
-
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-
-// Create and connect a client
-const client = new Client({
-  name: "my-mcp-client",
-  version: "1.0.0",
-});
-
-const transport = new StdioClientTransport({
-  command: "node",
-  args: ["path/to/server.js"],
-});
-
-await client.connect(transport);
-
-// Use the client
-const resources = await client.request("resources/list", {});
-console.log("Available resources:", resources);
-```
-
-#### Python
-```bash
+# Install MCP Python SDK
 pip install mcp
 ```
 
@@ -119,1082 +92,1631 @@ asyncio.run(main())
 ```
 
 ### Core Client Class
-```typescript
-class MCPClient {
-  private transport: Transport;
-  private requestId: number = 0;
-  private pendingRequests: Map<string | number, PendingRequest>;
-  private serverCapabilities: ServerCapabilities;
-  
-  constructor(private config: ClientConfig) {
-    this.pendingRequests = new Map();
-  }
-  
-  async connect(transport: Transport): Promise<void> {
-    this.transport = transport;
+```python
+import asyncio
+from typing import Dict, Any, Optional, Callable
+from dataclasses import dataclass, field
+
+@dataclass
+class PendingRequest:
+    """Tracks a pending request"""
+    future: asyncio.Future
+    method: str
+    timeout_handle: Optional[asyncio.TimerHandle] = None
+
+class MCPClient:
+    """Core MCP client implementation"""
     
-    // Set up message handlers
-    this.transport.onMessage(this.handleMessage.bind(this));
-    this.transport.onError(this.handleError.bind(this));
-    this.transport.onClose(this.handleClose.bind(this));
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.transport: Optional[Transport] = None
+        self.request_id: int = 0
+        self.pending_requests: Dict[int, PendingRequest] = {}
+        self.server_capabilities: Optional[Dict[str, Any]] = None
+        self._message_handler_task: Optional[asyncio.Task] = None
     
-    // Start transport
-    await this.transport.start();
+    async def connect(self, transport: Transport) -> None:
+        """Connect to MCP server"""
+        self.transport = transport
+        
+        # Start transport
+        await self.transport.start()
+        
+        # Start message handler
+        self._message_handler_task = asyncio.create_task(
+            self._handle_messages()
+        )
+        
+        # Initialize protocol
+        await self.initialize()
     
-    // Initialize protocol
-    await this.initialize();
-  }
-  
-  async request<T>(method: string, params?: any): Promise<T> {
-    const id = ++this.requestId;
+    async def request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Send request to server"""
+        request_id = self._next_id()
+        
+        # Create future for response
+        future = asyncio.Future()
+        pending = PendingRequest(future=future, method=method)
+        self.pending_requests[request_id] = pending
+        
+        # Send request
+        await self.transport.send({
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "method": method,
+            "params": params or {}
+        })
+        
+        # Set timeout
+        pending.timeout_handle = asyncio.get_event_loop().call_later(
+            30.0,
+            lambda: self._timeout_request(request_id)
+        )
+        
+        try:
+            return await future
+        finally:
+            # Clean up timeout
+            if pending.timeout_handle:
+                pending.timeout_handle.cancel()
     
-    return new Promise((resolve, reject) => {
-      // Track pending request
-      this.pendingRequests.set(id, { resolve, reject });
-      
-      // Send request
-      this.transport.send({
-        jsonrpc: "2.0",
-        id,
-        method,
-        params,
-      });
-      
-      // Set timeout
-      setTimeout(() => {
-        if (this.pendingRequests.has(id)) {
-          this.pendingRequests.delete(id);
-          reject(new Error(`Request timeout: ${method}`));
-        }
-      }, 30000);
-    });
-  }
-}
+    def _next_id(self) -> int:
+        """Generate next request ID"""
+        self.request_id += 1
+        return self.request_id
+    
+    def _timeout_request(self, request_id: int) -> None:
+        """Handle request timeout"""
+        if request_id in self.pending_requests:
+            pending = self.pending_requests.pop(request_id)
+            pending.future.set_exception(
+                TimeoutError(f"Request timeout: {pending.method}")
+            )
 ```
 
 ## Connection Management
 
 ### Transport Selection
-```typescript
-// stdio transport for local servers
-const stdioTransport = new StdioClientTransport({
-  command: "node",
-  args: ["./server.js"],
-  env: {
-    NODE_ENV: "production",
-  },
-});
+```python
+import os
+from mcp import StdioTransport, HttpTransport, SseTransport
 
-// HTTP transport for remote servers
-const httpTransport = new HttpClientTransport({
-  url: "https://api.example.com/mcp",
-  headers: {
-    Authorization: "Bearer token",
-  },
-});
+# stdio transport for local servers
+stdio_transport = StdioTransport(
+    command="python",
+    args=["./server.py"],
+    env={
+        **os.environ,
+        "PYTHONPATH": ".",
+    }
+)
 
-// SSE transport for streaming
-const sseTransport = new SseClientTransport({
-  url: "https://api.example.com/mcp/stream",
-});
+# HTTP transport for remote servers
+http_transport = HttpTransport(
+    url="https://api.example.com/mcp",
+    headers={
+        "Authorization": "Bearer token",
+    }
+)
+
+# SSE transport for streaming
+sse_transport = SseTransport(
+    url="https://api.example.com/mcp/stream"
+)
 ```
 
 ### Connection Lifecycle
-```typescript
-class ConnectionManager {
-  private client: MCPClient;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  
-  async connect(): Promise<void> {
-    try {
-      await this.client.connect(this.transport);
-      this.reconnectAttempts = 0;
-      console.log("Connected successfully");
-    } catch (error) {
-      console.error("Connection failed:", error);
-      await this.handleConnectionError();
-    }
-  }
-  
-  async handleConnectionError(): Promise<void> {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      throw new Error("Max reconnection attempts reached");
-    }
+```python
+import asyncio
+import logging
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+class ConnectionManager:
+    """Manages MCP client connections with reconnection logic"""
     
-    this.reconnectAttempts++;
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    def __init__(self, client: MCPClient, transport: Transport):
+        self.client = client
+        self.transport = transport
+        self.reconnect_attempts = 0
+        self.max_reconnect_attempts = 5
     
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
-    await new Promise(resolve => setTimeout(resolve, delay));
+    async def connect(self) -> None:
+        """Connect with automatic retry"""
+        try:
+            await self.client.connect(self.transport)
+            self.reconnect_attempts = 0
+            logger.info("Connected successfully")
+        except Exception as error:
+            logger.error(f"Connection failed: {error}")
+            await self.handle_connection_error()
     
-    return this.connect();
-  }
-  
-  async disconnect(): Promise<void> {
-    // Send shutdown request
-    await this.client.request("shutdown");
+    async def handle_connection_error(self) -> None:
+        """Handle connection errors with exponential backoff"""
+        if self.reconnect_attempts >= self.max_reconnect_attempts:
+            raise Exception("Max reconnection attempts reached")
+        
+        self.reconnect_attempts += 1
+        delay = min(1.0 * (2 ** self.reconnect_attempts), 30.0)
+        
+        logger.info(f"Reconnecting in {delay}s (attempt {self.reconnect_attempts})")
+        await asyncio.sleep(delay)
+        
+        return await self.connect()
     
-    // Close transport
-    await this.transport.close();
-  }
-}
+    async def disconnect(self) -> None:
+        """Gracefully disconnect"""
+        try:
+            # Send shutdown request
+            await self.client.request("shutdown")
+        except Exception as e:
+            logger.warning(f"Shutdown request failed: {e}")
+        
+        # Close transport
+        await self.transport.close()
 ```
 
 ### Health Monitoring
-```typescript
-class HealthMonitor {
-  private pingInterval: NodeJS.Timer;
-  private lastPong: number;
-  
-  startMonitoring(client: MCPClient): void {
-    this.pingInterval = setInterval(async () => {
-      try {
-        const start = Date.now();
-        await client.request("ping");
-        const latency = Date.now() - start;
-        
-        this.lastPong = Date.now();
-        this.onHealthCheck({ healthy: true, latency });
-      } catch (error) {
-        this.onHealthCheck({ healthy: false, error });
-      }
-    }, 30000);
-  }
-  
-  stopMonitoring(): void {
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-    }
-  }
-  
-  private onHealthCheck(status: HealthStatus): void {
-    // Emit health status event
-    this.emit("health", status);
-  }
-}
+```python
+import asyncio
+import time
+from typing import Optional, Callable, Dict, Any
+from dataclasses import dataclass
+
+@dataclass
+class HealthStatus:
+    """Health check status"""
+    healthy: bool
+    latency: Optional[float] = None
+    error: Optional[Exception] = None
+
+class HealthMonitor:
+    """Monitor MCP client health"""
+    
+    def __init__(self, health_callback: Optional[Callable[[HealthStatus], None]] = None):
+        self.ping_task: Optional[asyncio.Task] = None
+        self.last_pong: float = 0
+        self.health_callback = health_callback
+    
+    async def start_monitoring(self, client: MCPClient, interval: float = 30.0) -> None:
+        """Start health monitoring"""
+        self.ping_task = asyncio.create_task(
+            self._monitor_loop(client, interval)
+        )
+    
+    async def stop_monitoring(self) -> None:
+        """Stop health monitoring"""
+        if self.ping_task:
+            self.ping_task.cancel()
+            try:
+                await self.ping_task
+            except asyncio.CancelledError:
+                pass
+    
+    async def _monitor_loop(self, client: MCPClient, interval: float) -> None:
+        """Health check loop"""
+        while True:
+            try:
+                start = time.time()
+                await client.request("ping")
+                latency = (time.time() - start) * 1000  # ms
+                
+                self.last_pong = time.time()
+                self._on_health_check(HealthStatus(
+                    healthy=True,
+                    latency=latency
+                ))
+            except Exception as error:
+                self._on_health_check(HealthStatus(
+                    healthy=False,
+                    error=error
+                ))
+            
+            await asyncio.sleep(interval)
+    
+    def _on_health_check(self, status: HealthStatus) -> None:
+        """Handle health check result"""
+        if self.health_callback:
+            self.health_callback(status)
 ```
 
 ## Making Requests
 
 ### Basic Request Pattern
-```typescript
-// Simple request without parameters
-const result = await client.request("tools/list");
+```python
+# Simple request without parameters
+result = await client.request("tools/list")
 
-// Request with parameters
-const resource = await client.request("resources/read", {
-  uri: "file:///data/config.json",
-});
+# Request with parameters
+resource = await client.request("resources/read", {
+    "uri": "file:///data/config.json"
+})
 
-// Request with timeout
-const resultWithTimeout = await Promise.race([
-  client.request("tools/call", {
-    name: "long_running_tool",
-    arguments: { data: "..." },
-  }),
-  new Promise((_, reject) => 
-    setTimeout(() => reject(new Error("Timeout")), 60000)
-  ),
-]);
+# Request with timeout
+async def request_with_timeout(client, method, params, timeout=60.0):
+    """Make request with custom timeout"""
+    try:
+        return await asyncio.wait_for(
+            client.request(method, params),
+            timeout=timeout
+        )
+    except asyncio.TimeoutError:
+        raise TimeoutError(f"Request timeout: {method}")
+
+# Usage
+result_with_timeout = await request_with_timeout(
+    client,
+    "tools/call",
+    {
+        "name": "long_running_tool",
+        "arguments": {"data": "..."}
+    },
+    timeout=60.0
+)
 ```
 
 ### Batch Requests
-```typescript
-class BatchRequestClient {
-  async batchRequest(requests: Array<{method: string, params?: any}>) {
-    // Create batch with unique IDs
-    const batch = requests.map((req, index) => ({
-      jsonrpc: "2.0",
-      id: `batch-${Date.now()}-${index}`,
-      method: req.method,
-      params: req.params,
-    }));
-    
-    // Send batch
-    const responses = await this.client.sendBatch(batch);
-    
-    // Map responses back to requests
-    return responses.sort((a, b) => {
-      const aIndex = parseInt(a.id.split('-')[2]);
-      const bIndex = parseInt(b.id.split('-')[2]);
-      return aIndex - bIndex;
-    });
-  }
-}
+```python
+import time
+from typing import List, Dict, Any, Optional
 
-// Usage
-const results = await batchClient.batchRequest([
-  { method: "resources/list" },
-  { method: "tools/list" },
-  { method: "prompts/list" },
-]);
+class BatchRequestClient:
+    """Client with batch request support"""
+    
+    def __init__(self, client: MCPClient):
+        self.client = client
+    
+    async def batch_request(self, requests: List[Dict[str, Any]]) -> List[Any]:
+        """Send multiple requests as a batch"""
+        # Create batch with unique IDs
+        timestamp = int(time.time() * 1000)
+        batch = [
+            {
+                "jsonrpc": "2.0",
+                "id": f"batch-{timestamp}-{index}",
+                "method": req["method"],
+                "params": req.get("params", {})
+            }
+            for index, req in enumerate(requests)
+        ]
+        
+        # Send batch
+        responses = await self.client.send_batch(batch)
+        
+        # Sort responses back to original order
+        def get_index(response):
+            return int(response["id"].split('-')[2])
+        
+        return sorted(responses, key=get_index)
+
+# Usage
+batch_client = BatchRequestClient(client)
+results = await batch_client.batch_request([
+    {"method": "resources/list"},
+    {"method": "tools/list"},
+    {"method": "prompts/list"},
+])
 ```
 
 ### Request Queuing
-```typescript
-class QueuedClient {
-  private queue: Array<QueuedRequest> = [];
-  private processing = false;
-  private concurrency = 3;
-  
-  async queueRequest<T>(method: string, params?: any): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.queue.push({ method, params, resolve, reject });
-      this.processQueue();
-    });
-  }
-  
-  private async processQueue(): Promise<void> {
-    if (this.processing || this.queue.length === 0) return;
+```python
+import asyncio
+from typing import Any, Optional, List
+from dataclasses import dataclass
+from collections import deque
+
+@dataclass
+class QueuedRequest:
+    """Queued request with future"""
+    method: str
+    params: Optional[Dict[str, Any]]
+    future: asyncio.Future
+
+class QueuedClient:
+    """Client with request queuing and concurrency control"""
     
-    this.processing = true;
-    const active = new Set<Promise<any>>();
+    def __init__(self, client: MCPClient, concurrency: int = 3):
+        self.client = client
+        self.queue: deque[QueuedRequest] = deque()
+        self.concurrency = concurrency
+        self.processing = False
+        self._process_task: Optional[asyncio.Task] = None
     
-    while (this.queue.length > 0 || active.size > 0) {
-      // Start new requests up to concurrency limit
-      while (this.queue.length > 0 && active.size < this.concurrency) {
-        const request = this.queue.shift()!;
-        const promise = this.executeRequest(request)
-          .then(result => {
-            request.resolve(result);
-            active.delete(promise);
-          })
-          .catch(error => {
-            request.reject(error);
-            active.delete(promise);
-          });
+    async def queue_request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Queue a request for execution"""
+        future = asyncio.Future()
+        request = QueuedRequest(method=method, params=params, future=future)
+        self.queue.append(request)
         
-        active.add(promise);
-      }
-      
-      // Wait for at least one to complete
-      if (active.size > 0) {
-        await Promise.race(active);
-      }
-    }
+        # Start processing if not already running
+        if not self.processing:
+            self._process_task = asyncio.create_task(self._process_queue())
+        
+        return await future
     
-    this.processing = false;
-  }
-}
+    async def _process_queue(self) -> None:
+        """Process queued requests with concurrency limit"""
+        self.processing = True
+        active_tasks: set[asyncio.Task] = set()
+        
+        try:
+            while self.queue or active_tasks:
+                # Start new requests up to concurrency limit
+                while self.queue and len(active_tasks) < self.concurrency:
+                    request = self.queue.popleft()
+                    task = asyncio.create_task(
+                        self._execute_request(request)
+                    )
+                    active_tasks.add(task)
+                
+                # Wait for at least one to complete
+                if active_tasks:
+                    done, pending = await asyncio.wait(
+                        active_tasks,
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+                    active_tasks = pending
+        finally:
+            self.processing = False
+    
+    async def _execute_request(self, request: QueuedRequest) -> None:
+        """Execute a single request"""
+        try:
+            result = await self.client.request(request.method, request.params)
+            request.future.set_result(result)
+        except Exception as error:
+            request.future.set_exception(error)
 ```
 
 ## Handling Responses
 
 ### Response Processing
-```typescript
-class ResponseHandler {
-  handleMessage(message: any): void {
-    // Handle responses
-    if (message.id !== undefined) {
-      this.handleResponse(message);
-    }
-    // Handle notifications
-    else if (message.method) {
-      this.handleNotification(message);
-    }
-  }
-  
-  private handleResponse(message: any): void {
-    const pending = this.pendingRequests.get(message.id);
-    if (!pending) return;
+```python
+from typing import Dict, Any, Optional, Callable
+import logging
+
+logger = logging.getLogger(__name__)
+
+class MCPError(Exception):
+    """MCP protocol error"""
+    def __init__(self, message: str, code: int, data: Optional[Any] = None):
+        super().__init__(message)
+        self.code = code
+        self.data = data
+
+class ResponseHandler:
+    """Handle MCP protocol messages"""
     
-    this.pendingRequests.delete(message.id);
+    def __init__(self):
+        self.pending_requests: Dict[int, PendingRequest] = {}
+        self.notification_handlers: Dict[str, List[Callable]] = {}
     
-    if (message.error) {
-      pending.reject(new MCPError(
-        message.error.message,
-        message.error.code,
-        message.error.data
-      ));
-    } else {
-      pending.resolve(message.result);
-    }
-  }
-  
-  private handleNotification(message: any): void {
-    switch (message.method) {
-      case "notifications/progress":
-        this.emit("progress", message.params);
-        break;
+    def handle_message(self, message: Dict[str, Any]) -> None:
+        """Process incoming message"""
+        # Handle responses
+        if "id" in message and message["id"] is not None:
+            self.handle_response(message)
+        # Handle notifications
+        elif "method" in message:
+            self.handle_notification(message)
+    
+    def handle_response(self, message: Dict[str, Any]) -> None:
+        """Handle response message"""
+        request_id = message["id"]
+        pending = self.pending_requests.get(request_id)
+        if not pending:
+            return
         
-      case "notifications/resources/updated":
-        this.emit("resourceUpdated", message.params);
-        break;
+        del self.pending_requests[request_id]
         
-      case "notifications/log":
-        this.emit("log", message.params);
-        break;
+        if "error" in message:
+            error = message["error"]
+            pending.future.set_exception(MCPError(
+                error["message"],
+                error["code"],
+                error.get("data")
+            ))
+        else:
+            pending.future.set_result(message.get("result"))
+    
+    def handle_notification(self, message: Dict[str, Any]) -> None:
+        """Handle notification message"""
+        method = message["method"]
+        params = message.get("params", {})
         
-      default:
-        console.warn("Unknown notification:", message.method);
-    }
-  }
-}
+        # Call registered handlers
+        if method in self.notification_handlers:
+            for handler in self.notification_handlers[method]:
+                try:
+                    handler(params)
+                except Exception as e:
+                    logger.error(f"Notification handler error: {e}")
+        else:
+            logger.warning(f"Unknown notification: {method}")
+    
+    def on(self, method: str, handler: Callable) -> None:
+        """Register notification handler"""
+        if method not in self.notification_handlers:
+            self.notification_handlers[method] = []
+        self.notification_handlers[method].append(handler)
 ```
 
 ### Streaming Responses
-```typescript
-class StreamingClient {
-  async *streamRequest(method: string, params: any): AsyncGenerator<any> {
-    const streamId = await this.client.request("stream/start", {
-      method,
-      params,
-    });
+```python
+from typing import AsyncIterator, Dict, Any
+import asyncio
+
+class StreamingClient:
+    """Client with streaming support"""
     
-    try {
-      while (true) {
-        const chunk = await this.waitForChunk(streamId);
-        if (chunk.done) break;
-        yield chunk.data;
-      }
-    } finally {
-      // Clean up stream
-      await this.client.request("stream/end", { streamId });
-    }
-  }
-  
-  // Usage
-  async processStream() {
-    const stream = this.streamRequest("tools/call", {
-      name: "stream_logs",
-      arguments: { follow: true },
-    });
+    def __init__(self, client: MCPClient):
+        self.client = client
+        self.active_streams: Dict[str, asyncio.Queue] = {}
     
-    for await (const log of stream) {
-      console.log("Log:", log);
-    }
-  }
-}
+    async def stream_request(self, method: str, params: Dict[str, Any]) -> AsyncIterator[Any]:
+        """Stream response data"""
+        # Start stream
+        response = await self.client.request("stream/start", {
+            "method": method,
+            "params": params
+        })
+        stream_id = response["streamId"]
+        
+        # Create queue for stream data
+        queue = asyncio.Queue()
+        self.active_streams[stream_id] = queue
+        
+        try:
+            while True:
+                chunk = await self.wait_for_chunk(stream_id)
+                if chunk.get("done", False):
+                    break
+                yield chunk["data"]
+        finally:
+            # Clean up stream
+            del self.active_streams[stream_id]
+            await self.client.request("stream/end", {"streamId": stream_id})
+    
+    async def wait_for_chunk(self, stream_id: str) -> Dict[str, Any]:
+        """Wait for next chunk from stream"""
+        queue = self.active_streams.get(stream_id)
+        if not queue:
+            raise ValueError(f"Unknown stream: {stream_id}")
+        return await queue.get()
+    
+    # Usage example
+    async def process_stream(self):
+        """Example of processing streamed data"""
+        async for log in self.stream_request("tools/call", {
+            "name": "stream_logs",
+            "arguments": {"follow": True}
+        }):
+            print(f"Log: {log}")
 ```
 
 ## Resource Operations
 
 ### Resource Discovery
-```typescript
-class ResourceManager {
-  private resourceCache: Map<string, Resource> = new Map();
-  
-  async listResources(): Promise<Resource[]> {
-    const response = await this.client.request("resources/list");
+```python
+import re
+from typing import Dict, List, Optional
+from dataclasses import dataclass
+
+@dataclass
+class Resource:
+    """MCP resource"""
+    uri: str
+    name: str
+    description: Optional[str] = None
+    mimeType: Optional[str] = None
+
+class ResourceManager:
+    """Manage MCP resources"""
     
-    // Cache resources
-    response.resources.forEach(resource => {
-      this.resourceCache.set(resource.uri, resource);
-    });
+    def __init__(self, client: MCPClient):
+        self.client = client
+        self.resource_cache: Dict[str, Resource] = {}
     
-    return response.resources;
-  }
-  
-  async getResourceByPattern(pattern: string): Promise<Resource[]> {
-    const resources = await this.listResources();
-    const regex = new RegExp(pattern);
+    async def list_resources(self) -> List[Resource]:
+        """List available resources"""
+        response = await self.client.request("resources/list")
+        
+        # Cache resources
+        resources = []
+        for res_data in response["resources"]:
+            resource = Resource(**res_data)
+            self.resource_cache[resource.uri] = resource
+            resources.append(resource)
+        
+        return resources
     
-    return resources.filter(resource => 
-      regex.test(resource.uri) || regex.test(resource.name)
-    );
-  }
-}
+    async def get_resource_by_pattern(self, pattern: str) -> List[Resource]:
+        """Find resources matching pattern"""
+        resources = await self.list_resources()
+        regex = re.compile(pattern)
+        
+        return [
+            resource for resource in resources
+            if regex.search(resource.uri) or regex.search(resource.name)
+        ]
 ```
 
 ### Reading Resources
-```typescript
-class ResourceReader {
-  private cache: LRUCache<string, any>;
-  
-  constructor(cacheSize: number = 100) {
-    this.cache = new LRUCache({ max: cacheSize });
-  }
-  
-  async readResource(uri: string, options?: ReadOptions): Promise<any> {
-    // Check cache first
-    const cacheKey = `${uri}:${JSON.stringify(options)}`;
-    if (this.cache.has(cacheKey) && !options?.noCache) {
-      return this.cache.get(cacheKey);
-    }
+```python
+import json
+import base64
+from typing import Dict, Any, Optional
+from collections import OrderedDict
+
+class LRUCache:
+    """Simple LRU cache implementation"""
+    def __init__(self, max_size: int = 100):
+        self.cache = OrderedDict()
+        self.max_size = max_size
     
-    // Read from server
-    const response = await this.client.request("resources/read", {
-      uri,
-      ...options,
-    });
+    def get(self, key: str) -> Optional[Any]:
+        if key in self.cache:
+            # Move to end (most recently used)
+            self.cache.move_to_end(key)
+            return self.cache[key]
+        return None
     
-    // Process content based on type
-    const content = this.processContent(response.contents[0]);
+    def set(self, key: str, value: Any) -> None:
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.max_size:
+            # Remove least recently used
+            self.cache.popitem(last=False)
     
-    // Cache result
-    this.cache.set(cacheKey, content);
+    def has(self, key: str) -> bool:
+        return key in self.cache
+
+class ResourceReader:
+    """Read and cache MCP resources"""
     
-    return content;
-  }
-  
-  private processContent(content: ResourceContent): any {
-    switch (content.mimeType) {
-      case "application/json":
-        return JSON.parse(content.text);
+    def __init__(self, client: MCPClient, cache_size: int = 100):
+        self.client = client
+        self.cache = LRUCache(max_size=cache_size)
+    
+    async def read_resource(self, uri: str, options: Optional[Dict[str, Any]] = None) -> Any:
+        """Read resource with caching"""
+        options = options or {}
         
-      case "text/plain":
-        return content.text;
+        # Check cache first
+        cache_key = f"{uri}:{json.dumps(options, sort_keys=True)}"
+        if not options.get("noCache", False) and self.cache.has(cache_key):
+            return self.cache.get(cache_key)
         
-      case "application/octet-stream":
-        return Buffer.from(content.blob, "base64");
+        # Read from server
+        response = await self.client.request("resources/read", {
+            "uri": uri,
+            **options
+        })
         
-      default:
-        return content;
-    }
-  }
-}
+        # Process content based on type
+        content = self.process_content(response["contents"][0])
+        
+        # Cache result
+        self.cache.set(cache_key, content)
+        
+        return content
+    
+    def process_content(self, content: Dict[str, Any]) -> Any:
+        """Process content based on MIME type"""
+        mime_type = content.get("mimeType", "text/plain")
+        
+        if mime_type == "application/json":
+            return json.loads(content["text"])
+        elif mime_type == "text/plain":
+            return content["text"]
+        elif mime_type == "application/octet-stream":
+            return base64.b64decode(content["blob"])
+        else:
+            return content
 ```
 
 ### Resource Subscriptions
-```typescript
-class ResourceSubscriber {
-  private subscriptions: Map<string, Subscription> = new Map();
-  
-  async subscribe(uri: string, callback: (change: any) => void): Promise<string> {
-    // Subscribe on server
-    const { subscriptionId } = await this.client.request("resources/subscribe", {
-      uri,
-    });
+```python
+from typing import Dict, Callable, Any
+import asyncio
+from dataclasses import dataclass
+
+@dataclass
+class Subscription:
+    """Resource subscription info"""
+    uri: str
+    callback: Callable[[Any], None]
+
+class ResourceSubscriber:
+    """Manage resource subscriptions"""
     
-    // Track subscription
-    this.subscriptions.set(subscriptionId, {
-      uri,
-      callback,
-    });
+    def __init__(self, client: MCPClient):
+        self.client = client
+        self.subscriptions: Dict[str, Subscription] = {}
+        
+        # Set up notification handler
+        client.on("notifications/resources/updated", self._handle_update)
     
-    // Listen for updates
-    this.client.on("resourceUpdated", (params) => {
-      if (params.subscriptionId === subscriptionId) {
-        callback(params.change);
-      }
-    });
+    async def subscribe(self, uri: str, callback: Callable[[Any], None]) -> str:
+        """Subscribe to resource changes"""
+        # Subscribe on server
+        response = await self.client.request("resources/subscribe", {
+            "uri": uri
+        })
+        subscription_id = response["subscriptionId"]
+        
+        # Track subscription
+        self.subscriptions[subscription_id] = Subscription(
+            uri=uri,
+            callback=callback
+        )
+        
+        return subscription_id
     
-    return subscriptionId;
-  }
-  
-  async unsubscribe(subscriptionId: string): Promise<void> {
-    await this.client.request("resources/unsubscribe", {
-      subscriptionId,
-    });
+    async def unsubscribe(self, subscription_id: str) -> None:
+        """Unsubscribe from resource"""
+        await self.client.request("resources/unsubscribe", {
+            "subscriptionId": subscription_id
+        })
+        
+        self.subscriptions.pop(subscription_id, None)
     
-    this.subscriptions.delete(subscriptionId);
-  }
-  
-  async unsubscribeAll(): Promise<void> {
-    const promises = Array.from(this.subscriptions.keys()).map(id =>
-      this.unsubscribe(id)
-    );
+    async def unsubscribe_all(self) -> None:
+        """Unsubscribe from all resources"""
+        tasks = [
+            self.unsubscribe(sub_id)
+            for sub_id in list(self.subscriptions.keys())
+        ]
+        await asyncio.gather(*tasks)
     
-    await Promise.all(promises);
-  }
-}
+    def _handle_update(self, params: Dict[str, Any]) -> None:
+        """Handle resource update notification"""
+        subscription_id = params.get("subscriptionId")
+        if subscription_id in self.subscriptions:
+            subscription = self.subscriptions[subscription_id]
+            try:
+                subscription.callback(params.get("change"))
+            except Exception as e:
+                logger.error(f"Subscription callback error: {e}")
 ```
 
 ## Tool Execution
 
 ### Tool Discovery and Validation
-```typescript
-class ToolManager {
-  private toolSchemas: Map<string, ToolSchema> = new Map();
-  
-  async listTools(): Promise<Tool[]> {
-    const response = await this.client.request("tools/list");
+```python
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+import jsonschema
+
+@dataclass
+class Tool:
+    """MCP tool definition"""
+    name: str
+    description: str
+    inputSchema: Dict[str, Any]
+
+@dataclass
+class ValidationResult:
+    """Schema validation result"""
+    valid: bool
+    errors: List[str]
+
+class ToolManager:
+    """Manage MCP tools"""
     
-    // Cache tool schemas
-    response.tools.forEach(tool => {
-      this.toolSchemas.set(tool.name, tool);
-    });
+    def __init__(self, client: MCPClient):
+        self.client = client
+        self.tool_schemas: Dict[str, Tool] = {}
     
-    return response.tools;
-  }
-  
-  validateArguments(toolName: string, args: any): ValidationResult {
-    const schema = this.toolSchemas.get(toolName);
-    if (!schema) {
-      return {
-        valid: false,
-        errors: [`Unknown tool: ${toolName}`],
-      };
-    }
+    async def list_tools(self) -> List[Tool]:
+        """List available tools"""
+        response = await self.client.request("tools/list")
+        
+        # Cache tool schemas
+        tools = []
+        for tool_data in response["tools"]:
+            tool = Tool(**tool_data)
+            self.tool_schemas[tool.name] = tool
+            tools.append(tool)
+        
+        return tools
     
-    // Validate against JSON schema
-    return validateJsonSchema(args, schema.inputSchema);
-  }
-}
+    def validate_arguments(self, tool_name: str, args: Any) -> ValidationResult:
+        """Validate tool arguments against schema"""
+        tool = self.tool_schemas.get(tool_name)
+        if not tool:
+            return ValidationResult(
+                valid=False,
+                errors=[f"Unknown tool: {tool_name}"]
+            )
+        
+        # Validate against JSON schema
+        try:
+            jsonschema.validate(args, tool.inputSchema)
+            return ValidationResult(valid=True, errors=[])
+        except jsonschema.ValidationError as e:
+            return ValidationResult(
+                valid=False,
+                errors=[str(e)]
+            )
 ```
 
 ### Tool Execution with Progress
-```typescript
-class ToolExecutor {
-  async executeTool(
-    name: string,
-    args: any,
-    onProgress?: (progress: Progress) => void
-  ): Promise<ToolResult> {
-    // Validate arguments
-    const validation = this.toolManager.validateArguments(name, args);
-    if (!validation.valid) {
-      throw new Error(`Invalid arguments: ${validation.errors.join(", ")}`);
-    }
-    
-    // Set up progress listener
-    const progressHandler = (params: any) => {
-      if (onProgress) {
-        onProgress(params);
-      }
-    };
-    
-    this.client.on("progress", progressHandler);
-    
-    try {
-      // Execute tool
-      const result = await this.client.request("tools/call", {
-        name,
-        arguments: args,
-      });
-      
-      return result;
-    } finally {
-      // Clean up listener
-      this.client.off("progress", progressHandler);
-    }
-  }
-}
+```python
+from typing import Optional, Callable, Dict, Any
 
-// Usage
-const executor = new ToolExecutor();
-const result = await executor.executeTool(
-  "process_data",
-  { input: "data.csv" },
-  (progress) => {
-    console.log(`Progress: ${progress.progress}% - ${progress.message}`);
-  }
-);
+@dataclass
+class Progress:
+    """Progress notification"""
+    progress: float
+    message: Optional[str] = None
+
+class ToolExecutor:
+    """Execute MCP tools with progress tracking"""
+    
+    def __init__(self, client: MCPClient, tool_manager: ToolManager):
+        self.client = client
+        self.tool_manager = tool_manager
+    
+    async def execute_tool(
+        self,
+        name: str,
+        args: Any,
+        on_progress: Optional[Callable[[Progress], None]] = None
+    ) -> Dict[str, Any]:
+        """Execute tool with optional progress callback"""
+        # Validate arguments
+        validation = self.tool_manager.validate_arguments(name, args)
+        if not validation.valid:
+            raise ValueError(f"Invalid arguments: {', '.join(validation.errors)}")
+        
+        # Set up progress handler
+        progress_handler_id = None
+        if on_progress:
+            def progress_handler(params: Dict[str, Any]) -> None:
+                progress = Progress(
+                    progress=params.get("progress", 0),
+                    message=params.get("message")
+                )
+                on_progress(progress)
+            
+            # Register handler
+            self.client.on("notifications/progress", progress_handler)
+            progress_handler_id = id(progress_handler)
+        
+        try:
+            # Execute tool
+            result = await self.client.request("tools/call", {
+                "name": name,
+                "arguments": args
+            })
+            
+            return result
+        finally:
+            # Clean up listener
+            if progress_handler_id:
+                # Remove the specific handler
+                # (Implementation depends on how client.on is implemented)
+                pass
+
+# Usage
+executor = ToolExecutor(client, tool_manager)
+result = await executor.execute_tool(
+    "process_data",
+    {"input": "data.csv"},
+    on_progress=lambda p: print(f"Progress: {p.progress}% - {p.message}")
+)
 ```
 
 ### Tool Result Processing
-```typescript
-class ToolResultProcessor {
-  processResult(result: ToolResult): ProcessedResult {
-    const processed: ProcessedResult = {
-      text: [],
-      images: [],
-      resources: [],
-      metadata: {},
-    };
+```python
+import base64
+from pathlib import Path
+from typing import List, Dict, Any
+from dataclasses import dataclass, field
+
+@dataclass
+class ProcessedResult:
+    """Processed tool result"""
+    text: List[str] = field(default_factory=list)
+    images: List[Dict[str, Any]] = field(default_factory=list)
+    resources: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+class ToolResultProcessor:
+    """Process tool execution results"""
     
-    for (const content of result.content) {
-      switch (content.type) {
-        case "text":
-          processed.text.push(content.text);
-          break;
-          
-        case "image":
-          processed.images.push({
-            data: content.data,
-            mimeType: content.mimeType,
-          });
-          break;
-          
-        case "resource":
-          processed.resources.push(content.uri);
-          break;
-          
-        default:
-          console.warn(`Unknown content type: ${content.type}`);
-      }
-    }
+    def process_result(self, result: Dict[str, Any]) -> ProcessedResult:
+        """Process raw tool result"""
+        processed = ProcessedResult()
+        
+        for content in result.get("content", []):
+            content_type = content.get("type")
+            
+            if content_type == "text":
+                processed.text.append(content["text"])
+            
+            elif content_type == "image":
+                processed.images.append({
+                    "data": content["data"],
+                    "mimeType": content.get("mimeType", "image/png")
+                })
+            
+            elif content_type == "resource":
+                processed.resources.append(content["uri"])
+            
+            else:
+                logger.warning(f"Unknown content type: {content_type}")
+        
+        return processed
     
-    return processed;
-  }
-  
-  async saveResults(result: ProcessedResult, outputDir: string): Promise<void> {
-    // Save text content
-    if (result.text.length > 0) {
-      await fs.writeFile(
-        path.join(outputDir, "output.txt"),
-        result.text.join("\n")
-      );
-    }
-    
-    // Save images
-    for (let i = 0; i < result.images.length; i++) {
-      const image = result.images[i];
-      const ext = image.mimeType.split("/")[1];
-      await fs.writeFile(
-        path.join(outputDir, `image-${i}.${ext}`),
-        Buffer.from(image.data, "base64")
-      );
-    }
-  }
-}
+    async def save_results(self, result: ProcessedResult, output_dir: str) -> None:
+        """Save processed results to disk"""
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        # Save text content
+        if result.text:
+            text_file = output_path / "output.txt"
+            text_file.write_text("\n".join(result.text))
+        
+        # Save images
+        for i, image in enumerate(result.images):
+            mime_type = image["mimeType"]
+            ext = mime_type.split("/")[1]
+            image_file = output_path / f"image-{i}.{ext}"
+            
+            # Decode base64 and save
+            image_data = base64.b64decode(image["data"])
+            image_file.write_bytes(image_data)
 ```
 
 ## Prompt Management
 
 ### Prompt Discovery
-```typescript
-class PromptManager {
-  private promptCache: Map<string, Prompt> = new Map();
-  
-  async listPrompts(): Promise<Prompt[]> {
-    const response = await this.client.request("prompts/list");
+```python
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+
+@dataclass
+class PromptArgument:
+    """Prompt argument definition"""
+    name: str
+    description: str
+    required: bool = False
+
+@dataclass 
+class Prompt:
+    """MCP prompt definition"""
+    name: str
+    description: str
+    arguments: List[PromptArgument]
+
+class PromptManager:
+    """Manage MCP prompts"""
     
-    response.prompts.forEach(prompt => {
-      this.promptCache.set(prompt.name, prompt);
-    });
+    def __init__(self, client: MCPClient):
+        self.client = client
+        self.prompt_cache: Dict[str, Prompt] = {}
     
-    return response.prompts;
-  }
-  
-  async getPrompt(name: string, args: any): Promise<PromptResult> {
-    // Validate arguments
-    const prompt = this.promptCache.get(name);
-    if (!prompt) {
-      throw new Error(`Unknown prompt: ${name}`);
-    }
+    async def list_prompts(self) -> List[Prompt]:
+        """List available prompts"""
+        response = await self.client.request("prompts/list")
+        
+        prompts = []
+        for prompt_data in response["prompts"]:
+            # Convert arguments
+            args = [
+                PromptArgument(**arg) 
+                for arg in prompt_data.get("arguments", [])
+            ]
+            prompt = Prompt(
+                name=prompt_data["name"],
+                description=prompt_data["description"],
+                arguments=args
+            )
+            self.prompt_cache[prompt.name] = prompt
+            prompts.append(prompt)
+        
+        return prompts
     
-    // Check required arguments
-    const missing = prompt.arguments
-      .filter(arg => arg.required && !(arg.name in args))
-      .map(arg => arg.name);
-      
-    if (missing.length > 0) {
-      throw new Error(`Missing required arguments: ${missing.join(", ")}`);
-    }
-    
-    // Get prompt content
-    return await this.client.request("prompts/get", {
-      name,
-      arguments: args,
-    });
-  }
-}
+    async def get_prompt(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Get prompt with arguments"""
+        # Validate arguments
+        prompt = self.prompt_cache.get(name)
+        if not prompt:
+            raise ValueError(f"Unknown prompt: {name}")
+        
+        # Check required arguments
+        missing = [
+            arg.name for arg in prompt.arguments
+            if arg.required and arg.name not in args
+        ]
+        
+        if missing:
+            raise ValueError(f"Missing required arguments: {', '.join(missing)}")
+        
+        # Get prompt content
+        return await self.client.request("prompts/get", {
+            "name": name,
+            "arguments": args
+        })
 ```
 
 ### Prompt Integration with LLMs
-```typescript
-class LLMIntegration {
-  constructor(
-    private mcpClient: MCPClient,
-    private llmClient: LLMClient
-  ) {}
-  
-  async executePrompt(
-    promptName: string,
-    args: any,
-    llmOptions?: LLMOptions
-  ): Promise<string> {
-    // Get prompt from MCP server
-    const promptResult = await this.mcpClient.request("prompts/get", {
-      name: promptName,
-      arguments: args,
-    });
+```python
+from typing import Dict, List, Any, Optional
+import json
+
+class LLMClient:
+    """Mock LLM client interface"""
+    async def complete(self, messages: List[Dict[str, str]], **kwargs) -> Dict[str, str]:
+        # This would be your actual LLM implementation
+        pass
+
+class LLMIntegration:
+    """Integrate MCP prompts with LLMs"""
     
-    // Convert to LLM format
-    const messages = promptResult.messages.map(msg => ({
-      role: msg.role,
-      content: msg.content.type === "text" ? msg.content.text : msg.content,
-    }));
+    def __init__(self, mcp_client: MCPClient, llm_client: LLMClient):
+        self.mcp_client = mcp_client
+        self.llm_client = llm_client
     
-    // Send to LLM
-    const completion = await this.llmClient.complete({
-      messages,
-      ...llmOptions,
-    });
+    async def execute_prompt(
+        self,
+        prompt_name: str,
+        args: Dict[str, Any],
+        llm_options: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Execute MCP prompt through LLM"""
+        # Get prompt from MCP server
+        prompt_result = await self.mcp_client.request("prompts/get", {
+            "name": prompt_name,
+            "arguments": args
+        })
+        
+        # Convert to LLM format
+        messages = []
+        for msg in prompt_result["messages"]:
+            content = msg["content"]
+            if isinstance(content, dict) and content.get("type") == "text":
+                messages.append({
+                    "role": msg["role"],
+                    "content": content["text"]
+                })
+            else:
+                messages.append({
+                    "role": msg["role"],
+                    "content": str(content)
+                })
+        
+        # Send to LLM
+        llm_options = llm_options or {}
+        completion = await self.llm_client.complete(
+            messages=messages,
+            **llm_options
+        )
+        
+        return completion["content"]
     
-    return completion.content;
-  }
-  
-  async chainPrompts(
-    prompts: Array<{name: string, args: any}>
-  ): Promise<string[]> {
-    const results: string[] = [];
-    let context = {};
+    async def chain_prompts(
+        self,
+        prompts: List[Dict[str, Any]]
+    ) -> List[str]:
+        """Execute a chain of prompts"""
+        results: List[str] = []
+        context: Dict[str, Any] = {}
+        
+        for prompt in prompts:
+            # Include previous results in arguments
+            enriched_args = {
+                **prompt["args"],
+                "previousResults": results,
+                "context": context
+            }
+            
+            result = await self.execute_prompt(
+                prompt["name"],
+                enriched_args
+            )
+            results.append(result)
+            
+            # Extract context for next prompt
+            context = self.extract_context(result)
+        
+        return results
     
-    for (const prompt of prompts) {
-      // Include previous results in arguments
-      const enrichedArgs = {
-        ...prompt.args,
-        previousResults: results,
-        context,
-      };
-      
-      const result = await this.executePrompt(prompt.name, enrichedArgs);
-      results.push(result);
-      
-      // Extract context for next prompt
-      context = this.extractContext(result);
-    }
-    
-    return results;
-  }
-}
+    def extract_context(self, result: str) -> Dict[str, Any]:
+        """Extract context from result for chaining"""
+        # Simple implementation - could be more sophisticated
+        try:
+            # Try to parse as JSON
+            return json.loads(result)
+        except json.JSONDecodeError:
+            # Return as text context
+            return {"text": result}
 ```
 
 ## Error Handling
 
 ### Comprehensive Error Handling
-```typescript
-class MCPError extends Error {
-  constructor(
-    message: string,
-    public code: number,
-    public data?: any
-  ) {
-    super(message);
-    this.name = "MCPError";
-  }
-}
+```python
+from typing import TypeVar, Callable, Optional, Any, Dict
+import asyncio
+import logging
 
-class ErrorHandler {
-  async handleRequest<T>(
-    operation: () => Promise<T>,
-    options: ErrorHandlingOptions = {}
-  ): Promise<T> {
-    const {
-      retries = 3,
-      retryDelay = 1000,
-      onError,
-      fallback,
-    } = options;
+T = TypeVar('T')
+
+class MCPError(Exception):
+    """MCP protocol error"""
+    def __init__(self, message: str, code: int, data: Optional[Any] = None):
+        super().__init__(message)
+        self.code = code
+        self.data = data
+        self.name = "MCPError"
+
+@dataclass
+class ErrorHandlingOptions:
+    """Options for error handling"""
+    retries: int = 3
+    retry_delay: float = 1.0
+    on_error: Optional[Callable[[Exception, int], None]] = None
+    fallback: Optional[Callable[[Exception], Any]] = None
+
+class ErrorHandler:
+    """Comprehensive error handling for MCP operations"""
     
-    let lastError: Error;
-    
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        lastError = error;
+    async def handle_request(
+        self,
+        operation: Callable[[], Awaitable[T]],
+        options: Optional[ErrorHandlingOptions] = None
+    ) -> T:
+        """Execute operation with error handling"""
+        options = options or ErrorHandlingOptions()
+        last_error: Optional[Exception] = None
         
-        if (onError) {
-          onError(error, attempt);
-        }
+        for attempt in range(options.retries + 1):
+            try:
+                return await operation()
+            except Exception as error:
+                last_error = error
+                
+                if options.on_error:
+                    options.on_error(error, attempt)
+                
+                # Check if error is retryable
+                if not self.is_retryable(error) or attempt == options.retries:
+                    break
+                
+                # Wait before retry with exponential backoff
+                delay = options.retry_delay * (2 ** attempt)
+                await asyncio.sleep(delay)
         
-        // Check if error is retryable
-        if (!this.isRetryable(error) || attempt === retries) {
-          break;
-        }
+        # Use fallback if provided
+        if options.fallback and last_error:
+            return options.fallback(last_error)
         
-        // Wait before retry
-        await new Promise(resolve => 
-          setTimeout(resolve, retryDelay * Math.pow(2, attempt))
-        );
-      }
-    }
+        if last_error:
+            raise last_error
+        raise RuntimeError("No error but operation failed")
     
-    // Use fallback if provided
-    if (fallback) {
-      return fallback(lastError);
-    }
-    
-    throw lastError;
-  }
-  
-  private isRetryable(error: any): boolean {
-    if (error instanceof MCPError) {
-      // Don't retry client errors
-      return error.code < -32000 || error.code > -32099;
-    }
-    
-    // Retry network errors
-    return error.code === "ECONNRESET" ||
-           error.code === "ETIMEDOUT" ||
-           error.code === "ENOTFOUND";
-  }
-}
+    def is_retryable(self, error: Exception) -> bool:
+        """Check if error is retryable"""
+        if isinstance(error, MCPError):
+            # Don't retry client errors
+            return error.code < -32000 or error.code > -32099
+        
+        # Retry network errors
+        error_code = getattr(error, 'errno', None)
+        return error_code in [
+            # Common network error codes
+            104,  # ECONNRESET
+            110,  # ETIMEDOUT
+            -2,   # ENOTFOUND (DNS)
+        ]
 ```
 
 ### Circuit Breaker Pattern
-```typescript
-class CircuitBreaker {
-  private failures = 0;
-  private lastFailureTime = 0;
-  private state: "closed" | "open" | "half-open" = "closed";
-  
-  constructor(
-    private threshold: number = 5,
-    private timeout: number = 60000
-  ) {}
-  
-  async execute<T>(operation: () => Promise<T>): Promise<T> {
-    if (this.state === "open") {
-      if (Date.now() - this.lastFailureTime > this.timeout) {
-        this.state = "half-open";
-      } else {
-        throw new Error("Circuit breaker is open");
-      }
-    }
+```python
+import time
+from typing import TypeVar, Callable, Awaitable
+from enum import Enum
+
+T = TypeVar('T')
+
+class CircuitState(Enum):
+    """Circuit breaker states"""
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half-open"
+
+class CircuitBreaker:
+    """Circuit breaker for fault tolerance"""
     
-    try {
-      const result = await operation();
-      this.onSuccess();
-      return result;
-    } catch (error) {
-      this.onFailure();
-      throw error;
-    }
-  }
-  
-  private onSuccess(): void {
-    this.failures = 0;
-    this.state = "closed";
-  }
-  
-  private onFailure(): void {
-    this.failures++;
-    this.lastFailureTime = Date.now();
+    def __init__(self, threshold: int = 5, timeout: float = 60.0):
+        self.threshold = threshold
+        self.timeout = timeout
+        self.failures = 0
+        self.last_failure_time = 0.0
+        self.state = CircuitState.CLOSED
     
-    if (this.failures >= this.threshold) {
-      this.state = "open";
-    }
-  }
-}
+    async def execute(self, operation: Callable[[], Awaitable[T]]) -> T:
+        """Execute operation with circuit breaker protection"""
+        if self.state == CircuitState.OPEN:
+            if time.time() - self.last_failure_time > self.timeout:
+                self.state = CircuitState.HALF_OPEN
+            else:
+                raise Exception("Circuit breaker is open")
+        
+        try:
+            result = await operation()
+            self.on_success()
+            return result
+        except Exception as error:
+            self.on_failure()
+            raise error
+    
+    def on_success(self) -> None:
+        """Handle successful execution"""
+        self.failures = 0
+        self.state = CircuitState.CLOSED
+    
+    def on_failure(self) -> None:
+        """Handle failed execution"""
+        self.failures += 1
+        self.last_failure_time = time.time()
+        
+        if self.failures >= self.threshold:
+            self.state = CircuitState.OPEN
+            logger.warning(f"Circuit breaker opened after {self.failures} failures")
 ```
 
 ## Advanced Features
 
 ### Multi-Server Management
-```typescript
-class MultiServerClient {
-  private clients: Map<string, MCPClient> = new Map();
-  
-  async addServer(id: string, config: ServerConfig): Promise<void> {
-    const client = new MCPClient(config.clientConfig);
-    const transport = this.createTransport(config.transport);
+```python
+from typing import Dict, Any, Optional
+import asyncio
+
+@dataclass
+class ServerConfig:
+    """Server configuration"""
+    client_config: Dict[str, Any]
+    transport_type: str
+    transport_config: Dict[str, Any]
+
+class MultiServerClient:
+    """Manage multiple MCP server connections"""
     
-    await client.connect(transport);
-    this.clients.set(id, client);
-  }
-  
-  async request(serverId: string, method: string, params?: any): Promise<any> {
-    const client = this.clients.get(serverId);
-    if (!client) {
-      throw new Error(`Unknown server: ${serverId}`);
-    }
+    def __init__(self):
+        self.clients: Dict[str, MCPClient] = {}
     
-    return client.request(method, params);
-  }
-  
-  async broadcast(method: string, params?: any): Promise<Map<string, any>> {
-    const results = new Map<string, any>();
+    async def add_server(self, server_id: str, config: ServerConfig) -> None:
+        """Add a new server connection"""
+        client = MCPClient(config.client_config)
+        transport = self.create_transport(config.transport_type, config.transport_config)
+        
+        await client.connect(transport)
+        self.clients[server_id] = client
     
-    const promises = Array.from(this.clients.entries()).map(
-      async ([id, client]) => {
-        try {
-          const result = await client.request(method, params);
-          results.set(id, { success: true, result });
-        } catch (error) {
-          results.set(id, { success: false, error });
-        }
-      }
-    );
+    def create_transport(self, transport_type: str, config: Dict[str, Any]) -> Transport:
+        """Create transport based on type"""
+        if transport_type == "stdio":
+            return StdioTransport(**config)
+        elif transport_type == "http":
+            return HttpTransport(**config)
+        elif transport_type == "sse":
+            return SseTransport(**config)
+        else:
+            raise ValueError(f"Unknown transport type: {transport_type}")
     
-    await Promise.all(promises);
-    return results;
-  }
-}
+    async def request(self, server_id: str, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Send request to specific server"""
+        client = self.clients.get(server_id)
+        if not client:
+            raise ValueError(f"Unknown server: {server_id}")
+        
+        return await client.request(method, params)
+    
+    async def broadcast(self, method: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Broadcast request to all servers"""
+        results = {}
+        
+        async def request_with_id(server_id: str, client: MCPClient):
+            try:
+                result = await client.request(method, params)
+                results[server_id] = {"success": True, "result": result}
+            except Exception as error:
+                results[server_id] = {"success": False, "error": str(error)}
+        
+        tasks = [
+            request_with_id(server_id, client)
+            for server_id, client in self.clients.items()
+        ]
+        
+        await asyncio.gather(*tasks)
+        return results
 ```
 
 ### Request Caching
-```typescript
-class CachedClient {
-  private cache: Map<string, CacheEntry> = new Map();
-  
-  async request<T>(
-    method: string,
-    params?: any,
-    options?: CacheOptions
-  ): Promise<T> {
-    const cacheKey = this.getCacheKey(method, params);
+```python
+import time
+import json
+from typing import Dict, Any, Optional, TypeVar
+from dataclasses import dataclass
+
+T = TypeVar('T')
+
+@dataclass
+class CacheEntry:
+    """Cache entry with TTL"""
+    value: Any
+    timestamp: float
+    ttl: float
+
+@dataclass
+class CacheOptions:
+    """Cache configuration"""
+    use_cache: bool = True
+    cache: bool = True
+    ttl: Optional[float] = None
+
+class CachedClient:
+    """Client with request caching"""
     
-    // Check cache
-    if (options?.useCache !== false) {
-      const cached = this.cache.get(cacheKey);
-      if (cached && !this.isExpired(cached)) {
-        return cached.value as T;
-      }
-    }
+    def __init__(self, client: MCPClient):
+        self.client = client
+        self.cache: Dict[str, CacheEntry] = {}
     
-    // Make request
-    const result = await this.client.request<T>(method, params);
+    async def request(
+        self,
+        method: str,
+        params: Optional[Dict[str, Any]] = None,
+        options: Optional[CacheOptions] = None
+    ) -> Any:
+        """Make request with caching"""
+        options = options or CacheOptions()
+        cache_key = self.get_cache_key(method, params)
+        
+        # Check cache
+        if options.use_cache:
+            cached = self.cache.get(cache_key)
+            if cached and not self.is_expired(cached):
+                return cached.value
+        
+        # Make request
+        result = await self.client.request(method, params)
+        
+        # Cache result
+        if options.cache and self.is_cacheable(method):
+            ttl = options.ttl or self.get_default_ttl(method)
+            self.cache[cache_key] = CacheEntry(
+                value=result,
+                timestamp=time.time(),
+                ttl=ttl
+            )
+        
+        return result
     
-    // Cache result
-    if (options?.cache !== false && this.isCacheable(method)) {
-      this.cache.set(cacheKey, {
-        value: result,
-        timestamp: Date.now(),
-        ttl: options?.ttl || this.getDefaultTTL(method),
-      });
-    }
+    def get_cache_key(self, method: str, params: Optional[Dict[str, Any]]) -> str:
+        """Generate cache key"""
+        params_str = json.dumps(params, sort_keys=True) if params else ""
+        return f"{method}:{params_str}"
     
-    return result;
-  }
-  
-  private getCacheKey(method: string, params: any): string {
-    return `${method}:${JSON.stringify(params)}`;
-  }
-  
-  private isExpired(entry: CacheEntry): boolean {
-    return Date.now() - entry.timestamp > entry.ttl;
-  }
-  
-  private isCacheable(method: string): boolean {
-    // Only cache read operations
-    return method.startsWith("resources/") ||
-           method === "tools/list" ||
-           method === "prompts/list";
-  }
-}
+    def is_expired(self, entry: CacheEntry) -> bool:
+        """Check if cache entry is expired"""
+        return time.time() - entry.timestamp > entry.ttl
+    
+    def is_cacheable(self, method: str) -> bool:
+        """Check if method result is cacheable"""
+        # Only cache read operations
+        return (
+            method.startswith("resources/") or
+            method == "tools/list" or
+            method == "prompts/list"
+        )
+    
+    def get_default_ttl(self, method: str) -> float:
+        """Get default TTL for method"""
+        # Different TTLs for different methods
+        if method == "resources/list":
+            return 300.0  # 5 minutes
+        elif method.startswith("resources/"):
+            return 60.0   # 1 minute
+        else:
+            return 600.0  # 10 minutes
 ```
 
 ### Request Middleware
-```typescript
-class MiddlewareClient {
-  private middleware: Middleware[] = [];
-  
-  use(middleware: Middleware): void {
-    this.middleware.push(middleware);
-  }
-  
-  async request<T>(method: string, params?: any): Promise<T> {
-    let index = 0;
-    
-    const next = async (): Promise<T> => {
-      if (index >= this.middleware.length) {
-        return this.client.request<T>(method, params);
-      }
-      
-      const middleware = this.middleware[index++];
-      return middleware(method, params, next);
-    };
-    
-    return next();
-  }
-}
+```python
+import time
+from typing import List, Callable, Any, Optional, Dict, TypeVar
+import logging
 
-// Example middleware
-const loggingMiddleware: Middleware = async (method, params, next) => {
-  console.log(`Request: ${method}`, params);
-  const start = Date.now();
-  
-  try {
-    const result = await next();
-    console.log(`Response: ${method} (${Date.now() - start}ms)`);
-    return result;
-  } catch (error) {
-    console.error(`Error: ${method}`, error);
-    throw error;
-  }
-};
+T = TypeVar('T')
+logger = logging.getLogger(__name__)
 
-const authMiddleware: Middleware = async (method, params, next) => {
-  // Add authentication token
-  const enrichedParams = {
-    ...params,
-    auth: await getAuthToken(),
-  };
-  
-  return next(method, enrichedParams);
-};
+# Middleware type
+Middleware = Callable[
+    [str, Optional[Dict[str, Any]], Callable[[], Awaitable[Any]]],
+    Awaitable[Any]
+]
+
+class MiddlewareClient:
+    """Client with middleware support"""
+    
+    def __init__(self, client: MCPClient):
+        self.client = client
+        self.middleware: List[Middleware] = []
+    
+    def use(self, middleware: Middleware) -> None:
+        """Add middleware to the stack"""
+        self.middleware.append(middleware)
+    
+    async def request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Execute request through middleware stack"""
+        index = 0
+        
+        async def next() -> Any:
+            nonlocal index
+            if index >= len(self.middleware):
+                return await self.client.request(method, params)
+            
+            current_middleware = self.middleware[index]
+            index += 1
+            return await current_middleware(method, params, next)
+        
+        return await next()
+
+# Example middleware implementations
+async def logging_middleware(
+    method: str,
+    params: Optional[Dict[str, Any]],
+    next: Callable[[], Awaitable[Any]]
+) -> Any:
+    """Log requests and responses"""
+    logger.info(f"Request: {method}", extra={"params": params})
+    start_time = time.time()
+    
+    try:
+        result = await next()
+        duration = (time.time() - start_time) * 1000
+        logger.info(f"Response: {method} ({duration:.2f}ms)")
+        return result
+    except Exception as error:
+        logger.error(f"Error: {method}", exc_info=error)
+        raise
+
+async def auth_middleware(
+    method: str,
+    params: Optional[Dict[str, Any]],
+    next: Callable[[], Awaitable[Any]]
+) -> Any:
+    """Add authentication to requests"""
+    # Get auth token (implementation specific)
+    auth_token = await get_auth_token()
+    
+    # Enrich params with auth
+    enriched_params = {
+        **(params or {}),
+        "auth": auth_token
+    }
+    
+    # Update params for next middleware
+    return await next()
+
+async def retry_middleware(
+    method: str,
+    params: Optional[Dict[str, Any]],
+    next: Callable[[], Awaitable[Any]]
+) -> Any:
+    """Retry failed requests"""
+    max_retries = 3
+    retry_delay = 1.0
+    
+    for attempt in range(max_retries):
+        try:
+            return await next()
+        except Exception as error:
+            if attempt == max_retries - 1:
+                raise
+            
+            logger.warning(f"Request failed, retrying ({attempt + 1}/{max_retries})")
+            await asyncio.sleep(retry_delay * (2 ** attempt))
+
+# Helper function stub
+async def get_auth_token() -> str:
+    """Get authentication token"""
+    # Implementation specific
+    return "auth-token"
 ```
 
 ## Testing Clients
 
 ### Unit Testing
-```typescript
-import { describe, it, expect, vi } from "vitest";
-import { MockTransport } from "@modelcontextprotocol/sdk/testing";
+```python
+import pytest
+import pytest_asyncio
+from unittest.mock import Mock, AsyncMock
+from typing import Dict, Any
 
-describe("MCP Client", () => {
-  let client: MCPClient;
-  let transport: MockTransport;
-  
-  beforeEach(() => {
-    transport = new MockTransport();
-    client = new MCPClient({ name: "test", version: "1.0.0" });
-  });
-  
-  it("should list resources", async () => {
-    // Set up mock response
-    transport.mockResponse("resources/list", {
-      resources: [
-        {
-          uri: "test://resource",
-          name: "Test Resource",
-          mimeType: "text/plain",
-        },
-      ],
-    });
+class MockTransport:
+    """Mock transport for testing"""
     
-    await client.connect(transport);
-    const result = await client.request("resources/list");
+    def __init__(self):
+        self.responses: Dict[str, Any] = {}
+        self.errors: Dict[str, Exception] = {}
+        self._started = False
     
-    expect(result.resources).toHaveLength(1);
-    expect(result.resources[0].uri).toBe("test://resource");
-  });
-  
-  it("should handle errors", async () => {
-    transport.mockError("tools/call", {
-      code: -32003,
-      message: "Tool execution failed",
-    });
+    def mock_response(self, method: str, response: Any) -> None:
+        """Set mock response for method"""
+        self.responses[method] = response
     
-    await client.connect(transport);
+    def mock_error(self, method: str, error: Dict[str, Any]) -> None:
+        """Set mock error for method"""
+        self.errors[method] = MCPError(
+            error["message"],
+            error["code"],
+            error.get("data")
+        )
     
-    await expect(
-      client.request("tools/call", { name: "test" })
-    ).rejects.toThrow("Tool execution failed");
-  });
-});
+    async def start(self) -> None:
+        self._started = True
+    
+    async def send(self, message: Dict[str, Any]) -> None:
+        """Mock send - triggers response"""
+        method = message.get("method")
+        if method in self.errors:
+            raise self.errors[method]
+
+@pytest.mark.asyncio
+class TestMCPClient:
+    """Test MCP client functionality"""
+    
+    @pytest_asyncio.fixture
+    async def setup(self):
+        """Set up test fixtures"""
+        self.transport = MockTransport()
+        self.client = MCPClient({"name": "test", "version": "1.0.0"})
+        return self.client, self.transport
+    
+    async def test_list_resources(self, setup):
+        """Test listing resources"""
+        client, transport = setup
+        
+        # Set up mock response
+        transport.mock_response("resources/list", {
+            "resources": [
+                {
+                    "uri": "test://resource",
+                    "name": "Test Resource",
+                    "mimeType": "text/plain"
+                }
+            ]
+        })
+        
+        # Mock the request method to return the mocked response
+        client.request = AsyncMock(return_value=transport.responses["resources/list"])
+        
+        await client.connect(transport)
+        result = await client.request("resources/list")
+        
+        assert len(result["resources"]) == 1
+        assert result["resources"][0]["uri"] == "test://resource"
+    
+    async def test_handle_errors(self, setup):
+        """Test error handling"""
+        client, transport = setup
+        
+        transport.mock_error("tools/call", {
+            "code": -32003,
+            "message": "Tool execution failed"
+        })
+        
+        # Mock the request to raise the error
+        client.request = AsyncMock(
+            side_effect=transport.errors["tools/call"]
+        )
+        
+        await client.connect(transport)
+        
+        with pytest.raises(MCPError, match="Tool execution failed"):
+            await client.request("tools/call", {"name": "test"})
 ```
 
 ### Integration Testing
-```typescript
-describe("MCP Client Integration", () => {
-  let client: MCPClient;
-  let server: TestServer;
-  
-  beforeAll(async () => {
-    // Start test server
-    server = new TestServer();
-    await server.start();
+```python
+import pytest
+import pytest_asyncio
+from mcp.server.fastmcp import FastMCP
+from mcp import Client, HttpTransport
+import asyncio
+
+class TestServer:
+    """Test MCP server"""
     
-    // Connect client
-    client = new MCPClient({ name: "test", version: "1.0.0" });
-    const transport = new HttpClientTransport({
-      url: `http://localhost:${server.port}/mcp`,
-    });
-    await client.connect(transport);
-  });
-  
-  afterAll(async () => {
-    await client.disconnect();
-    await server.stop();
-  });
-  
-  it("should execute full workflow", async () => {
-    // List resources
-    const resources = await client.request("resources/list");
-    expect(resources.resources).toHaveLength(2);
+    def __init__(self):
+        self.mcp = FastMCP(name="test-server", version="1.0.0")
+        self.port = 8080
+        self._setup_handlers()
     
-    // Read resource
-    const content = await client.request("resources/read", {
-      uri: resources.resources[0].uri,
-    });
-    expect(content.contents).toHaveLength(1);
+    def _setup_handlers(self):
+        @self.mcp.resource("test://data")
+        async def test_data():
+            return "Test data content"
+        
+        @self.mcp.tool(
+            name="process_data",
+            description="Process data",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "data": {"type": "string"}
+                },
+                "required": ["data"]
+            }
+        )
+        async def process_data(data: str) -> str:
+            return f"Processed: {data}"
     
-    // Execute tool
-    const toolResult = await client.request("tools/call", {
-      name: "process_data",
-      arguments: {
-        data: content.contents[0].text,
-      },
-    });
-    expect(toolResult.content[0].type).toBe("text");
-  });
-});
+    async def start(self):
+        """Start test server"""
+        # This would start the actual server
+        pass
+    
+    async def stop(self):
+        """Stop test server"""
+        # This would stop the actual server
+        pass
+
+@pytest.mark.asyncio
+class TestMCPClientIntegration:
+    """Integration tests for MCP client"""
+    
+    @pytest_asyncio.fixture
+    async def setup(self):
+        """Set up test environment"""
+        # Start test server
+        server = TestServer()
+        await server.start()
+        
+        # Connect client
+        client = Client(name="test", version="1.0.0")
+        transport = HttpTransport(
+            url=f"http://localhost:{server.port}/mcp"
+        )
+        await client.connect(transport)
+        
+        yield client, server
+        
+        # Cleanup
+        await client.disconnect()
+        await server.stop()
+    
+    async def test_full_workflow(self, setup):
+        """Test complete client workflow"""
+        client, server = setup
+        
+        # List resources
+        resources = await client.request("resources/list")
+        assert len(resources["resources"]) >= 1
+        
+        # Read resource
+        content = await client.request("resources/read", {
+            "uri": resources["resources"][0]["uri"]
+        })
+        assert len(content["contents"]) == 1
+        
+        # Execute tool
+        tool_result = await client.request("tools/call", {
+            "name": "process_data",
+            "arguments": {
+                "data": content["contents"][0]["text"]
+            }
+        })
+        assert tool_result["content"][0]["type"] == "text"
+        assert "Processed:" in tool_result["content"][0]["text"]
 ```
 
 ## Best Practices
@@ -1230,56 +1752,101 @@ describe("MCP Client Integration", () => {
 - Monitor resource usage
 
 ### Example: Production-Ready Client
-```typescript
-class ProductionMCPClient {
-  private client: MCPClient;
-  private errorHandler: ErrorHandler;
-  private circuitBreaker: CircuitBreaker;
-  private metrics: MetricsCollector;
-  private cache: CachedClient;
-  
-  constructor(config: ProductionConfig) {
-    this.client = new MCPClient(config.client);
-    this.errorHandler = new ErrorHandler();
-    this.circuitBreaker = new CircuitBreaker(config.circuitBreaker);
-    this.metrics = new MetricsCollector(config.metrics);
-    this.cache = new CachedClient(this.client, config.cache);
+```python
+from typing import Dict, Any, Optional
+import logging
+from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class ProductionConfig:
+    """Production client configuration"""
+    client: Dict[str, Any]
+    circuit_breaker: Dict[str, Any]
+    metrics: Dict[str, Any]
+    cache: Dict[str, Any]
+
+class MetricsCollector:
+    """Collect client metrics"""
     
-    this.setupMiddleware();
-  }
-  
-  private setupMiddleware(): void {
-    // Metrics middleware
-    this.client.use(async (method, params, next) => {
-      const start = Date.now();
-      try {
-        const result = await next();
-        this.metrics.recordSuccess(method, Date.now() - start);
-        return result;
-      } catch (error) {
-        this.metrics.recordError(method, error);
-        throw error;
-      }
-    });
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.metrics: Dict[str, Any] = {}
     
-    // Circuit breaker middleware
-    this.client.use(async (method, params, next) => {
-      return this.circuitBreaker.execute(() => next());
-    });
-  }
-  
-  async request<T>(method: string, params?: any): Promise<T> {
-    return this.errorHandler.handleRequest(
-      () => this.cache.request<T>(method, params),
-      {
-        retries: 3,
-        onError: (error, attempt) => {
-          console.error(`Request failed (attempt ${attempt}):`, error);
-        },
-      }
-    );
-  }
-}
+    def record_success(self, method: str, duration_ms: float) -> None:
+        """Record successful request"""
+        if method not in self.metrics:
+            self.metrics[method] = {"success": 0, "error": 0, "total_time": 0}
+        self.metrics[method]["success"] += 1
+        self.metrics[method]["total_time"] += duration_ms
+    
+    def record_error(self, method: str, error: Exception) -> None:
+        """Record failed request"""
+        if method not in self.metrics:
+            self.metrics[method] = {"success": 0, "error": 0, "total_time": 0}
+        self.metrics[method]["error"] += 1
+
+class ProductionMCPClient:
+    """Production-ready MCP client with all features"""
+    
+    def __init__(self, config: ProductionConfig):
+        self.client = MCPClient(config.client)
+        self.error_handler = ErrorHandler()
+        self.circuit_breaker = CircuitBreaker(**config.circuit_breaker)
+        self.metrics = MetricsCollector(config.metrics)
+        self.cache = CachedClient(self.client)
+        
+        self.setup_middleware()
+    
+    def setup_middleware(self) -> None:
+        """Configure middleware stack"""
+        middleware_client = MiddlewareClient(self.client)
+        
+        # Metrics middleware
+        async def metrics_middleware(method, params, next):
+            start_time = time.time()
+            try:
+                result = await next()
+                duration_ms = (time.time() - start_time) * 1000
+                self.metrics.record_success(method, duration_ms)
+                return result
+            except Exception as error:
+                self.metrics.record_error(method, error)
+                raise
+        
+        middleware_client.use(metrics_middleware)
+        
+        # Circuit breaker middleware
+        async def circuit_breaker_middleware(method, params, next):
+            return await self.circuit_breaker.execute(next)
+        
+        middleware_client.use(circuit_breaker_middleware)
+        
+        # Replace client with middleware-enabled version
+        self.client = middleware_client
+    
+    async def request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Make request with all production features"""
+        options = ErrorHandlingOptions(
+            retries=3,
+            on_error=lambda error, attempt: logger.error(
+                f"Request failed (attempt {attempt}): {error}"
+            )
+        )
+        
+        return await self.error_handler.handle_request(
+            lambda: self.cache.request(method, params),
+            options
+        )
+    
+    async def connect(self, transport: Transport) -> None:
+        """Connect to MCP server"""
+        await self.client.connect(transport)
+    
+    async def disconnect(self) -> None:
+        """Disconnect from MCP server"""
+        await self.client.disconnect()
 ```
 
 ## Next Steps

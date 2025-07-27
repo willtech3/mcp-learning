@@ -35,6 +35,8 @@
 ## Tutorials & Guides
 - [Getting Started with MCP](https://modelcontextprotocol.io/docs/getting-started)
 - [MCP Quickstart (Python)](https://github.com/modelcontextprotocol/mcp-python-sdk#quickstart)
+- [Anthropic Academy: Introduction to Model Context Protocol](https://anthropic.skilljar.com/introduction-to-model-context-protocol) - Free comprehensive course covering MCP architecture, tools, resources, and prompts using Python
+- [Anthropic Academy: Model Context Protocol Advanced Topics](https://anthropic.skilljar.com/model-context-protocol-advanced-topics) - Advanced course covering sampling, notifications, file system access, and transport mechanisms
 - [Video Walkthroughs](https://www.youtube.com/results?search_query=Model+Context+Protocol)
 - [Blog: MCP Security Best Practices](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices)
 

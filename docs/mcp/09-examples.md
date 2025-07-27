@@ -19,235 +19,205 @@ This document provides practical examples of MCP implementations, from simple se
 
 A complete MCP server that provides file system access with security controls.
 
-```typescript
-// filesystem-server.ts
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import * as fs from "fs/promises";
-import * as path from "path";
-import { z } from "zod";
+```python
+# filesystem_server.py
+import os
+import json
+import asyncio
+from pathlib import Path
+from typing import List, Dict, Any
+from mcp.server.fastmcp import FastMCP
+import aiofiles
 
-const server = new Server(
-  {
-    name: "filesystem-server",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      resources: {},
-      tools: {},
-    },
-  }
-);
+# Create server instance
+mcp = FastMCP(
+    name="filesystem-server",
+    version="1.0.0"
+)
 
-// Configuration
-const ALLOWED_DIRECTORIES = [
-  process.env.HOME + "/Documents",
-  process.env.HOME + "/Desktop",
-];
+# Configuration
+ALLOWED_DIRECTORIES = [
+    str(Path.home() / "Documents"),
+    str(Path.home() / "Desktop"),
+]
 
-// Helper to validate paths
-function isPathAllowed(filePath: string): boolean {
-  const absolutePath = path.resolve(filePath);
-  return ALLOWED_DIRECTORIES.some(dir => 
-    absolutePath.startsWith(path.resolve(dir))
-  );
-}
+# Helper to validate paths
+def is_path_allowed(file_path: str) -> bool:
+    """Check if path is within allowed directories"""
+    absolute_path = Path(file_path).resolve()
+    return any(
+        str(absolute_path).startswith(str(Path(dir).resolve()))
+        for dir in ALLOWED_DIRECTORIES
+    )
 
-// List available resources (files)
-server.setRequestHandler("resources/list", async () => {
-  const resources = [];
-  
-  for (const dir of ALLOWED_DIRECTORIES) {
-    try {
-      const files = await fs.readdir(dir, { withFileTypes: true });
-      for (const file of files) {
-        if (file.isFile()) {
-          resources.push({
-            uri: `file://${path.join(dir, file.name)}`,
-            name: file.name,
-            mimeType: getMimeType(file.name),
-          });
-        }
-      }
-    } catch (error) {
-      // Directory might not exist
-    }
-  }
-  
-  return { resources };
-});
-
-// Read file content
-server.setRequestHandler("resources/read", async (request) => {
-  const { uri } = request.params;
-  const filePath = uri.replace("file://", "");
-  
-  if (!isPathAllowed(filePath)) {
-    throw new Error("Access denied: Path not allowed");
-  }
-  
-  const content = await fs.readFile(filePath, "utf-8");
-  
-  return {
-    contents: [
-      {
-        uri,
-        mimeType: getMimeType(filePath),
-        text: content,
-      },
-    ],
-  };
-});
-
-// File manipulation tools
-const tools = [
-  {
-    name: "create_file",
-    description: "Create a new file",
-    inputSchema: z.object({
-      path: z.string().describe("File path"),
-      content: z.string().describe("File content"),
-    }),
-  },
-  {
-    name: "append_to_file",
-    description: "Append content to an existing file",
-    inputSchema: z.object({
-      path: z.string().describe("File path"),
-      content: z.string().describe("Content to append"),
-    }),
-  },
-  {
-    name: "delete_file",
-    description: "Delete a file",
-    inputSchema: z.object({
-      path: z.string().describe("File path"),
-    }),
-  },
-  {
-    name: "list_directory",
-    description: "List contents of a directory",
-    inputSchema: z.object({
-      path: z.string().describe("Directory path"),
-    }),
-  },
-];
-
-// List available tools
-server.setRequestHandler("tools/list", async () => {
-  return {
-    tools: tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: zodToJsonSchema(tool.inputSchema),
-    })),
-  };
-});
-
-// Execute tools
-server.setRequestHandler("tools/call", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  // Validate path for all tools
-  if (args.path && !isPathAllowed(args.path)) {
-    throw new Error("Access denied: Path not allowed");
-  }
-  
-  switch (name) {
-    case "create_file": {
-      await fs.writeFile(args.path, args.content);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `File created: ${args.path}`,
-          },
-        ],
-      };
-    }
+# List available resources (files)
+@mcp.list_resources()
+async def list_resources() -> List[Dict[str, Any]]:
+    """List available files as resources"""
+    resources = []
     
-    case "append_to_file": {
-      await fs.appendFile(args.path, args.content);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Content appended to: ${args.path}`,
-          },
-        ],
-      };
-    }
+    for dir_path in ALLOWED_DIRECTORIES:
+        try:
+            path = Path(dir_path)
+            if path.exists():
+                for file in path.iterdir():
+                    if file.is_file():
+                        resources.append({
+                            "uri": f"file://{file}",
+                            "name": file.name,
+                            "mimeType": get_mime_type(file.name),
+                        })
+        except Exception:
+            # Directory might not exist or be accessible
+            pass
     
-    case "delete_file": {
-      await fs.unlink(args.path);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `File deleted: ${args.path}`,
-          },
-        ],
-      };
-    }
+    return resources
+
+# Read file content
+@mcp.resource("file://*")
+async def read_file_resource(uri: str) -> str:
+    """Read file content from URI"""
+    file_path = uri.replace("file://", "")
     
-    case "list_directory": {
-      const files = await fs.readdir(args.path, { withFileTypes: true });
-      const listing = files.map(file => ({
-        name: file.name,
-        type: file.isDirectory() ? "directory" : "file",
-      }));
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(listing, null, 2),
-          },
-        ],
-      };
-    }
+    if not is_path_allowed(file_path):
+        raise ValueError("Access denied: Path not allowed")
     
-    default:
-      throw new Error(`Unknown tool: ${name}`);
-  }
-});
+    async with aiofiles.open(file_path, 'r') as f:
+        content = await f.read()
+    
+    return content
 
-// Helper functions
-function getMimeType(filename: string): string {
-  const ext = path.extname(filename).toLowerCase();
-  const mimeTypes = {
-    ".txt": "text/plain",
-    ".json": "application/json",
-    ".js": "text/javascript",
-    ".ts": "text/typescript",
-    ".py": "text/x-python",
-    ".md": "text/markdown",
-    ".html": "text/html",
-    ".css": "text/css",
-  };
-  return mimeTypes[ext] || "application/octet-stream";
-}
+# File manipulation tools
+@mcp.tool(
+    name="create_file",
+    description="Create a new file",
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "File path",
+            },
+            "content": {
+                "type": "string",
+                "description": "File content",
+            },
+        },
+        "required": ["path", "content"],
+    }
+)
+async def create_file(path: str, content: str) -> str:
+    """Create a new file with content"""
+    if not is_path_allowed(path):
+        raise ValueError("Access denied: Path not allowed")
+    
+    async with aiofiles.open(path, 'w') as f:
+        await f.write(content)
+    
+    return f"File created: {path}"
 
-function zodToJsonSchema(schema: z.ZodSchema): any {
-  // Simple conversion - in production use a proper library
-  return {
-    type: "object",
-    properties: Object.fromEntries(
-      Object.entries(schema.shape).map(([key, value]) => [
-        key,
-        { type: "string", description: value._def.description },
-      ])
-    ),
-    required: Object.keys(schema.shape),
-  };
-}
+@mcp.tool(
+    name="append_to_file",
+    description="Append content to an existing file",
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "File path",
+            },
+            "content": {
+                "type": "string",
+                "description": "Content to append",
+            },
+        },
+        "required": ["path", "content"],
+    }
+)
+async def append_to_file(path: str, content: str) -> str:
+    """Append content to an existing file"""
+    if not is_path_allowed(path):
+        raise ValueError("Access denied: Path not allowed")
+    
+    async with aiofiles.open(path, 'a') as f:
+        await f.write(content)
+    
+    return f"Content appended to: {path}"
 
-// Start server
-const transport = new StdioServerTransport();
-server.connect(transport).then(() => {
-  console.error("Filesystem MCP server running");
-});
+@mcp.tool(
+    name="delete_file",
+    description="Delete a file",
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "File path",
+            },
+        },
+        "required": ["path"],
+    }
+)
+async def delete_file(path: str) -> str:
+    """Delete a file"""
+    if not is_path_allowed(path):
+        raise ValueError("Access denied: Path not allowed")
+    
+    Path(path).unlink()
+    return f"File deleted: {path}"
+
+@mcp.tool(
+    name="list_directory",
+    description="List contents of a directory",
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "Directory path",
+            },
+        },
+        "required": ["path"],
+    }
+)
+async def list_directory(path: str) -> str:
+    """List contents of a directory"""
+    if not is_path_allowed(path):
+        raise ValueError("Access denied: Path not allowed")
+    
+    directory = Path(path)
+    if not directory.is_dir():
+        raise ValueError(f"Not a directory: {path}")
+    
+    listing = []
+    for item in directory.iterdir():
+        listing.append({
+            "name": item.name,
+            "type": "directory" if item.is_dir() else "file",
+        })
+    
+    return json.dumps(listing, indent=2)
+
+# Helper functions
+def get_mime_type(filename: str) -> str:
+    """Get MIME type from file extension"""
+    ext = Path(filename).suffix.lower()
+    mime_types = {
+        ".txt": "text/plain",
+        ".json": "application/json",
+        ".js": "text/javascript",
+        ".ts": "text/typescript",
+        ".py": "text/x-python",
+        ".md": "text/markdown",
+        ".html": "text/html",
+        ".css": "text/css",
+    }
+    return mime_types.get(ext, "application/octet-stream")
+
+# Start server
+if __name__ == "__main__":
+    print("Filesystem MCP server running", file=sys.stderr)
+    mcp.run()
 ```
 
 ### 2. Database Server
@@ -259,247 +229,214 @@ An MCP server that provides database access with query capabilities.
 import asyncio
 import json
 import sqlite3
-from typing import List, Dict, Any
-from mcp import Server, Resource, Tool
-from mcp.server.stdio import StdioServerTransport
-from mcp.types import TextContent, ToolResult
+import sys
+from typing import List, Dict, Any, Optional
+from mcp.server.fastmcp import FastMCP
+from pathlib import Path
 
-class DatabaseServer:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-        self.server = Server(
-            name="database-server",
-            version="1.0.0"
-        )
-        self.setup_handlers()
+# Create server instance
+mcp = FastMCP(
+    name="database-server",
+    version="1.0.0"
+)
+
+# Global database path
+DB_PATH = "sample.db"
+
+@mcp.list_resources()
+async def list_resources() -> List[Dict[str, Any]]:
+    """List available database tables as resources"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
     
-    def setup_handlers(self):
-        @self.server.list_resources()
-        async def list_resources() -> List[Resource]:
-            """List available database tables as resources"""
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Get all tables
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )
-            tables = cursor.fetchall()
-            conn.close()
-            
-            return [
-                Resource(
-                    uri=f"db://{self.db_path}/{table[0]}",
-                    name=f"Table: {table[0]}",
-                    mime_type="application/json"
-                )
-                for table in tables
-            ]
-        
-        @self.server.read_resource()
-        async def read_resource(uri: str) -> Dict[str, Any]:
-            """Read table schema and sample data"""
-            # Parse URI
-            parts = uri.replace("db://", "").split("/")
-            table_name = parts[-1]
-            
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            # Get table schema
-            cursor.execute(f"PRAGMA table_info({table_name})")
-            schema = [dict(row) for row in cursor.fetchall()]
-            
-            # Get sample data
-            cursor.execute(f"SELECT * FROM {table_name} LIMIT 5")
-            sample_data = [dict(row) for row in cursor.fetchall()]
-            
-            # Get row count
-            cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
-            row_count = cursor.fetchone()[0]
-            
-            conn.close()
-            
-            result = {
-                "table": table_name,
-                "schema": schema,
-                "row_count": row_count,
-                "sample_data": sample_data
-            }
-            
-            return {
-                "contents": [
-                    {
-                        "uri": uri,
-                        "mime_type": "application/json",
-                        "text": json.dumps(result, indent=2)
-                    }
-                ]
-            }
-        
-        @self.server.list_tools()
-        async def list_tools() -> List[Tool]:
-            """List available database tools"""
-            return [
-                Tool(
-                    name="query",
-                    description="Execute a SELECT query",
-                    input_schema={
-                        "type": "object",
-                        "properties": {
-                            "sql": {
-                                "type": "string",
-                                "description": "SELECT query to execute"
-                            },
-                            "parameters": {
-                                "type": "array",
-                                "description": "Query parameters",
-                                "items": {"type": ["string", "number", "null"]}
-                            }
-                        },
-                        "required": ["sql"]
-                    }
-                ),
-                Tool(
-                    name="execute",
-                    description="Execute INSERT, UPDATE, or DELETE",
-                    input_schema={
-                        "type": "object",
-                        "properties": {
-                            "sql": {
-                                "type": "string",
-                                "description": "SQL statement to execute"
-                            },
-                            "parameters": {
-                                "type": "array",
-                                "description": "Statement parameters",
-                                "items": {"type": ["string", "number", "null"]}
-                            }
-                        },
-                        "required": ["sql"]
-                    }
-                ),
-                Tool(
-                    name="create_table",
-                    description="Create a new table",
-                    input_schema={
-                        "type": "object",
-                        "properties": {
-                            "table_name": {
-                                "type": "string",
-                                "description": "Name of the table"
-                            },
-                            "columns": {
-                                "type": "array",
-                                "description": "Column definitions",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {"type": "string"},
-                                        "type": {"type": "string"},
-                                        "primary_key": {"type": "boolean"},
-                                        "not_null": {"type": "boolean"}
-                                    },
-                                    "required": ["name", "type"]
-                                }
-                            }
-                        },
-                        "required": ["table_name", "columns"]
-                    }
-                )
-            ]
-        
-        @self.server.call_tool()
-        async def call_tool(name: str, arguments: dict) -> ToolResult:
-            """Execute database tools"""
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            try:
-                if name == "query":
-                    # Validate it's a SELECT query
-                    sql = arguments["sql"].strip().upper()
-                    if not sql.startswith("SELECT"):
-                        raise ValueError("Only SELECT queries allowed")
-                    
-                    # Execute query
-                    params = arguments.get("parameters", [])
-                    cursor.execute(arguments["sql"], params)
-                    
-                    # Fetch results
-                    results = [dict(row) for row in cursor.fetchall()]
-                    
-                    return ToolResult(
-                        content=[
-                            TextContent(
-                                text=json.dumps({
-                                    "row_count": len(results),
-                                    "results": results
-                                }, indent=2)
-                            )
-                        ]
-                    )
-                
-                elif name == "execute":
-                    # Execute statement
-                    params = arguments.get("parameters", [])
-                    cursor.execute(arguments["sql"], params)
-                    conn.commit()
-                    
-                    return ToolResult(
-                        content=[
-                            TextContent(
-                                text=f"Executed successfully. Rows affected: {cursor.rowcount}"
-                            )
-                        ]
-                    )
-                
-                elif name == "create_table":
-                    # Build CREATE TABLE statement
-                    columns = []
-                    for col in arguments["columns"]:
-                        col_def = f"{col['name']} {col['type']}"
-                        if col.get("primary_key"):
-                            col_def += " PRIMARY KEY"
-                        if col.get("not_null"):
-                            col_def += " NOT NULL"
-                        columns.append(col_def)
-                    
-                    sql = f"CREATE TABLE {arguments['table_name']} ({', '.join(columns)})"
-                    cursor.execute(sql)
-                    conn.commit()
-                    
-                    return ToolResult(
-                        content=[
-                            TextContent(
-                                text=f"Table '{arguments['table_name']}' created successfully"
-                            )
-                        ]
-                    )
-                
-                else:
-                    raise ValueError(f"Unknown tool: {name}")
-                    
-            except Exception as e:
-                return ToolResult(
-                    content=[
-                        TextContent(text=f"Error: {str(e)}")
-                    ],
-                    is_error=True
-                )
-            finally:
-                conn.close()
+    # Get all tables
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    )
+    tables = cursor.fetchall()
+    conn.close()
     
-    async def run(self):
-        transport = StdioServerTransport()
-        await self.server.connect(transport)
-        await self.server.run()
+    return [
+        {
+            "uri": f"db://{DB_PATH}/{table[0]}",
+            "name": f"Table: {table[0]}",
+            "mimeType": "application/json",
+        }
+        for table in tables
+    ]
+
+@mcp.resource("db://*/*")
+async def read_table_resource(uri: str) -> str:
+    """Read table schema and sample data"""
+    # Parse URI
+    parts = uri.replace("db://", "").split("/")
+    table_name = parts[-1]
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # Get table schema
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    schema = [dict(row) for row in cursor.fetchall()]
+    
+    # Get sample data
+    cursor.execute(f"SELECT * FROM {table_name} LIMIT 5")
+    sample_data = [dict(row) for row in cursor.fetchall()]
+    
+    # Get row count
+    cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+    row_count = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    result = {
+        "table": table_name,
+        "schema": schema,
+        "row_count": row_count,
+        "sample_data": sample_data
+    }
+    
+    return json.dumps(result, indent=2)
+
+@mcp.tool(
+    name="query",
+    description="Execute a SELECT query",
+    parameters={
+        "type": "object",
+        "properties": {
+            "sql": {
+                "type": "string",
+                "description": "SELECT query to execute"
+            },
+            "parameters": {
+                "type": "array",
+                "description": "Query parameters",
+                "items": {"type": ["string", "number", "null"]}
+            }
+        },
+        "required": ["sql"]
+    }
+)
+async def query_database(sql: str, parameters: Optional[List[Any]] = None) -> str:
+    """Execute a SELECT query"""
+    # Validate it's a SELECT query
+    sql_upper = sql.strip().upper()
+    if not sql_upper.startswith("SELECT"):
+        raise ValueError("Only SELECT queries allowed")
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    try:
+        # Execute query
+        params = parameters or []
+        cursor.execute(sql, params)
+        
+        # Fetch results
+        results = [dict(row) for row in cursor.fetchall()]
+        
+        return json.dumps({
+            "row_count": len(results),
+            "results": results
+        }, indent=2)
+        
+    finally:
+        conn.close()
+
+@mcp.tool(
+    name="execute",
+    description="Execute INSERT, UPDATE, or DELETE",
+    parameters={
+        "type": "object",
+        "properties": {
+            "sql": {
+                "type": "string",
+                "description": "SQL statement to execute"
+            },
+            "parameters": {
+                "type": "array",
+                "description": "Statement parameters",
+                "items": {"type": ["string", "number", "null"]}
+            }
+        },
+        "required": ["sql"]
+    }
+)
+async def execute_statement(sql: str, parameters: Optional[List[Any]] = None) -> str:
+    """Execute INSERT, UPDATE, or DELETE statement"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        # Execute statement
+        params = parameters or []
+        cursor.execute(sql, params)
+        conn.commit()
+        
+        return f"Executed successfully. Rows affected: {cursor.rowcount}"
+        
+    finally:
+        conn.close()
+
+@mcp.tool(
+    name="create_table",
+    description="Create a new table",
+    parameters={
+        "type": "object",
+        "properties": {
+            "table_name": {
+                "type": "string",
+                "description": "Name of the table"
+            },
+            "columns": {
+                "type": "array",
+                "description": "Column definitions",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "type": {"type": "string"},
+                        "primary_key": {"type": "boolean"},
+                        "not_null": {"type": "boolean"}
+                    },
+                    "required": ["name", "type"]
+                }
+            }
+        },
+        "required": ["table_name", "columns"]
+    }
+)
+async def create_table(table_name: str, columns: List[Dict[str, Any]]) -> str:
+    """Create a new table"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        # Build CREATE TABLE statement
+        column_defs = []
+        for col in columns:
+            col_def = f"{col['name']} {col['type']}"
+            if col.get("primary_key"):
+                col_def += " PRIMARY KEY"
+            if col.get("not_null"):
+                col_def += " NOT NULL"
+            column_defs.append(col_def)
+        
+        sql = f"CREATE TABLE {table_name} ({', '.join(column_defs)})"
+        cursor.execute(sql)
+        conn.commit()
+        
+        return f"Table '{table_name}' created successfully"
+        
+    finally:
+        conn.close()
 
 # Initialize with sample database
-def init_sample_db(db_path: str):
-    conn = sqlite3.connect(db_path)
+def init_sample_db():
+    """Initialize sample database with test data"""
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
     # Create sample tables
@@ -543,442 +480,406 @@ def init_sample_db(db_path: str):
     conn.commit()
     conn.close()
 
+# Start server
 if __name__ == "__main__":
-    db_path = "sample.db"
-    init_sample_db(db_path)
-    
-    server = DatabaseServer(db_path)
-    asyncio.run(server.run())
+    init_sample_db()
+    print(f"Database MCP server running with {DB_PATH}", file=sys.stderr)
+    mcp.run()
 ```
 
 ### 3. API Integration Server
 
 An MCP server that integrates with external APIs.
 
-```typescript
-// api-server.ts
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
-import axios from "axios";
-import { z } from "zod";
+```python
+# api_server.py
+import os
+import sys
+import json
+import asyncio
+from typing import List, Dict, Any, Optional
+import aiohttp
+from mcp.server.fastmcp import FastMCP
 
-const server = new Server(
-  {
-    name: "api-integration-server",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      resources: {},
-      tools: {},
-      prompts: {},
+# Create server instance
+mcp = FastMCP(
+    name="api-integration-server",
+    version="1.0.0"
+)
+
+# API configurations
+APIS = {
+    "weather": {
+        "base_url": "https://api.openweathermap.org/data/2.5",
+        "api_key": os.getenv("OPENWEATHER_API_KEY"),
     },
-  }
-);
+    "github": {
+        "base_url": "https://api.github.com",
+        "token": os.getenv("GITHUB_TOKEN"),
+    },
+}
 
-// API configurations
-const APIs = {
-  weather: {
-    baseUrl: "https://api.openweathermap.org/data/2.5",
-    apiKey: process.env.OPENWEATHER_API_KEY,
-  },
-  github: {
-    baseUrl: "https://api.github.com",
-    token: process.env.GITHUB_TOKEN,
-  },
-};
+# API documentation resources
+@mcp.list_resources()
+async def list_resources() -> List[Dict[str, Any]]:
+    """List API documentation resources"""
+    return [
+        {
+            "uri": "api://weather/docs",
+            "name": "Weather API Documentation",
+            "mimeType": "text/markdown",
+        },
+        {
+            "uri": "api://github/docs",
+            "name": "GitHub API Documentation",
+            "mimeType": "text/markdown",
+        },
+    ]
 
-// Resources for API documentation
-server.setRequestHandler("resources/list", async () => {
-  return {
-    resources: [
-      {
-        uri: "api://weather/docs",
-        name: "Weather API Documentation",
-        mimeType: "text/markdown",
-      },
-      {
-        uri: "api://github/docs",
-        name: "GitHub API Documentation",
-        mimeType: "text/markdown",
-      },
-    ],
-  };
-});
+@mcp.resource("api://*/docs")
+async def read_api_docs(uri: str) -> str:
+    """Read API documentation"""
+    docs = {
+        "api://weather/docs": """# Weather API
 
-server.setRequestHandler("resources/read", async (request) => {
-  const { uri } = request.params;
-  
-  const docs = {
-    "api://weather/docs": `# Weather API
-    
 Available endpoints:
-- Get current weather: \`weather?q={city}\`
-- Get forecast: \`forecast?q={city}\`
+- Get current weather: `weather?q={city}`
+- Get forecast: `forecast?q={city}`
 
 Example usage with the MCP tool:
 - Tool: get_weather
-- Arguments: { "city": "London" }`,
-    
-    "api://github/docs": `# GitHub API
-    
+- Arguments: { "city": "London" }""",
+        
+        "api://github/docs": """# GitHub API
+
 Available endpoints:
-- Get user repos: \`/users/{username}/repos\`
-- Get repo info: \`/repos/{owner}/{repo}\`
-- Create issue: \`/repos/{owner}/{repo}/issues\`
+- Get user repos: `/users/{username}/repos`
+- Get repo info: `/repos/{owner}/{repo}`
+- Create issue: `/repos/{owner}/{repo}/issues`
 
 Example usage with MCP tools:
 - Tool: github_user_repos
-- Arguments: { "username": "octocat" }`,
-  };
-  
-  return {
-    contents: [
-      {
-        uri,
-        mimeType: "text/markdown",
-        text: docs[uri] || "Documentation not found",
-      },
-    ],
-  };
-});
-
-// Tool definitions
-const weatherTools = [
-  {
-    name: "get_weather",
-    description: "Get current weather for a city",
-    inputSchema: z.object({
-      city: z.string().describe("City name"),
-      units: z.enum(["metric", "imperial"]).default("metric"),
-    }),
-  },
-  {
-    name: "get_forecast",
-    description: "Get 5-day weather forecast",
-    inputSchema: z.object({
-      city: z.string().describe("City name"),
-      units: z.enum(["metric", "imperial"]).default("metric"),
-    }),
-  },
-];
-
-const githubTools = [
-  {
-    name: "github_user_repos",
-    description: "Get repositories for a GitHub user",
-    inputSchema: z.object({
-      username: z.string().describe("GitHub username"),
-      sort: z.enum(["created", "updated", "pushed", "full_name"]).optional(),
-    }),
-  },
-  {
-    name: "github_repo_info",
-    description: "Get information about a GitHub repository",
-    inputSchema: z.object({
-      owner: z.string().describe("Repository owner"),
-      repo: z.string().describe("Repository name"),
-    }),
-  },
-  {
-    name: "github_create_issue",
-    description: "Create an issue in a GitHub repository",
-    inputSchema: z.object({
-      owner: z.string().describe("Repository owner"),
-      repo: z.string().describe("Repository name"),
-      title: z.string().describe("Issue title"),
-      body: z.string().describe("Issue body"),
-      labels: z.array(z.string()).optional(),
-    }),
-  },
-];
-
-// List all tools
-server.setRequestHandler("tools/list", async () => {
-  return {
-    tools: [...weatherTools, ...githubTools].map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: zodToJsonSchema(tool.inputSchema),
-    })),
-  };
-});
-
-// Execute tools
-server.setRequestHandler("tools/call", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  try {
-    // Weather API tools
-    if (name === "get_weather") {
-      const response = await axios.get(
-        `${APIs.weather.baseUrl}/weather`,
-        {
-          params: {
-            q: args.city,
-            units: args.units,
-            appid: APIs.weather.apiKey,
-          },
-        }
-      );
-      
-      const data = response.data;
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({
-              city: data.name,
-              country: data.sys.country,
-              temperature: data.main.temp,
-              feels_like: data.main.feels_like,
-              description: data.weather[0].description,
-              humidity: data.main.humidity,
-              wind_speed: data.wind.speed,
-            }, null, 2),
-          },
-        ],
-      };
+- Arguments: { "username": "octocat" }""",
     }
     
-    if (name === "get_forecast") {
-      const response = await axios.get(
-        `${APIs.weather.baseUrl}/forecast`,
-        {
-          params: {
-            q: args.city,
-            units: args.units,
-            appid: APIs.weather.apiKey,
-          },
-        }
-      );
-      
-      const forecasts = response.data.list.slice(0, 5).map(item => ({
-        datetime: item.dt_txt,
-        temperature: item.main.temp,
-        description: item.weather[0].description,
-      }));
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(forecasts, null, 2),
-          },
-        ],
-      };
-    }
-    
-    // GitHub API tools
-    if (name === "github_user_repos") {
-      const response = await axios.get(
-        `${APIs.github.baseUrl}/users/${args.username}/repos`,
-        {
-          headers: {
-            Authorization: `token ${APIs.github.token}`,
-          },
-          params: {
-            sort: args.sort,
-            per_page: 10,
-          },
-        }
-      );
-      
-      const repos = response.data.map(repo => ({
-        name: repo.name,
-        description: repo.description,
-        stars: repo.stargazers_count,
-        language: repo.language,
-        url: repo.html_url,
-      }));
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(repos, null, 2),
-          },
-        ],
-      };
-    }
-    
-    if (name === "github_repo_info") {
-      const response = await axios.get(
-        `${APIs.github.baseUrl}/repos/${args.owner}/${args.repo}`,
-        {
-          headers: {
-            Authorization: `token ${APIs.github.token}`,
-          },
-        }
-      );
-      
-      const info = {
-        name: response.data.name,
-        description: response.data.description,
-        stars: response.data.stargazers_count,
-        forks: response.data.forks_count,
-        open_issues: response.data.open_issues_count,
-        language: response.data.language,
-        created_at: response.data.created_at,
-        updated_at: response.data.updated_at,
-      };
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(info, null, 2),
-          },
-        ],
-      };
-    }
-    
-    if (name === "github_create_issue") {
-      const response = await axios.post(
-        `${APIs.github.baseUrl}/repos/${args.owner}/${args.repo}/issues`,
-        {
-          title: args.title,
-          body: args.body,
-          labels: args.labels,
+    return docs.get(uri, "Documentation not found")
+
+# Weather API tools
+@mcp.tool(
+    name="get_weather",
+    description="Get current weather for a city",
+    parameters={
+        "type": "object",
+        "properties": {
+            "city": {
+                "type": "string",
+                "description": "City name",
+            },
+            "units": {
+                "type": "string",
+                "enum": ["metric", "imperial"],
+                "default": "metric",
+                "description": "Temperature units",
+            },
         },
-        {
-          headers: {
-            Authorization: `token ${APIs.github.token}`,
-          },
-        }
-      );
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Issue created: ${response.data.html_url}`,
-          },
-        ],
-      };
+        "required": ["city"],
     }
-    
-    throw new Error(`Unknown tool: ${name}`);
-    
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error: ${error.message}`,
-        },
-      ],
-      isError: true,
-    };
-  }
-});
-
-// Prompts for common API tasks
-server.setRequestHandler("prompts/list", async () => {
-  return {
-    prompts: [
-      {
-        name: "weather_report",
-        description: "Generate a weather report for multiple cities",
-        arguments: [
-          {
-            name: "cities",
-            description: "Comma-separated list of cities",
-            required: true,
-          },
-        ],
-      },
-      {
-        name: "github_activity",
-        description: "Analyze GitHub user activity",
-        arguments: [
-          {
-            name: "username",
-            description: "GitHub username",
-            required: true,
-          },
-        ],
-      },
-    ],
-  };
-});
-
-server.setRequestHandler("prompts/get", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  if (name === "weather_report") {
-    const cities = args.cities.split(",").map(c => c.trim());
-    return {
-      messages: [
-        {
-          role: "user",
-          content: {
-            type: "text",
-            text: `Please generate a comprehensive weather report for the following cities: ${cities.join(", ")}. 
+)
+async def get_weather(city: str, units: str = "metric") -> str:
+    """Get current weather for a city"""
+    async with aiohttp.ClientSession() as session:
+        params = {
+            "q": city,
+            "units": units,
+            "appid": APIS["weather"]["api_key"],
+        }
+        
+        async with session.get(
+            f"{APIS['weather']['base_url']}/weather",
+            params=params
+        ) as response:
+            data = await response.json()
             
+            if response.status != 200:
+                raise ValueError(f"Weather API error: {data.get('message', 'Unknown error')}")
+            
+            result = {
+                "city": data["name"],
+                "country": data["sys"]["country"],
+                "temperature": data["main"]["temp"],
+                "feels_like": data["main"]["feels_like"],
+                "description": data["weather"][0]["description"],
+                "humidity": data["main"]["humidity"],
+                "wind_speed": data["wind"]["speed"],
+            }
+            
+            return json.dumps(result, indent=2)
+
+@mcp.tool(
+    name="get_forecast",
+    description="Get 5-day weather forecast",
+    parameters={
+        "type": "object",
+        "properties": {
+            "city": {
+                "type": "string",
+                "description": "City name",
+            },
+            "units": {
+                "type": "string",
+                "enum": ["metric", "imperial"],
+                "default": "metric",
+                "description": "Temperature units",
+            },
+        },
+        "required": ["city"],
+    }
+)
+async def get_forecast(city: str, units: str = "metric") -> str:
+    """Get 5-day weather forecast"""
+    async with aiohttp.ClientSession() as session:
+        params = {
+            "q": city,
+            "units": units,
+            "appid": APIS["weather"]["api_key"],
+        }
+        
+        async with session.get(
+            f"{APIS['weather']['base_url']}/forecast",
+            params=params
+        ) as response:
+            data = await response.json()
+            
+            if response.status != 200:
+                raise ValueError(f"Weather API error: {data.get('message', 'Unknown error')}")
+            
+            forecasts = [
+                {
+                    "datetime": item["dt_txt"],
+                    "temperature": item["main"]["temp"],
+                    "description": item["weather"][0]["description"],
+                }
+                for item in data["list"][:5]
+            ]
+            
+            return json.dumps(forecasts, indent=2)
+
+# GitHub API tools
+@mcp.tool(
+    name="github_user_repos",
+    description="Get repositories for a GitHub user",
+    parameters={
+        "type": "object",
+        "properties": {
+            "username": {
+                "type": "string",
+                "description": "GitHub username",
+            },
+            "sort": {
+                "type": "string",
+                "enum": ["created", "updated", "pushed", "full_name"],
+                "description": "Sort order",
+            },
+        },
+        "required": ["username"],
+    }
+)
+async def github_user_repos(username: str, sort: Optional[str] = None) -> str:
+    """Get repositories for a GitHub user"""
+    async with aiohttp.ClientSession() as session:
+        headers = {
+            "Authorization": f"token {APIS['github']['token']}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        params = {"per_page": 10}
+        if sort:
+            params["sort"] = sort
+        
+        async with session.get(
+            f"{APIS['github']['base_url']}/users/{username}/repos",
+            headers=headers,
+            params=params
+        ) as response:
+            data = await response.json()
+            
+            if response.status != 200:
+                raise ValueError(f"GitHub API error: {data.get('message', 'Unknown error')}")
+            
+            repos = [
+                {
+                    "name": repo["name"],
+                    "description": repo["description"],
+                    "stars": repo["stargazers_count"],
+                    "language": repo["language"],
+                    "url": repo["html_url"],
+                }
+                for repo in data
+            ]
+            
+            return json.dumps(repos, indent=2)
+
+@mcp.tool(
+    name="github_repo_info",
+    description="Get information about a GitHub repository",
+    parameters={
+        "type": "object",
+        "properties": {
+            "owner": {
+                "type": "string",
+                "description": "Repository owner",
+            },
+            "repo": {
+                "type": "string",
+                "description": "Repository name",
+            },
+        },
+        "required": ["owner", "repo"],
+    }
+)
+async def github_repo_info(owner: str, repo: str) -> str:
+    """Get information about a GitHub repository"""
+    async with aiohttp.ClientSession() as session:
+        headers = {
+            "Authorization": f"token {APIS['github']['token']}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        
+        async with session.get(
+            f"{APIS['github']['base_url']}/repos/{owner}/{repo}",
+            headers=headers
+        ) as response:
+            data = await response.json()
+            
+            if response.status != 200:
+                raise ValueError(f"GitHub API error: {data.get('message', 'Unknown error')}")
+            
+            info = {
+                "name": data["name"],
+                "description": data["description"],
+                "stars": data["stargazers_count"],
+                "forks": data["forks_count"],
+                "open_issues": data["open_issues_count"],
+                "language": data["language"],
+                "created_at": data["created_at"],
+                "updated_at": data["updated_at"],
+            }
+            
+            return json.dumps(info, indent=2)
+
+@mcp.tool(
+    name="github_create_issue",
+    description="Create an issue in a GitHub repository",
+    parameters={
+        "type": "object",
+        "properties": {
+            "owner": {
+                "type": "string",
+                "description": "Repository owner",
+            },
+            "repo": {
+                "type": "string",
+                "description": "Repository name",
+            },
+            "title": {
+                "type": "string",
+                "description": "Issue title",
+            },
+            "body": {
+                "type": "string",
+                "description": "Issue body",
+            },
+            "labels": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Issue labels",
+            },
+        },
+        "required": ["owner", "repo", "title", "body"],
+    }
+)
+async def github_create_issue(
+    owner: str, repo: str, title: str, body: str, labels: Optional[List[str]] = None
+) -> str:
+    """Create an issue in a GitHub repository"""
+    async with aiohttp.ClientSession() as session:
+        headers = {
+            "Authorization": f"token {APIS['github']['token']}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        
+        data = {
+            "title": title,
+            "body": body,
+        }
+        if labels:
+            data["labels"] = labels
+        
+        async with session.post(
+            f"{APIS['github']['base_url']}/repos/{owner}/{repo}/issues",
+            headers=headers,
+            json=data
+        ) as response:
+            result = await response.json()
+            
+            if response.status != 201:
+                raise ValueError(f"GitHub API error: {result.get('message', 'Unknown error')}")
+            
+            return f"Issue created: {result['html_url']}"
+
+# Prompts for common API tasks
+@mcp.prompt(
+    name="weather_report",
+    description="Generate a weather report for multiple cities",
+    parameters=[
+        {
+            "name": "cities",
+            "description": "Comma-separated list of cities",
+            "required": True,
+        },
+    ]
+)
+async def weather_report_prompt(cities: str) -> str:
+    """Generate weather report prompt"""
+    city_list = [c.strip() for c in cities.split(",")]
+    return f"""Please generate a comprehensive weather report for the following cities: {', '.join(city_list)}.
+
 Use the get_weather tool for each city and create a summary that includes:
 1. Current conditions for each city
 2. Temperature comparisons
 3. Any weather warnings or notable conditions
-4. Recommendations for travelers`,
-          },
-        },
-      ],
-    };
-  }
-  
-  if (name === "github_activity") {
-    return {
-      messages: [
+4. Recommendations for travelers"""
+
+@mcp.prompt(
+    name="github_activity",
+    description="Analyze GitHub user activity",
+    parameters=[
         {
-          role: "user",
-          content: {
-            type: "text",
-            text: `Please analyze the GitHub activity for user: ${args.username}
-            
+            "name": "username",
+            "description": "GitHub username",
+            "required": True,
+        },
+    ]
+)
+async def github_activity_prompt(username: str) -> str:
+    """Generate GitHub activity analysis prompt"""
+    return f"""Please analyze the GitHub activity for user: {username}
+
 Use the github_user_repos tool to get their repositories and provide:
 1. Overview of their most popular repositories
 2. Primary programming languages used
 3. Recent activity summary
-4. Interesting projects worth highlighting`,
-          },
-        },
-      ],
-    };
-  }
-  
-  throw new Error(`Unknown prompt: ${name}`);
-});
+4. Interesting projects worth highlighting"""
 
-// Helper function
-function zodToJsonSchema(schema: z.ZodSchema): any {
-  // Simplified - use a proper library in production
-  return {
-    type: "object",
-    properties: Object.fromEntries(
-      Object.entries(schema.shape).map(([key, value]) => [
-        key,
-        { 
-          type: value._def.typeName === "ZodEnum" ? "string" : "string",
-          enum: value._def.values,
-          description: value._def.description,
-        },
-      ])
-    ),
-    required: Object.keys(schema.shape).filter(
-      key => !schema.shape[key].isOptional()
-    ),
-  };
-}
-
-// Start HTTP server
-const transport = new HttpServerTransport({
-  port: 3000,
-});
-
-server.connect(transport).then(() => {
-  console.log("API Integration MCP server running on port 3000");
-});
+# Start server
+if __name__ == "__main__":
+    # Check for required environment variables
+    if not APIS["weather"]["api_key"]:
+        print("Warning: OPENWEATHER_API_KEY not set", file=sys.stderr)
+    if not APIS["github"]["token"]:
+        print("Warning: GITHUB_TOKEN not set", file=sys.stderr)
+    
+    print("API Integration MCP server running", file=sys.stderr)
+    mcp.run()
 ```
 
 ## Complete Client Examples
@@ -992,46 +893,68 @@ A command-line client that interacts with MCP servers.
 import asyncio
 import json
 import sys
-from typing import Optional
+import subprocess
+from typing import Optional, List, Dict, Any
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
-from mcp import Client
-from mcp.client.stdio import StdioClientTransport
+from fastmcp.client import MCPClient
 
 class InteractiveMCPClient:
     def __init__(self):
-        self.client = Client(
-            name="interactive-cli",
-            version="1.0.0"
-        )
+        self.client: Optional[MCPClient] = None
         self.connected = False
         self.resources = []
         self.tools = []
         self.prompts = []
+        self.server_process = None
     
-    async def connect(self, command: str, args: list):
+    async def connect(self, command: str, args: List[str]):
         """Connect to an MCP server"""
         try:
-            transport = StdioClientTransport(command=command, args=args)
-            await self.client.connect(transport)
+            # Start server process
+            self.server_process = subprocess.Popen(
+                [command] + args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            
+            # Create client and connect
+            self.client = MCPClient(
+                name="interactive-cli",
+                version="1.0.0"
+            )
+            
+            await self.client.connect_stdio(self.server_process)
             self.connected = True
             
             # Cache available capabilities
             await self.refresh_capabilities()
             
-            print(f"Connected to server: {self.client.server_info.name}")
-            print(f"Server version: {self.client.server_info.version}")
+            server_info = self.client.server_info
+            print(f"Connected to server: {server_info.get('name', 'Unknown')}")
+            print(f"Server version: {server_info.get('version', 'Unknown')}")
             
         except Exception as e:
             print(f"Failed to connect: {e}")
             self.connected = False
+            if self.server_process:
+                self.server_process.terminate()
     
     async def refresh_capabilities(self):
         """Refresh cached capabilities"""
         try:
-            self.resources = await self.client.list_resources()
-            self.tools = await self.client.list_tools()
-            self.prompts = await self.client.list_prompts()
+            # List resources
+            result = await self.client.request("resources/list")
+            self.resources = result.get("resources", [])
+            
+            # List tools
+            result = await self.client.request("tools/list")
+            self.tools = result.get("tools", [])
+            
+            # List prompts
+            result = await self.client.request("prompts/list")
+            self.prompts = result.get("prompts", [])
         except:
             # Server might not support all capabilities
             pass
@@ -1044,21 +967,22 @@ class InteractiveMCPClient:
         
         print("\nAvailable Resources:")
         for i, resource in enumerate(self.resources, 1):
-            print(f"{i}. {resource.name} ({resource.uri})")
-            if resource.description:
-                print(f"   {resource.description}")
+            print(f"{i}. {resource['name']} ({resource['uri']})")
+            if resource.get('description'):
+                print(f"   {resource['description']}")
     
     async def read_resource(self, uri: str):
         """Read a specific resource"""
         try:
-            content = await self.client.read_resource(uri)
+            result = await self.client.request("resources/read", {"uri": uri})
             print(f"\nResource: {uri}")
             print("-" * 50)
-            for item in content.contents:
-                if item.text:
-                    print(item.text)
-                elif item.blob:
-                    print(f"[Binary data: {len(item.blob)} bytes]")
+            
+            for item in result.get("contents", []):
+                if item.get("text"):
+                    print(item["text"])
+                elif item.get("blob"):
+                    print(f"[Binary data: {len(item['blob'])} bytes]")
         except Exception as e:
             print(f"Error reading resource: {e}")
     
@@ -1070,11 +994,11 @@ class InteractiveMCPClient:
         
         print("\nAvailable Tools:")
         for i, tool in enumerate(self.tools, 1):
-            print(f"{i}. {tool.name}")
-            if tool.description:
-                print(f"   {tool.description}")
-            if hasattr(tool, 'input_schema'):
-                print(f"   Parameters: {json.dumps(tool.input_schema, indent=6)}")
+            print(f"{i}. {tool['name']}")
+            if tool.get('description'):
+                print(f"   {tool['description']}")
+            if tool.get('inputSchema'):
+                print(f"   Parameters: {json.dumps(tool['inputSchema'], indent=6)}")
     
     async def call_tool(self, name: str, args_str: str):
         """Call a tool with arguments"""
@@ -1083,17 +1007,21 @@ class InteractiveMCPClient:
             args = json.loads(args_str) if args_str else {}
             
             # Call tool
-            result = await self.client.call_tool(name, args)
+            result = await self.client.request(
+                "tools/call",
+                {"name": name, "arguments": args}
+            )
             
             print(f"\nTool Result: {name}")
             print("-" * 50)
-            for content in result.content:
-                if content.text:
-                    print(content.text)
-                elif hasattr(content, 'data'):
-                    print(f"[Image data: {content.mime_type}]")
             
-            if result.is_error:
+            for content in result.get("content", []):
+                if content.get("type") == "text":
+                    print(content["text"])
+                elif content.get("type") == "image":
+                    print(f"[Image data: {content.get('mimeType', 'unknown')}]")
+            
+            if result.get("isError"):
                 print("(Error occurred during execution)")
                 
         except json.JSONDecodeError:
@@ -1109,13 +1037,13 @@ class InteractiveMCPClient:
         
         print("\nAvailable Prompts:")
         for i, prompt_info in enumerate(self.prompts, 1):
-            print(f"{i}. {prompt_info.name}")
-            if prompt_info.description:
-                print(f"   {prompt_info.description}")
-            if prompt_info.arguments:
-                for arg in prompt_info.arguments:
-                    req = " (required)" if arg.required else ""
-                    print(f"   - {arg.name}: {arg.description}{req}")
+            print(f"{i}. {prompt_info['name']}")
+            if prompt_info.get('description'):
+                print(f"   {prompt_info['description']}")
+            if prompt_info.get('arguments'):
+                for arg in prompt_info['arguments']:
+                    req = " (required)" if arg.get('required') else ""
+                    print(f"   - {arg['name']}: {arg.get('description', '')}{req}")
     
     async def get_prompt(self, name: str, args_str: str):
         """Get a prompt with arguments"""
@@ -1124,17 +1052,24 @@ class InteractiveMCPClient:
             args = json.loads(args_str) if args_str else {}
             
             # Get prompt
-            result = await self.client.get_prompt(name, args)
+            result = await self.client.request(
+                "prompts/get",
+                {"name": name, "arguments": args}
+            )
             
             print(f"\nPrompt: {name}")
-            if result.description:
-                print(f"Description: {result.description}")
+            if result.get('description'):
+                print(f"Description: {result['description']}")
             print("-" * 50)
             
-            for message in result.messages:
-                print(f"\n[{message.role}]:")
-                if message.content.text:
-                    print(message.content.text)
+            for message in result.get('messages', []):
+                role = message.get('role', 'unknown')
+                print(f"\n[{role}]:")
+                content = message.get('content', {})
+                if isinstance(content, dict) and content.get('text'):
+                    print(content['text'])
+                elif isinstance(content, str):
+                    print(content)
                     
         except json.JSONDecodeError:
             print("Invalid JSON arguments")
@@ -1181,9 +1116,12 @@ class InteractiveMCPClient:
                         await self.connect(cmd, args)
                 
                 elif command == "disconnect":
-                    if self.connected:
+                    if self.connected and self.client:
                         await self.client.disconnect()
                         self.connected = False
+                        if self.server_process:
+                            self.server_process.terminate()
+                            self.server_process = None
                         print("Disconnected")
                     else:
                         print("Not connected")
@@ -1242,8 +1180,10 @@ class InteractiveMCPClient:
                         print("Capabilities refreshed")
                 
                 elif command == "exit":
-                    if self.connected:
+                    if self.connected and self.client:
                         await self.client.disconnect()
+                    if self.server_process:
+                        self.server_process.terminate()
                     print("Goodbye!")
                     break
                 
@@ -1769,34 +1709,42 @@ Example configuration for Claude Desktop with multiple MCP servers:
 {
   "mcpServers": {
     "filesystem": {
-      "command": "node",
-      "args": ["/path/to/filesystem-server.js"],
+      "command": "python",
+      "args": ["/path/to/filesystem_server.py"],
       "env": {
         "ALLOWED_DIRECTORIES": "/Users/username/Documents,/Users/username/Desktop"
       }
     },
     "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "command": "python",
+      "args": ["/path/to/github_server.py"],
       "env": {
         "GITHUB_TOKEN": "your-github-token"
       }
     },
     "database": {
       "command": "python",
-      "args": ["/path/to/database-server.py"],
+      "args": ["/path/to/database_server.py"],
       "env": {
         "DATABASE_URL": "postgresql://localhost/mydb"
       }
     },
-    "slack": {
+    "api-integration": {
+      "command": "python",
+      "args": ["/path/to/api_server.py"],
+      "env": {
+        "OPENWEATHER_API_KEY": "${OPENWEATHER_API_KEY}",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "docker-compose": {
       "command": "docker",
       "args": [
         "run",
         "-i",
         "--rm",
-        "-e", "SLACK_TOKEN=${SLACK_TOKEN}",
-        "mcp/slack-server:latest"
+        "-e", "MCP_ENV=production",
+        "mcp/server:latest"
       ]
     }
   }
@@ -1970,11 +1918,11 @@ Integrating MCP with LangChain for enhanced AI applications:
 from langchain.tools import BaseTool
 from langchain.agents import initialize_agent, AgentType
 from langchain.llms import OpenAI
-from mcp import Client
-from mcp.client.stdio import StdioClientTransport
+from fastmcp.client import MCPClient
 import asyncio
 import json
-from typing import Optional, Type
+import subprocess
+from typing import Optional, Type, Dict, Any
 from pydantic import BaseModel, Field
 
 class MCPToolInput(BaseModel):
@@ -1987,9 +1935,9 @@ class MCPTool(BaseTool):
     name = "mcp_tool"
     description = "Execute tools from an MCP server"
     args_schema: Type[BaseModel] = MCPToolInput
-    mcp_client: Optional[Client] = None
+    mcp_client: Optional[MCPClient] = None
     
-    def __init__(self, mcp_client: Client):
+    def __init__(self, mcp_client: MCPClient):
         super().__init__()
         self.mcp_client = mcp_client
     
@@ -2001,13 +1949,16 @@ class MCPTool(BaseTool):
         """Execute MCP tool asynchronously"""
         try:
             args = json.loads(arguments)
-            result = await self.mcp_client.call_tool(tool_name, args)
+            result = await self.mcp_client.request(
+                "tools/call",
+                {"name": tool_name, "arguments": args}
+            )
             
             # Extract text content
             text_content = []
-            for content in result.content:
-                if hasattr(content, 'text'):
-                    text_content.append(content.text)
+            for content in result.get("content", []):
+                if content.get("type") == "text":
+                    text_content.append(content["text"])
             
             return "\n".join(text_content)
             
@@ -2018,9 +1969,9 @@ class MCPResourceTool(BaseTool):
     """LangChain tool for reading MCP resources"""
     name = "mcp_resource"
     description = "Read resources from an MCP server"
-    mcp_client: Optional[Client] = None
+    mcp_client: Optional[MCPClient] = None
     
-    def __init__(self, mcp_client: Client):
+    def __init__(self, mcp_client: MCPClient):
         super().__init__()
         self.mcp_client = mcp_client
     
@@ -2031,13 +1982,16 @@ class MCPResourceTool(BaseTool):
     async def _arun(self, uri: str) -> str:
         """Read MCP resource asynchronously"""
         try:
-            content = await self.mcp_client.read_resource(uri)
+            result = await self.mcp_client.request(
+                "resources/read",
+                {"uri": uri}
+            )
             
             # Extract text content
             text_content = []
-            for item in content.contents:
-                if item.text:
-                    text_content.append(item.text)
+            for item in result.get("contents", []):
+                if item.get("text"):
+                    text_content.append(item["text"])
             
             return "\n".join(text_content)
             
@@ -2046,29 +2000,36 @@ class MCPResourceTool(BaseTool):
 
 async def create_mcp_agent():
     """Create a LangChain agent with MCP tools"""
-    # Connect to MCP server
-    client = Client(name="langchain-mcp", version="1.0.0")
-    transport = StdioClientTransport(
-        command="python",
-        args=["mcp_server.py"]
+    # Start MCP server process
+    server_process = subprocess.Popen(
+        ["python", "mcp_server.py"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
     )
-    await client.connect(transport)
+    
+    # Connect to MCP server
+    client = MCPClient(name="langchain-mcp", version="1.0.0")
+    await client.connect_stdio(server_process)
     
     # Get available tools and resources
-    tools_list = await client.list_tools()
-    resources_list = await client.list_resources()
+    tools_result = await client.request("tools/list")
+    resources_result = await client.request("resources/list")
+    
+    tools_list = tools_result.get("tools", [])
+    resources_list = resources_result.get("resources", [])
     
     # Create tool descriptions
     tool_descriptions = []
     for tool in tools_list:
-        desc = f"- {tool.name}: {tool.description}"
-        if hasattr(tool, 'input_schema'):
-            desc += f" (args: {json.dumps(tool.input_schema)})"
+        desc = f"- {tool['name']}: {tool.get('description', '')}"
+        if tool.get('inputSchema'):
+            desc += f" (args: {json.dumps(tool['inputSchema'])})"
         tool_descriptions.append(desc)
     
     resource_descriptions = []
     for resource in resources_list:
-        desc = f"- {resource.uri}: {resource.name}"
+        desc = f"- {resource['uri']}: {resource['name']}"
         resource_descriptions.append(desc)
     
     # Update tool descriptions
@@ -2099,28 +2060,31 @@ To use: provide the resource URI."""
         verbose=True
     )
     
-    return agent, client
+    return agent, client, server_process
 
 # Example usage
 async def main():
-    agent, mcp_client = await create_mcp_agent()
+    agent, mcp_client, server_process = await create_mcp_agent()
     
-    # Example queries
-    queries = [
-        "What files are available in the resources?",
-        "Read the configuration file and summarize its contents",
-        "Use the weather tool to get the current weather in London",
-        "Create a new file called test.txt with the content 'Hello from LangChain'"
-    ]
+    try:
+        # Example queries
+        queries = [
+            "What files are available in the resources?",
+            "Read the configuration file and summarize its contents",
+            "Use the weather tool to get the current weather in London",
+            "Create a new file called test.txt with the content 'Hello from LangChain'"
+        ]
+        
+        for query in queries:
+            print(f"\nQuery: {query}")
+            print("-" * 50)
+            response = agent.run(query)
+            print(f"Response: {response}")
     
-    for query in queries:
-        print(f"\nQuery: {query}")
-        print("-" * 50)
-        response = agent.run(query)
-        print(f"Response: {response}")
-    
-    # Cleanup
-    await mcp_client.disconnect()
+    finally:
+        # Cleanup
+        await mcp_client.disconnect()
+        server_process.terminate()
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -2134,16 +2098,18 @@ MCP integration for Jupyter notebooks:
 # mcp_jupyter.py
 import asyncio
 import json
+import subprocess
+from typing import Optional, List, Dict, Any
 from IPython.display import display, HTML, JSON
 from ipywidgets import widgets, Layout
-from mcp import Client
-from mcp.client.stdio import StdioClientTransport
+from fastmcp.client import MCPClient
 
 class MCPJupyterClient:
     """MCP client for Jupyter notebooks with interactive widgets"""
     
     def __init__(self):
-        self.client = None
+        self.client: Optional[MCPClient] = None
+        self.server_process: Optional[subprocess.Popen] = None
         self.connected = False
         self.setup_ui()
     
@@ -2236,18 +2202,24 @@ class MCPJupyterClient:
                 command = parts[0]
                 args = parts[1:] if len(parts) > 1 else []
                 
-                # Create client
-                self.client = Client(
+                # Start server process
+                self.server_process = subprocess.Popen(
+                    [command] + args,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+                
+                # Create and connect client
+                self.client = MCPClient(
                     name="jupyter-mcp",
                     version="1.0.0"
                 )
-                
-                # Connect
-                transport = StdioClientTransport(command=command, args=args)
-                await self.client.connect(transport)
+                await self.client.connect_stdio(self.server_process)
                 
                 self.connected = True
-                self.status_label.value = f'Connected to {self.client.server_info.name}'
+                server_info = self.client.server_info
+                self.status_label.value = f'Connected to {server_info.get("name", "Unknown")}'
                 
                 # Load capabilities
                 await self.load_capabilities()
@@ -2259,25 +2231,30 @@ class MCPJupyterClient:
             except Exception as e:
                 self.status_label.value = f'Error: {str(e)}'
                 self.connected = False
+                if self.server_process:
+                    self.server_process.terminate()
+                    self.server_process = None
     
     async def load_capabilities(self):
         """Load server capabilities"""
         # Load resources
-        resources = await self.client.list_resources()
+        result = await self.client.request("resources/list")
+        resources = result.get("resources", [])
         self.resource_dropdown.options = [
-            (f"{r.name} ({r.uri})", r.uri)
+            (f"{r['name']} ({r['uri']})", r['uri'])
             for r in resources
         ]
         
-        # Load tools
-        tools = await self.client.list_tools()
+        # Load tools  
+        result = await self.client.request("tools/list")
+        tools = result.get("tools", [])
         self.tool_dropdown.options = [
-            (f"{t.name} - {t.description}", t.name)
+            (f"{t['name']} - {t.get('description', '')}", t['name'])
             for t in tools
         ]
         
         # Store tool schemas
-        self.tool_schemas = {t.name: t for t in tools}
+        self.tool_schemas = {t['name']: t for t in tools}
     
     def on_read_click(self, _):
         """Handle read resource button click"""
@@ -2294,19 +2271,22 @@ class MCPJupyterClient:
         
         with self.output:
             try:
-                content = await self.client.read_resource(uri)
+                result = await self.client.request(
+                    "resources/read",
+                    {"uri": uri}
+                )
                 
                 # Display content
-                for item in content.contents:
-                    if item.text:
+                for item in result.get("contents", []):
+                    if item.get("text"):
                         # Try to parse as JSON for pretty display
                         try:
-                            data = json.loads(item.text)
+                            data = json.loads(item["text"])
                             display(JSON(data))
                         except:
-                            print(item.text)
-                    elif item.blob:
-                        print(f"[Binary data: {len(item.blob)} bytes]")
+                            print(item["text"])
+                    elif item.get("blob"):
+                        print(f"[Binary data: {len(item['blob'])} bytes]")
                         
             except Exception as e:
                 print(f"Error reading resource: {e}")
@@ -2333,29 +2313,32 @@ class MCPJupyterClient:
                 # Show tool schema if empty args
                 if args == {} and tool_name in self.tool_schemas:
                     schema = self.tool_schemas[tool_name]
-                    if hasattr(schema, 'input_schema'):
+                    if schema.get('inputSchema'):
                         print("Tool schema:")
-                        display(JSON(schema.input_schema))
+                        display(JSON(schema['inputSchema']))
                         print("\nExecuting with empty arguments...")
                 
                 # Execute tool
-                result = await self.client.call_tool(tool_name, args)
+                result = await self.client.request(
+                    "tools/call",
+                    {"name": tool_name, "arguments": args}
+                )
                 
                 # Display result
                 print(f"\nTool result for '{tool_name}':")
-                for content in result.content:
-                    if content.text:
+                for content in result.get("content", []):
+                    if content.get("type") == "text":
                         # Try to parse as JSON for pretty display
                         try:
-                            data = json.loads(content.text)
+                            data = json.loads(content["text"])
                             display(JSON(data))
                         except:
-                            print(content.text)
-                    elif hasattr(content, 'data'):
+                            print(content["text"])
+                    elif content.get("type") == "image":
                         # Image data
-                        display(HTML(f'<img src="data:{content.mime_type};base64,{content.data}">'))
+                        display(HTML(f'<img src="data:{content.get("mimeType", "")};base64,{content.get("data", "")}">'))
                 
-                if result.is_error:
+                if result.get("isError"):
                     print("(Error occurred during execution)")
                     
             except json.JSONDecodeError:
@@ -2374,6 +2357,11 @@ class MCPJupyterClient:
         with self.output:
             print(f"Query: {question}")
             print("(Manual tool/resource selection required)")
+    
+    def __del__(self):
+        """Cleanup when object is destroyed"""
+        if self.server_process:
+            self.server_process.terminate()
 
 # Usage in Jupyter notebook:
 # client = MCPJupyterClient()
@@ -2386,404 +2374,462 @@ class MCPJupyterClient:
 
 Composing multiple MCP servers into a unified interface:
 
-```typescript
-// server-composer.ts
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+```python
+# server_composer.py
+import asyncio
+import json
+import subprocess
+import sys
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass
+from mcp.server.fastmcp import FastMCP
+from fastmcp.client import MCPClient
 
-interface ServerConfig {
-  name: string;
-  command: string;
-  args: string[];
-  prefix: string;
-}
+@dataclass
+class ServerConfig:
+    """Configuration for an upstream MCP server"""
+    name: str
+    command: str
+    args: List[str]
+    prefix: str
 
-class ComposedMCPServer {
-  private server: Server;
-  private clients: Map<string, Client> = new Map();
-  private configs: ServerConfig[];
-  
-  constructor(configs: ServerConfig[]) {
-    this.configs = configs;
-    this.server = new Server(
-      {
-        name: "composed-server",
-        version: "1.0.0",
-      },
-      {
-        capabilities: {
-          resources: {},
-          tools: {},
-        },
-      }
-    );
+class ComposedMCPServer:
+    """Compose multiple MCP servers into a unified interface"""
     
-    this.setupHandlers();
-  }
-  
-  async start() {
-    // Connect to all upstream servers
-    for (const config of this.configs) {
-      const client = new Client({
-        name: `composer-${config.name}`,
-        version: "1.0.0",
-      });
-      
-      const transport = new StdioClientTransport({
-        command: config.command,
-        args: config.args,
-      });
-      
-      await client.connect(transport);
-      this.clients.set(config.name, client);
-    }
-    
-    // Start composed server
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-  }
-  
-  setupHandlers() {
-    // List resources from all servers
-    this.server.setRequestHandler("resources/list", async () => {
-      const allResources = [];
-      
-      for (const [name, client] of this.clients) {
-        const config = this.configs.find(c => c.name === name)!;
+    def __init__(self, configs: List[ServerConfig]):
+        self.configs = configs
+        self.clients: Dict[str, MCPClient] = {}
+        self.processes: Dict[str, subprocess.Popen] = {}
         
-        try {
-          const response = await client.request("resources/list");
-          
-          // Prefix resource URIs
-          const prefixedResources = response.resources.map(r => ({
-            ...r,
-            uri: `${config.prefix}:${r.uri}`,
-            name: `[${config.name}] ${r.name}`,
-          }));
-          
-          allResources.push(...prefixedResources);
-        } catch (error) {
-          console.error(`Failed to list resources from ${name}:`, error);
-        }
-      }
-      
-      return { resources: allResources };
-    });
-    
-    // Read resources from appropriate server
-    this.server.setRequestHandler("resources/read", async (request) => {
-      const { uri } = request.params;
-      
-      // Parse prefixed URI
-      const match = uri.match(/^([^:]+):(.+)$/);
-      if (!match) {
-        throw new Error(`Invalid URI format: ${uri}`);
-      }
-      
-      const [, prefix, actualUri] = match;
-      const config = this.configs.find(c => c.prefix === prefix);
-      if (!config) {
-        throw new Error(`Unknown prefix: ${prefix}`);
-      }
-      
-      const client = this.clients.get(config.name)!;
-      const response = await client.request("resources/read", {
-        uri: actualUri,
-      });
-      
-      // Rewrite URIs in response
-      response.contents = response.contents.map(c => ({
-        ...c,
-        uri: `${prefix}:${c.uri}`,
-      }));
-      
-      return response;
-    });
-    
-    // List tools from all servers
-    this.server.setRequestHandler("tools/list", async () => {
-      const allTools = [];
-      
-      for (const [name, client] of this.clients) {
-        const config = this.configs.find(c => c.name === name)!;
+        # Create composed server
+        self.mcp = FastMCP(
+            name="composed-server",
+            version="1.0.0"
+        )
         
-        try {
-          const response = await client.request("tools/list");
-          
-          // Prefix tool names
-          const prefixedTools = response.tools.map(t => ({
-            ...t,
-            name: `${config.prefix}_${t.name}`,
-            description: `[${config.name}] ${t.description}`,
-          }));
-          
-          allTools.push(...prefixedTools);
-        } catch (error) {
-          console.error(`Failed to list tools from ${name}:`, error);
-        }
-      }
-      
-      return { tools: allTools };
-    });
+        self.setup_handlers()
     
-    // Execute tools on appropriate server
-    this.server.setRequestHandler("tools/call", async (request) => {
-      const { name, arguments: args } = request.params;
-      
-      // Parse prefixed tool name
-      const match = name.match(/^([^_]+)_(.+)$/);
-      if (!match) {
-        throw new Error(`Invalid tool name format: ${name}`);
-      }
-      
-      const [, prefix, actualName] = match;
-      const config = this.configs.find(c => c.prefix === prefix);
-      if (!config) {
-        throw new Error(`Unknown prefix: ${prefix}`);
-      }
-      
-      const client = this.clients.get(config.name)!;
-      return await client.request("tools/call", {
-        name: actualName,
-        arguments: args,
-      });
-    });
-  }
-}
+    async def start(self):
+        """Start all upstream servers and connect clients"""
+        for config in self.configs:
+            # Start server process
+            process = subprocess.Popen(
+                [config.command] + config.args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            self.processes[config.name] = process
+            
+            # Create and connect client
+            client = MCPClient(
+                name=f"composer-{config.name}",
+                version="1.0.0"
+            )
+            await client.connect_stdio(process)
+            self.clients[config.name] = client
+        
+        print(f"Connected to {len(self.clients)} upstream servers", file=sys.stderr)
+  
+    def setup_handlers(self):
+        """Setup handlers for the composed server"""
+        
+        @self.mcp.list_resources()
+        async def list_all_resources() -> List[Dict[str, Any]]:
+            """List resources from all servers"""
+            all_resources = []
+            
+            for config in self.configs:
+                client = self.clients.get(config.name)
+                if not client:
+                    continue
+                
+                try:
+                    response = await client.request("resources/list")
+                    resources = response.get("resources", [])
+                    
+                    # Prefix resource URIs
+                    for resource in resources:
+                        all_resources.append({
+                            "uri": f"{config.prefix}:{resource['uri']}",
+                            "name": f"[{config.name}] {resource['name']}",
+                            "mimeType": resource.get("mimeType", "text/plain"),
+                            "description": resource.get("description"),
+                        })
+                except Exception as e:
+                    print(f"Failed to list resources from {config.name}: {e}", file=sys.stderr)
+            
+            return all_resources
+        
+        @self.mcp.resource("*:*")
+        async def read_prefixed_resource(uri: str) -> str:
+            """Read resources from appropriate server"""
+            # Parse prefixed URI
+            parts = uri.split(":", 1)
+            if len(parts) != 2:
+                raise ValueError(f"Invalid URI format: {uri}")
+            
+            prefix, actual_uri = parts
+            config = next((c for c in self.configs if c.prefix == prefix), None)
+            if not config:
+                raise ValueError(f"Unknown prefix: {prefix}")
+            
+            client = self.clients.get(config.name)
+            if not client:
+                raise ValueError(f"Server {config.name} not connected")
+            
+            # Request from upstream server
+            response = await client.request("resources/read", {"uri": actual_uri})
+            
+            # Extract text content
+            contents = response.get("contents", [])
+            if contents and contents[0].get("text"):
+                return contents[0]["text"]
+            return ""
+    
+        @self.mcp.list_tools()
+        async def list_all_tools() -> List[Dict[str, Any]]:
+            """List tools from all servers"""
+            all_tools = []
+            
+            for config in self.configs:
+                client = self.clients.get(config.name)
+                if not client:
+                    continue
+                
+                try:
+                    response = await client.request("tools/list")
+                    tools = response.get("tools", [])
+                    
+                    # Prefix tool names
+                    for tool in tools:
+                        all_tools.append({
+                            "name": f"{config.prefix}_{tool['name']}",
+                            "description": f"[{config.name}] {tool.get('description', '')}",
+                            "inputSchema": tool.get("inputSchema", {}),
+                        })
+                except Exception as e:
+                    print(f"Failed to list tools from {config.name}: {e}", file=sys.stderr)
+            
+            return all_tools
+        
+        # Dynamic tool handler for all prefixed tools
+        @self.mcp.tool_handler()
+        async def handle_prefixed_tool(name: str, arguments: Dict[str, Any]) -> str:
+            """Execute tools on appropriate server"""
+            # Parse prefixed tool name
+            parts = name.split("_", 1)
+            if len(parts) != 2:
+                raise ValueError(f"Invalid tool name format: {name}")
+            
+            prefix, actual_name = parts
+            config = next((c for c in self.configs if c.prefix == prefix), None)
+            if not config:
+                raise ValueError(f"Unknown prefix: {prefix}")
+            
+            client = self.clients.get(config.name)
+            if not client:
+                raise ValueError(f"Server {config.name} not connected")
+            
+            # Call tool on upstream server
+            response = await client.request(
+                "tools/call",
+                {"name": actual_name, "arguments": arguments}
+            )
+            
+            # Extract text content
+            content = response.get("content", [])
+            if content and content[0].get("type") == "text":
+                return content[0]["text"]
+            return json.dumps(response)
+    
+    async def run(self):
+        """Run the composed server"""
+        await self.start()
+        self.mcp.run()
+    
+    def cleanup(self):
+        """Cleanup all connections and processes"""
+        for client in self.clients.values():
+            asyncio.create_task(client.disconnect())
+        
+        for process in self.processes.values():
+            process.terminate()
 
-// Usage
-const composer = new ComposedMCPServer([
-  {
-    name: "filesystem",
-    command: "node",
-    args: ["./filesystem-server.js"],
-    prefix: "fs",
-  },
-  {
-    name: "database",
-    command: "python",
-    args: ["./database-server.py"],
-    prefix: "db",
-  },
-  {
-    name: "api",
-    command: "node",
-    args: ["./api-server.js"],
-    prefix: "api",
-  },
-]);
-
-composer.start().then(() => {
-  console.error("Composed MCP server running");
-});
+# Usage
+if __name__ == "__main__":
+    configs = [
+        ServerConfig(
+            name="filesystem",
+            command="python",
+            args=["filesystem_server.py"],
+            prefix="fs"
+        ),
+        ServerConfig(
+            name="database",
+            command="python",
+            args=["database_server.py"],
+            prefix="db"
+        ),
+        ServerConfig(
+            name="api",
+            command="python",
+            args=["api_server.py"],
+            prefix="api"
+        ),
+    ]
+    
+    composer = ComposedMCPServer(configs)
+    
+    try:
+        print("Starting composed MCP server...", file=sys.stderr)
+        asyncio.run(composer.run())
+    except KeyboardInterrupt:
+        print("\nShutting down...", file=sys.stderr)
+        composer.cleanup()
 ```
 
 ### 2. Middleware System
 
 Advanced middleware system for MCP servers:
 
-```typescript
-// middleware-system.ts
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+```python
+# middleware_system.py
+import time
+import json
+import asyncio
+from typing import Dict, Any, Callable, List, Optional, Awaitable
+from datetime import datetime
+from functools import wraps
+from mcp.server.fastmcp import FastMCP
 
-type RequestHandler = (request: any) => Promise<any>;
-type Middleware = (request: any, next: RequestHandler) => Promise<any>;
+# Type definitions
+RequestHandler = Callable[[Dict[str, Any]], Awaitable[Any]]
+Middleware = Callable[[Dict[str, Any], RequestHandler], Awaitable[Any]]
 
-class MiddlewareServer extends Server {
-  private middlewares: Map<string, Middleware[]> = new Map();
-  
-  use(method: string | string[], middleware: Middleware) {
-    const methods = Array.isArray(method) ? method : [method];
+class MiddlewareMCP(FastMCP):
+    """FastMCP with middleware support"""
     
-    for (const m of methods) {
-      if (!this.middlewares.has(m)) {
-        this.middlewares.set(m, []);
-      }
-      this.middlewares.get(m)!.push(middleware);
-    }
-  }
-  
-  setRequestHandler(method: string, handler: RequestHandler) {
-    const wrappedHandler = async (request: any) => {
-      const middlewares = this.middlewares.get(method) || [];
-      
-      // Build middleware chain
-      let index = 0;
-      const next = async (req: any): Promise<any> => {
-        if (index >= middlewares.length) {
-          return handler(req);
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.middlewares: Dict[str, List[Middleware]] = {}
+    
+    def use(self, methods: str | List[str], middleware: Middleware):
+        """Add middleware for specific methods"""
+        if isinstance(methods, str):
+            methods = [methods]
+        
+        for method in methods:
+            if method not in self.middlewares:
+                self.middlewares[method] = []
+            self.middlewares[method].append(middleware)
+    
+    def apply_middleware(self, method: str, handler: RequestHandler) -> RequestHandler:
+        """Apply middleware chain to a handler"""
+        @wraps(handler)
+        async def wrapped_handler(request: Dict[str, Any]) -> Any:
+            middlewares = self.middlewares.get(method, [])
+            
+            # Build middleware chain
+            async def execute_chain(index: int, req: Dict[str, Any]) -> Any:
+                if index >= len(middlewares):
+                    return await handler(req)
+                
+                middleware = middlewares[index]
+                return await middleware(
+                    req,
+                    lambda r: execute_chain(index + 1, r)
+                )
+            
+            return await execute_chain(0, request)
+        
+        return wrapped_handler
+
+# Example middlewares
+
+# Logging middleware
+async def logging_middleware(request: Dict[str, Any], next: RequestHandler) -> Any:
+    """Log all requests and responses"""
+    start_time = time.time()
+    method = request.get('method', 'unknown')
+    timestamp = datetime.now().isoformat()
+    
+    print(f"[{timestamp}] {method} - Start")
+    
+    try:
+        result = await next(request)
+        duration = (time.time() - start_time) * 1000  # ms
+        print(f"[{timestamp}] {method} - Success ({duration:.2f}ms)")
+        return result
+    except Exception as error:
+        duration = (time.time() - start_time) * 1000  # ms
+        print(f"[{timestamp}] {method} - Error ({duration:.2f}ms): {error}")
+        raise
+
+# Rate limiting middleware
+class RateLimiter:
+    """Rate limiting middleware"""
+    
+    def __init__(self, window_seconds: float, max_requests: int):
+        self.window_seconds = window_seconds
+        self.max_requests = max_requests
+        self.requests: Dict[str, List[float]] = {}
+    
+    async def middleware(self, request: Dict[str, Any], next: RequestHandler) -> Any:
+        """Check rate limit before processing request"""
+        method = request.get('method', 'unknown')
+        now = time.time()
+        
+        # Get request timestamps
+        timestamps = self.requests.get(method, [])
+        
+        # Remove old timestamps
+        valid_timestamps = [
+            t for t in timestamps 
+            if now - t < self.window_seconds
+        ]
+        
+        # Check rate limit
+        if len(valid_timestamps) >= self.max_requests:
+            raise ValueError(
+                f"Rate limit exceeded for {method}. "
+                f"Max {self.max_requests} requests per {self.window_seconds}s"
+            )
+        
+        # Add current timestamp
+        valid_timestamps.append(now)
+        self.requests[method] = valid_timestamps
+        
+        return await next(request)
+
+# Caching middleware
+class CacheMiddleware:
+    """Simple caching middleware"""
+    
+    def __init__(self, ttl_seconds: float):
+        self.ttl_seconds = ttl_seconds
+        self.cache: Dict[str, Dict[str, Any]] = {}
+    
+    async def middleware(self, request: Dict[str, Any], next: RequestHandler) -> Any:
+        """Cache read operations"""
+        method = request.get('method', '')
+        
+        # Only cache read operations
+        if 'read' not in method and 'list' not in method:
+            return await next(request)
+        
+        # Create cache key
+        cache_key = json.dumps({
+            'method': method,
+            'params': request.get('params', {})
+        }, sort_keys=True)
+        
+        # Check cache
+        cached = self.cache.get(cache_key)
+        if cached and cached['expires'] > time.time():
+            print(f"Cache hit for {method}")
+            return cached['data']
+        
+        # Execute request
+        result = await next(request)
+        
+        # Store in cache
+        self.cache[cache_key] = {
+            'data': result,
+            'expires': time.time() + self.ttl_seconds
         }
         
-        const middleware = middlewares[index++];
-        return middleware(req, next);
-      };
-      
-      return next(request);
-    };
-    
-    super.setRequestHandler(method, wrappedHandler);
-  }
-}
+        return result
 
-// Example middlewares
+# Validation middleware
+async def validation_middleware(request: Dict[str, Any], next: RequestHandler) -> Any:
+    """Validate request parameters"""
+    method = request.get('method', '')
+    params = request.get('params', {})
+    
+    # Validate resources/read requests
+    if method == "resources/read":
+        if not params.get('uri'):
+            raise ValueError("Missing required parameter: uri")
+        
+        if not isinstance(params['uri'], str):
+            raise TypeError("Parameter 'uri' must be a string")
+    
+    # Validate tools/call requests
+    if method == "tools/call":
+        if not params.get('name'):
+            raise ValueError("Missing required parameter: name")
+        
+        if 'arguments' in params and not isinstance(params['arguments'], dict):
+            raise TypeError("Parameter 'arguments' must be a dict")
+    
+    return await next(request)
 
-// Logging middleware
-const loggingMiddleware: Middleware = async (request, next) => {
-  const start = Date.now();
-  console.log(`[${new Date().toISOString()}] ${request.method} - Start`);
-  
-  try {
-    const result = await next(request);
-    const duration = Date.now() - start;
-    console.log(`[${new Date().toISOString()}] ${request.method} - Success (${duration}ms)`);
-    return result;
-  } catch (error) {
-    const duration = Date.now() - start;
-    console.error(`[${new Date().toISOString()}] ${request.method} - Error (${duration}ms):`, error);
-    throw error;
-  }
-};
+# Usage example
+def create_middleware_server():
+    """Create server with middleware"""
+    server = MiddlewareMCP(
+        name="middleware-example",
+        version="1.0.0"
+    )
+    
+    # Apply middlewares
+    all_methods = ["resources/list", "resources/read", "tools/list", "tools/call"]
+    server.use(all_methods, logging_middleware)
+    
+    # Rate limiting
+    rate_limiter = RateLimiter(window_seconds=60, max_requests=100)
+    server.use(["resources/read", "tools/call"], rate_limiter.middleware)
+    
+    # Caching
+    cache = CacheMiddleware(ttl_seconds=30)
+    server.use(["resources/list", "resources/read"], cache.middleware)
+    
+    # Validation
+    server.use(["resources/read", "tools/call"], validation_middleware)
+    
+    # Define handlers with middleware applied
+    @server.list_resources()
+    async def list_resources() -> List[Dict[str, Any]]:
+        """List available resources"""
+        # Middleware will be applied automatically
+        return [
+            {
+                "uri": "example://resource",
+                "name": "Example Resource",
+                "mimeType": "text/plain",
+            },
+        ]
+    
+    @server.resource("example://*")
+    async def read_resource(uri: str) -> str:
+        """Read resource with middleware"""
+        # All configured middleware will run before this handler
+        return f"Resource content from {uri} with middleware"
+    
+    @server.tool(
+        name="example_tool",
+        description="Example tool with middleware",
+        parameters={
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"},
+            },
+        }
+    )
+    async def example_tool(message: str) -> str:
+        """Tool execution with middleware"""
+        return f"Processed: {message}"
+    
+    return server
 
-// Rate limiting middleware
-class RateLimiter {
-  private requests: Map<string, number[]> = new Map();
-  
-  constructor(
-    private windowMs: number,
-    private maxRequests: number
-  ) {}
-  
-  middleware: Middleware = async (request, next) => {
-    const key = request.method;
-    const now = Date.now();
+# Run server
+if __name__ == "__main__":
+    import sys
     
-    // Get request timestamps
-    const timestamps = this.requests.get(key) || [];
-    
-    // Remove old timestamps
-    const validTimestamps = timestamps.filter(
-      t => now - t < this.windowMs
-    );
-    
-    // Check rate limit
-    if (validTimestamps.length >= this.maxRequests) {
-      throw new Error(
-        `Rate limit exceeded for ${key}. Max ${this.maxRequests} requests per ${this.windowMs}ms`
-      );
-    }
-    
-    // Add current timestamp
-    validTimestamps.push(now);
-    this.requests.set(key, validTimestamps);
-    
-    return next(request);
-  };
-}
-
-// Caching middleware
-class CacheMiddleware {
-  private cache: Map<string, { data: any; expires: number }> = new Map();
-  
-  constructor(private ttlMs: number) {}
-  
-  middleware: Middleware = async (request, next) => {
-    // Only cache read operations
-    if (!request.method.includes("read") && !request.method.includes("list")) {
-      return next(request);
-    }
-    
-    const key = JSON.stringify({ method: request.method, params: request.params });
-    const cached = this.cache.get(key);
-    
-    if (cached && cached.expires > Date.now()) {
-      console.log(`Cache hit for ${request.method}`);
-      return cached.data;
-    }
-    
-    const result = await next(request);
-    
-    this.cache.set(key, {
-      data: result,
-      expires: Date.now() + this.ttlMs,
-    });
-    
-    return result;
-  };
-}
-
-// Validation middleware
-const validationMiddleware: Middleware = async (request, next) => {
-  // Validate resources/read requests
-  if (request.method === "resources/read") {
-    if (!request.params?.uri) {
-      throw new Error("Missing required parameter: uri");
-    }
-    
-    if (typeof request.params.uri !== "string") {
-      throw new Error("Parameter 'uri' must be a string");
-    }
-  }
-  
-  // Validate tools/call requests
-  if (request.method === "tools/call") {
-    if (!request.params?.name) {
-      throw new Error("Missing required parameter: name");
-    }
-    
-    if (request.params.arguments && typeof request.params.arguments !== "object") {
-      throw new Error("Parameter 'arguments' must be an object");
-    }
-  }
-  
-  return next(request);
-};
-
-// Usage example
-const server = new MiddlewareServer(
-  {
-    name: "middleware-example",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      resources: {},
-      tools: {},
-    },
-  }
-);
-
-// Apply middlewares
-server.use(["resources/list", "resources/read", "tools/list", "tools/call"], loggingMiddleware);
-server.use(["resources/read", "tools/call"], new RateLimiter(60000, 100).middleware);
-server.use(["resources/list", "resources/read"], new CacheMiddleware(30000).middleware);
-server.use(["resources/read", "tools/call"], validationMiddleware);
-
-// Define handlers
-server.setRequestHandler("resources/list", async () => {
-  return {
-    resources: [
-      {
-        uri: "example://resource",
-        name: "Example Resource",
-        mimeType: "text/plain",
-      },
-    ],
-  };
-});
-
-server.setRequestHandler("resources/read", async (request) => {
-  return {
-    contents: [
-      {
-        uri: request.params.uri,
-        mimeType: "text/plain",
-        text: "Resource content with middleware",
-      },
-    ],
-  };
-});
+    server = create_middleware_server()
+    print("Middleware MCP server running", file=sys.stderr)
+    server.run()
 ```
 
 ## Troubleshooting Common Issues
@@ -2919,13 +2965,23 @@ server.setRequestHandler("resources/read", async (request) => {
 ### Debugging Tips
 
 1. **Enable verbose logging**
-   ```typescript
-   // Set environment variable
-   process.env.MCP_LOG_LEVEL = "debug";
+   ```python
+   # Set environment variable
+   import os
+   os.environ["MCP_LOG_LEVEL"] = "debug"
    
-   // Or in code
-   server.setLogLevel("debug");
-   client.setLogLevel("debug");
+   # Or configure logging in code
+   import logging
+   
+   # Set up detailed logging
+   logging.basicConfig(
+       level=logging.DEBUG,
+       format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+   )
+   
+   # Get logger for your module
+   logger = logging.getLogger(__name__)
+   logger.setLevel(logging.DEBUG)
    ```
 
 2. **Protocol tracing**
@@ -2943,16 +2999,37 @@ server.setRequestHandler("resources/read", async (request) => {
    ```
 
 3. **Health checks**
-   ```typescript
-   // Add health endpoint
-   server.setRequestHandler("health", async () => {
-     return {
-       status: "healthy",
-       uptime: process.uptime(),
-       memory: process.memoryUsage(),
-       version: server.version,
-     };
-   });
+   ```python
+   # Add health endpoint
+   import time
+   import json
+   import psutil
+   from mcp.server.fastmcp import FastMCP
+   
+   mcp = FastMCP()
+   SERVER_START_TIME = time.time()
+   
+   @mcp.tool(
+       name="health",
+       description="Get server health status"
+   )
+   async def health_check() -> str:
+       """Return server health information"""
+       process = psutil.Process()
+       
+       health_info = {
+           "status": "healthy",
+           "uptime": time.time() - SERVER_START_TIME,
+           "memory": {
+               "rss": process.memory_info().rss,
+               "vms": process.memory_info().vms,
+               "percent": process.memory_percent()
+           },
+           "cpu_percent": process.cpu_percent(interval=0.1),
+           "version": mcp.version,
+       }
+       
+       return json.dumps(health_info, indent=2)
    ```
 
 ## Next Steps

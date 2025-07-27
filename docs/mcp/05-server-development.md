@@ -21,89 +21,57 @@ MCP servers are programs that expose data (resources) and functionality (tools) 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ (for TypeScript/JavaScript)
-- Python 3.8+ (for Python)
+- Python 3.12+ 
 - Basic understanding of JSON-RPC 2.0
 - Familiarity with async programming
+- uv package manager (recommended)
 
 ### Quick Start
 
-#### TypeScript/JavaScript
 ```bash
-# Install the MCP SDK
-npm install @modelcontextprotocol/sdk
+# Install MCP Python SDK with CLI tools using uv
+uv add "mcp[cli]"
 
-# Create a new server
-npx @modelcontextprotocol/create-server my-server
-cd my-server
-npm install
-npm start
-```
+# Or using pip
+pip install "mcp[cli]"
 
-#### Python
-```bash
-# Install the MCP SDK
-pip install mcp
-
-# Create a new server
-mcp create-server my-server
-cd my-server
-pip install -r requirements.txt
-python server.py
+# Create a new server file
+touch server.py
 ```
 
 ### Minimal Server Example
 
-```typescript
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+```python
+from mcp.server.fastmcp import FastMCP
 
-const server = new Server(
-  {
-    name: "my-first-server",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      resources: {},
-      tools: {},
-    },
-  }
-);
+# Create server instance
+mcp = FastMCP(
+    name="my-first-server",
+    version="1.0.0"
+)
 
-// Add a simple resource
-server.setRequestHandler("resources/list", async () => {
-  return {
-    resources: [
-      {
-        uri: "greeting://hello",
-        name: "Hello Message",
-        description: "A friendly greeting",
-        mimeType: "text/plain",
-      },
-    ],
-  };
-});
+# Add a simple resource
+@mcp.resource("greeting://hello")
+async def hello_resource():
+    """A friendly greeting resource"""
+    return "Hello from MCP!"
 
-server.setRequestHandler("resources/read", async (request) => {
-  const { uri } = request.params;
-  if (uri === "greeting://hello") {
-    return {
-      contents: [
+# List all resources
+@mcp.list_resources()
+async def list_resources():
+    """List available resources"""
+    return [
         {
-          uri: "greeting://hello",
-          mimeType: "text/plain",
-          text: "Hello from MCP!",
-        },
-      ],
-    };
-  }
-  throw new Error("Resource not found");
-});
+            "uri": "greeting://hello",
+            "name": "Hello Message",
+            "description": "A friendly greeting",
+            "mimeType": "text/plain"
+        }
+    ]
 
-// Start the server
-const transport = new StdioServerTransport();
-await server.connect(transport);
+# Start the server
+if __name__ == "__main__":
+    mcp.run()
 ```
 
 ## Server Architecture
@@ -145,39 +113,47 @@ await server.connect(transport);
 ## Core Concepts
 
 ### Server Configuration
-```typescript
-interface ServerConfig {
-  name: string;           // Server identifier
-  version: string;        // Server version
-  capabilities: {         // Advertised capabilities
-    resources?: {};
-    tools?: {};
-    prompts?: {};
-    logging?: {};
-    experimental?: {};
-  };
-}
+```python
+from typing import Dict, Optional
+from pydantic import BaseModel
+
+class ServerCapabilities(BaseModel):
+    """Server capability configuration"""
+    resources: Optional[Dict] = {}
+    tools: Optional[Dict] = {}
+    prompts: Optional[Dict] = {}
+    logging: Optional[Dict] = {}
+    experimental: Optional[Dict] = {}
+
+class ServerConfig(BaseModel):
+    """Server configuration"""
+    name: str  # Server identifier
+    version: str  # Server version
+    capabilities: ServerCapabilities = ServerCapabilities()
 ```
 
 ### Request Handlers
 Request handlers are the core of your server implementation:
 
-```typescript
-// Generic handler type
-server.setRequestHandler(method: string, handler: RequestHandler);
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import Dict, Any
 
-// Specific handler examples
-server.setRequestHandler("initialize", async (request) => {
-  // Initialization logic
-  return {
-    protocolVersion: "2025-06-18",
-    capabilities: server.capabilities,
-    serverInfo: {
-      name: server.name,
-      version: server.version,
-    },
-  };
-});
+mcp = FastMCP()
+
+# FastMCP handles initialization automatically
+# You can customize it by overriding the handler
+@mcp.handler("initialize")
+async def custom_initialize(request: Dict[str, Any]) -> Dict[str, Any]:
+    """Custom initialization handler"""
+    return {
+        "protocolVersion": "2025-06-18",
+        "capabilities": mcp.get_capabilities(),
+        "serverInfo": {
+            "name": mcp.name,
+            "version": mcp.version,
+        },
+    }
 ```
 
 ## Resources
@@ -185,134 +161,126 @@ server.setRequestHandler("initialize", async (request) => {
 Resources expose data that clients can read. Think of them as GET endpoints in a REST API.
 
 ### Basic Resource Implementation
-```typescript
-// List available resources
-server.setRequestHandler("resources/list", async () => {
-  return {
-    resources: [
-      {
-        uri: "file:///data/config.json",
-        name: "Configuration",
-        description: "Server configuration file",
-        mimeType: "application/json",
-      },
-      {
-        uri: "db://users",
-        name: "User Database",
-        description: "All user records",
-        mimeType: "application/json",
-      },
-    ],
-  };
-});
+```python
+import json
+from mcp.server.fastmcp import FastMCP
 
-// Read a specific resource
-server.setRequestHandler("resources/read", async (request) => {
-  const { uri } = request.params;
-  
-  switch (uri) {
-    case "file:///data/config.json":
-      const config = await readConfigFile();
-      return {
-        contents: [
-          {
-            uri,
-            mimeType: "application/json",
-            text: JSON.stringify(config, null, 2),
-          },
-        ],
-      };
-      
-    case "db://users":
-      const users = await queryDatabase("SELECT * FROM users");
-      return {
-        contents: [
-          {
-            uri,
-            mimeType: "application/json",
-            text: JSON.stringify(users),
-          },
-        ],
-      };
-      
-    default:
-      throw new Error(`Resource not found: ${uri}`);
-  }
-});
+mcp = FastMCP()
+
+# Expose multiple resources
+@mcp.resource("file:///data/config.json")
+async def config_resource():
+    """Server configuration file"""
+    config = await read_config_file()
+    return json.dumps(config, indent=2)
+
+@mcp.resource("db://users")
+async def users_resource():
+    """All user records"""
+    users = await query_database("SELECT * FROM users")
+    return json.dumps(users)
+
+# List all available resources
+@mcp.list_resources()
+async def list_all_resources():
+    """List available resources"""
+    return [
+        {
+            "uri": "file:///data/config.json",
+            "name": "Configuration",
+            "description": "Server configuration file",
+            "mimeType": "application/json",
+        },
+        {
+            "uri": "db://users",
+            "name": "User Database",
+            "description": "All user records",
+            "mimeType": "application/json",
+        },
+    ]
 ```
 
 ### Dynamic Resources with Templates
-```typescript
-// Resource with URI template
-const userResourceTemplate = {
-  uri: "db://users/{userId}",
-  name: "User Details",
-  description: "Get specific user information",
-  mimeType: "application/json",
-};
+```python
+import re
+import json
+from mcp.server.fastmcp import FastMCP
 
-// Handle templated URIs
-server.setRequestHandler("resources/read", async (request) => {
-  const { uri } = request.params;
-  
-  // Parse URI template
-  const userMatch = uri.match(/^db:\/\/users\/(\d+)$/);
-  if (userMatch) {
-    const userId = userMatch[1];
-    const user = await queryDatabase(
-      "SELECT * FROM users WHERE id = ?",
-      [userId]
-    );
+mcp = FastMCP()
+
+# Handle dynamic resource URIs
+@mcp.resource_handler()
+async def handle_dynamic_resources(uri: str) -> str:
+    """Handle templated resource URIs"""
     
-    return {
-      contents: [
+    # Parse URI template for users
+    user_match = re.match(r"^db://users/(\d+)$", uri)
+    if user_match:
+        user_id = user_match.group(1)
+        user = await query_database(
+            "SELECT * FROM users WHERE id = ?",
+            [user_id]
+        )
+        return json.dumps(user)
+    
+    # Add more patterns as needed
+    raise ValueError(f"Resource not found: {uri}")
+
+# Advertise templated resources
+@mcp.list_resources()
+async def list_templated_resources():
+    """Include templated resources in listing"""
+    return [
         {
-          uri,
-          mimeType: "application/json",
-          text: JSON.stringify(user),
-        },
-      ],
-    };
-  }
-});
+            "uri": "db://users/{userId}",
+            "name": "User Details",
+            "description": "Get specific user information",
+            "mimeType": "application/json",
+        }
+    ]
 ```
 
 ### Resource Subscriptions
-```typescript
-// Track subscriptions
-const subscriptions = new Map();
+```python
+import uuid
+from typing import Dict, Any
+from mcp.server.fastmcp import FastMCP
 
-server.setRequestHandler("resources/subscribe", async (request) => {
-  const { uri } = request.params;
-  const subscriptionId = generateId();
-  
-  // Set up file watcher, database trigger, etc.
-  const watcher = watchResource(uri, (change) => {
-    // Send notification on change
-    server.notification({
-      method: "notifications/resources/updated",
-      params: {
-        uri,
-        subscriptionId,
-        change,
-      },
-    });
-  });
-  
-  subscriptions.set(subscriptionId, watcher);
-  
-  return { subscriptionId };
-});
+mcp = FastMCP()
 
-server.setRequestHandler("resources/unsubscribe", async (request) => {
-  const { subscriptionId } = request.params;
-  const watcher = subscriptions.get(subscriptionId);
-  if (watcher) {
-    watcher.stop();
-    subscriptions.delete(subscriptionId);
-  }
-  return {};
-});
+# Track subscriptions
+subscriptions: Dict[str, Any] = {}
+
+@mcp.subscription_handler("resources/subscribe")
+async def subscribe_to_resource(uri: str) -> Dict[str, str]:
+    """Subscribe to resource changes"""
+    subscription_id = str(uuid.uuid4())
+    
+    # Set up file watcher, database trigger, etc.
+    async def on_change(change: Dict[str, Any]):
+        # Send notification on change
+        await mcp.send_notification(
+            "notifications/resources/updated",
+            {
+                "uri": uri,
+                "subscriptionId": subscription_id,
+                "change": change,
+            }
+        )
+    
+    watcher = await watch_resource(uri, on_change)
+    subscriptions[subscription_id] = watcher
+    
+    return {"subscriptionId": subscription_id}
+
+@mcp.subscription_handler("resources/unsubscribe")
+async def unsubscribe_from_resource(subscription_id: str) -> Dict:
+    """Unsubscribe from resource changes"""
+    if subscription_id in subscriptions:
+        watcher = subscriptions[subscription_id]
+        await watcher.stop()
+        del subscriptions[subscription_id]
+    return {}
 ```
 
 ## Tools
@@ -320,157 +288,125 @@ server.setRequestHandler("resources/unsubscribe", async (request) => {
 Tools provide executable functionality with potential side effects. Think of them as POST endpoints in a REST API.
 
 ### Basic Tool Implementation
-```typescript
-// List available tools
-server.setRequestHandler("tools/list", async () => {
-  return {
-    tools: [
-      {
-        name: "create_file",
-        description: "Create a new file with content",
-        inputSchema: {
-          type: "object",
-          properties: {
-            path: {
-              type: "string",
-              description: "File path",
-            },
-            content: {
-              type: "string",
-              description: "File content",
-            },
-          },
-          required: ["path", "content"],
-        },
-      },
-      {
-        name: "send_email",
-        description: "Send an email",
-        inputSchema: {
-          type: "object",
-          properties: {
-            to: {
-              type: "string",
-              format: "email",
-            },
-            subject: {
-              type: "string",
-            },
-            body: {
-              type: "string",
-            },
-          },
-          required: ["to", "subject", "body"],
-        },
-      },
-    ],
-  };
-});
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import Dict, Any
+import aiofiles
 
-// Execute tools
-server.setRequestHandler("tools/call", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  switch (name) {
-    case "create_file":
-      await fs.writeFile(args.path, args.content);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `File created at ${args.path}`,
-          },
-        ],
-      };
-      
-    case "send_email":
-      const result = await sendEmail(args.to, args.subject, args.body);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Email sent to ${args.to}`,
-          },
-        ],
-      };
-      
-    default:
-      throw new Error(`Unknown tool: ${name}`);
-  }
-});
+mcp = FastMCP()
+
+@mcp.tool(
+    name="create_file",
+    description="Create a new file with content",
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "File path",
+            },
+            "content": {
+                "type": "string",
+                "description": "File content",
+            },
+        },
+        "required": ["path", "content"],
+    }
+)
+async def create_file(path: str, content: str) -> str:
+    """Create a new file with content"""
+    async with aiofiles.open(path, 'w') as f:
+        await f.write(content)
+    return f"File created at {path}"
+
+@mcp.tool(
+    name="send_email",
+    description="Send an email",
+    parameters={
+        "type": "object",
+        "properties": {
+            "to": {
+                "type": "string",
+                "format": "email",
+            },
+            "subject": {
+                "type": "string",
+            },
+            "body": {
+                "type": "string",
+            },
+        },
+        "required": ["to", "subject", "body"],
+    }
+)
+async def send_email(to: str, subject: str, body: str) -> str:
+    """Send an email"""
+    result = await send_email_async(to, subject, body)
+    return f"Email sent to {to}"
 ```
 
 ### Advanced Tool Features
 
 #### Progress Reporting
-```typescript
-server.setRequestHandler("tools/call", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  if (name === "process_large_dataset") {
-    const totalItems = args.items.length;
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import List, Any
+
+mcp = FastMCP()
+
+@mcp.tool(
+    name="process_large_dataset",
+    description="Process a large dataset with progress updates"
+)
+async def process_large_dataset(items: List[Any]) -> str:
+    """Process dataset with progress notifications"""
+    total_items = len(items)
     
-    for (let i = 0; i < totalItems; i++) {
-      // Process item
-      await processItem(args.items[i]);
-      
-      // Send progress notification
-      server.notification({
-        method: "notifications/progress",
-        params: {
-          progress: Math.round((i + 1) / totalItems * 100),
-          message: `Processing item ${i + 1} of ${totalItems}`,
-        },
-      });
-    }
+    for i, item in enumerate(items):
+        # Process item
+        await process_item(item)
+        
+        # Send progress notification
+        progress = round((i + 1) / total_items * 100)
+        await mcp.send_progress(
+            progress=progress,
+            message=f"Processing item {i + 1} of {total_items}"
+        )
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Processed ${totalItems} items successfully`,
-        },
-      ],
-    };
-  }
-});
+    return f"Processed {total_items} items successfully"
 ```
 
 #### Streaming Results
-```typescript
-server.setRequestHandler("tools/call", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  if (name === "stream_logs") {
-    const logStream = createLogStream(args.filter);
-    const results = [];
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import AsyncIterator
+
+mcp = FastMCP()
+
+@mcp.tool(
+    name="stream_logs",
+    description="Stream log entries matching filter"
+)
+async def stream_logs(filter: str) -> str:
+    """Stream logs with intermediate results"""
+    results = []
     
-    for await (const log of logStream) {
-      results.push(log);
-      
-      // Send intermediate results
-      server.notification({
-        method: "notifications/tools/output",
-        params: {
-          toolName: name,
-          output: {
-            type: "text",
-            text: log,
-          },
-        },
-      });
-    }
+    async for log in create_log_stream(filter):
+        results.append(log)
+        
+        # Send intermediate results
+        await mcp.send_notification(
+            "notifications/tools/output",
+            {
+                "toolName": "stream_logs",
+                "output": {
+                    "type": "text",
+                    "text": log,
+                },
+            }
+        )
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: results.join("\n"),
-        },
-      ],
-    };
-  }
-});
+    return "\n".join(results)
 ```
 
 ## Prompts
@@ -478,373 +414,421 @@ server.setRequestHandler("tools/call", async (request) => {
 Prompts provide reusable templates for LLM interactions, allowing servers to guide AI behavior.
 
 ### Basic Prompt Implementation
-```typescript
-// List available prompts
-server.setRequestHandler("prompts/list", async () => {
-  return {
-    prompts: [
-      {
-        name: "analyze_code",
-        description: "Analyze code for issues and improvements",
-        arguments: [
-          {
-            name: "code",
-            description: "The code to analyze",
-            required: true,
-          },
-          {
-            name: "language",
-            description: "Programming language",
-            required: false,
-          },
-        ],
-      },
-      {
-        name: "generate_report",
-        description: "Generate a report from data",
-        arguments: [
-          {
-            name: "data",
-            description: "The data to analyze",
-            required: true,
-          },
-          {
-            name: "format",
-            description: "Report format (pdf, html, markdown)",
-            required: false,
-          },
-        ],
-      },
-    ],
-  };
-});
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import Dict, Any, Optional
+import json
 
-// Get prompt content
-server.setRequestHandler("prompts/get", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  switch (name) {
-    case "analyze_code":
-      return {
-        description: "Code analysis prompt",
-        messages: [
-          {
-            role: "user",
-            content: {
-              type: "text",
-              text: `Please analyze the following ${args.language || "code"} and provide:
+mcp = FastMCP()
+
+@mcp.prompt(
+    name="analyze_code",
+    description="Analyze code for issues and improvements",
+    parameters=[
+        {
+            "name": "code",
+            "description": "The code to analyze",
+            "required": True,
+        },
+        {
+            "name": "language",
+            "description": "Programming language",
+            "required": False,
+        },
+    ]
+)
+async def analyze_code_prompt(code: str, language: Optional[str] = None) -> str:
+    """Generate code analysis prompt"""
+    lang = language or "code"
+    return f"""Please analyze the following {lang} and provide:
 1. Potential bugs or issues
 2. Performance improvements
 3. Code style suggestions
 4. Security considerations
 
 Code:
-\`\`\`${args.language || ""}
-${args.code}
-\`\`\``,
-            },
-          },
-        ],
-      };
-      
-    case "generate_report":
-      const analysisResult = analyzeData(args.data);
-      return {
-        description: "Report generation prompt",
-        messages: [
-          {
-            role: "user",
-            content: {
-              type: "text",
-              text: `Generate a comprehensive report in ${args.format || "markdown"} format based on the following data analysis:
+```{language or ""}
+{code}
+```"""
 
-${JSON.stringify(analysisResult, null, 2)}
+@mcp.prompt(
+    name="generate_report",
+    description="Generate a report from data",
+    parameters=[
+        {
+            "name": "data",
+            "description": "The data to analyze",
+            "required": True,
+        },
+        {
+            "name": "format",
+            "description": "Report format (pdf, html, markdown)",
+            "required": False,
+        },
+    ]
+)
+async def generate_report_prompt(data: Dict[str, Any], format: Optional[str] = None) -> str:
+    """Generate report generation prompt"""
+    analysis_result = await analyze_data(data)
+    fmt = format or "markdown"
+    
+    return f"""Generate a comprehensive report in {fmt} format based on the following data analysis:
+
+{json.dumps(analysis_result, indent=2)}
 
 Include:
 - Executive summary
 - Key findings
 - Detailed analysis
-- Recommendations`,
-            },
-          },
-        ],
-      };
-      
-    default:
-      throw new Error(`Unknown prompt: ${name}`);
-  }
-});
+- Recommendations"""
 ```
 
 ## Server Lifecycle
 
 ### Initialization Phase
-```typescript
-class MyMCPServer {
-  async initialize(request) {
-    // Validate client capabilities
-    const clientVersion = request.params.protocolVersion;
-    if (!this.isVersionSupported(clientVersion)) {
-      throw new Error(`Unsupported protocol version: ${clientVersion}`);
-    }
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import Dict, Any
+
+class MyMCPServer:
+    def __init__(self):
+        self.mcp = FastMCP(
+            name="my-mcp-server",
+            version="1.0.0"
+        )
+        self.setup_handlers()
     
-    // Initialize server resources
-    await this.connectDatabase();
-    await this.loadConfiguration();
+    def setup_handlers(self):
+        @self.mcp.initialization_handler()
+        async def handle_initialize(request: Dict[str, Any]) -> Dict[str, Any]:
+            """Custom initialization handler"""
+            # Validate client capabilities
+            client_version = request["params"].get("protocolVersion")
+            if not self.is_version_supported(client_version):
+                raise ValueError(f"Unsupported protocol version: {client_version}")
+            
+            # Initialize server resources
+            await self.connect_database()
+            await self.load_configuration()
+            
+            # Return server capabilities
+            return {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {
+                    "resources": {
+                        "subscribe": True,
+                        "templates": True,
+                    },
+                    "tools": {
+                        "streaming": True,
+                    },
+                    "prompts": {},
+                    "logging": {
+                        "levels": ["debug", "info", "warn", "error"],
+                    },
+                },
+                "serverInfo": {
+                    "name": self.mcp.name,
+                    "version": self.mcp.version,
+                },
+            }
     
-    // Return server capabilities
-    return {
-      protocolVersion: "2025-06-18",
-      capabilities: {
-        resources: {
-          subscribe: true,
-          templates: true,
-        },
-        tools: {
-          streaming: true,
-        },
-        prompts: {},
-        logging: {
-          levels: ["debug", "info", "warn", "error"],
-        },
-      },
-      serverInfo: {
-        name: this.name,
-        version: this.version,
-      },
-    };
-  }
-}
+    def is_version_supported(self, version: str) -> bool:
+        """Check if protocol version is supported"""
+        return version in ["2025-06-18", "2025-01-01"]
+    
+    async def connect_database(self):
+        """Connect to database"""
+        pass
+    
+    async def load_configuration(self):
+        """Load server configuration"""
+        pass
 ```
 
 ### Shutdown Handling
-```typescript
-server.setRequestHandler("shutdown", async () => {
-  // Clean up resources
-  await closeDatabase();
-  await saveState();
-  
-  // Stop background tasks
-  cancelAllSubscriptions();
-  stopBackgroundJobs();
-  
-  return {};
-});
+```python
+import signal
+import asyncio
+from mcp.server.fastmcp import FastMCP
 
-// Handle process termination
-process.on("SIGINT", async () => {
-  await server.close();
-  process.exit(0);
-});
+mcp = FastMCP()
 
-process.on("SIGTERM", async () => {
-  await server.close();
-  process.exit(0);
-});
+@mcp.shutdown_handler()
+async def handle_shutdown():
+    """Clean shutdown handler"""
+    # Clean up resources
+    await close_database()
+    await save_state()
+    
+    # Stop background tasks
+    await cancel_all_subscriptions()
+    await stop_background_jobs()
+
+# Handle process termination
+def setup_signal_handlers():
+    """Setup graceful shutdown on signals"""
+    async def shutdown_handler(sig):
+        print(f"Received signal {sig}, shutting down...")
+        await mcp.shutdown()
+        asyncio.get_event_loop().stop()
+    
+    for sig in [signal.SIGINT, signal.SIGTERM]:
+        signal.signal(
+            sig,
+            lambda s, f: asyncio.create_task(shutdown_handler(s))
+        )
+
+if __name__ == "__main__":
+    setup_signal_handlers()
+    mcp.run()
 ```
 
 ## Error Handling
 
 ### Error Response Format
-```typescript
-class MCPError extends Error {
-  constructor(message, code, data) {
-    super(message);
-    this.code = code;
-    this.data = data;
-  }
-}
+```python
+from enum import IntEnum
+from typing import Optional, Any
 
-// Standard error codes
-const ErrorCodes = {
-  ParseError: -32700,
-  InvalidRequest: -32600,
-  MethodNotFound: -32601,
-  InvalidParams: -32602,
-  InternalError: -32603,
-  
-  // MCP-specific errors
-  ResourceNotFound: -32001,
-  ResourceAccessDenied: -32002,
-  ToolExecutionFailed: -32003,
-  InvalidToolArguments: -32004,
-  PromptNotFound: -32005,
-};
+class ErrorCode(IntEnum):
+    """Standard JSON-RPC and MCP error codes"""
+    # Standard JSON-RPC errors
+    PARSE_ERROR = -32700
+    INVALID_REQUEST = -32600
+    METHOD_NOT_FOUND = -32601
+    INVALID_PARAMS = -32602
+    INTERNAL_ERROR = -32603
+    
+    # MCP-specific errors
+    RESOURCE_NOT_FOUND = -32001
+    RESOURCE_ACCESS_DENIED = -32002
+    TOOL_EXECUTION_FAILED = -32003
+    INVALID_TOOL_ARGUMENTS = -32004
+    PROMPT_NOT_FOUND = -32005
+
+class MCPError(Exception):
+    """MCP-specific error with code and data"""
+    def __init__(self, message: str, code: ErrorCode, data: Optional[Any] = None):
+        super().__init__(message)
+        self.code = code
+        self.data = data
 ```
 
 ### Error Handling Best Practices
-```typescript
-server.setRequestHandler("tools/call", async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  try {
-    // Validate tool exists
-    const tool = await getToolDefinition(name);
-    if (!tool) {
-      throw new MCPError(
-        `Tool not found: ${name}`,
-        ErrorCodes.MethodNotFound
-      );
-    }
+```python
+import asyncio
+import logging
+from mcp.server.fastmcp import FastMCP
+from typing import Dict, Any
+
+mcp = FastMCP()
+logger = logging.getLogger(__name__)
+
+@mcp.tool("example_tool")
+async def example_tool_with_error_handling(**kwargs) -> str:
+    """Example tool with comprehensive error handling"""
+    tool_name = "example_tool"
     
-    // Validate arguments
-    const validation = validateArguments(args, tool.inputSchema);
-    if (!validation.valid) {
-      throw new MCPError(
-        "Invalid tool arguments",
-        ErrorCodes.InvalidToolArguments,
-        { errors: validation.errors }
-      );
-    }
+    try:
+        # Validate tool exists (in real implementation)
+        tool_def = await get_tool_definition(tool_name)
+        if not tool_def:
+            raise MCPError(
+                f"Tool not found: {tool_name}",
+                ErrorCode.METHOD_NOT_FOUND
+            )
+        
+        # Validate arguments
+        validation = validate_arguments(kwargs, tool_def.input_schema)
+        if not validation.valid:
+            raise MCPError(
+                "Invalid tool arguments",
+                ErrorCode.INVALID_TOOL_ARGUMENTS,
+                {"errors": validation.errors}
+            )
+        
+        # Execute tool with timeout
+        result = await asyncio.wait_for(
+            execute_tool(tool_name, kwargs),
+            timeout=30.0
+        )
+        
+        return result
+        
+    except asyncio.TimeoutError:
+        logger.error(f"Tool execution timeout: {tool_name}")
+        raise MCPError(
+            f"Tool execution timeout: {tool_name}",
+            ErrorCode.TOOL_EXECUTION_FAILED
+        )
     
-    // Execute tool with timeout
-    const result = await withTimeout(
-      executeTool(name, args),
-      30000,
-      `Tool execution timeout: ${name}`
-    );
+    except MCPError:
+        # Re-raise MCP errors
+        raise
     
-    return result;
-    
-  } catch (error) {
-    // Log error for debugging
-    logger.error(`Tool execution failed: ${name}`, error);
-    
-    // Return appropriate error response
-    if (error instanceof MCPError) {
-      throw error;
-    }
-    
-    // Wrap unexpected errors
-    throw new MCPError(
-      "Internal server error",
-      ErrorCodes.InternalError,
-      { 
-        tool: name,
-        message: error.message 
-      }
-    );
-  }
-});
+    except Exception as error:
+        # Log error for debugging
+        logger.error(f"Tool execution failed: {tool_name}", exc_info=True)
+        
+        # Wrap unexpected errors
+        raise MCPError(
+            "Internal server error",
+            ErrorCode.INTERNAL_ERROR,
+            {
+                "tool": tool_name,
+                "message": str(error)
+            }
+        )
 ```
 
 ## Testing
 
 ### Unit Testing
-```typescript
-import { describe, it, expect, beforeEach } from "vitest";
-import { TestClient } from "@modelcontextprotocol/sdk/testing";
+```python
+import pytest
+import pytest_asyncio
+from mcp.server.fastmcp.testing import TestClient
+from typing import AsyncGenerator
+import json
 
-describe("MCP Server", () => {
-  let client;
-  let server;
-  
-  beforeEach(async () => {
-    server = createTestServer();
-    client = new TestClient(server);
-    await client.initialize();
-  });
-  
-  describe("Resources", () => {
-    it("should list available resources", async () => {
-      const response = await client.request("resources/list");
-      expect(response.resources).toHaveLength(2);
-      expect(response.resources[0].uri).toBe("file:///config.json");
-    });
+@pytest_asyncio.fixture
+async def test_client() -> AsyncGenerator[TestClient, None]:
+    """Create test client for MCP server"""
+    from myserver import mcp  # Import your server instance
     
-    it("should read resource content", async () => {
-      const response = await client.request("resources/read", {
-        uri: "file:///config.json",
-      });
-      expect(response.contents[0].mimeType).toBe("application/json");
-      expect(JSON.parse(response.contents[0].text)).toHaveProperty("version");
-    });
-  });
-  
-  describe("Tools", () => {
-    it("should execute tool successfully", async () => {
-      const response = await client.request("tools/call", {
-        name: "create_file",
-        arguments: {
-          path: "/tmp/test.txt",
-          content: "Hello, MCP!",
-        },
-      });
-      expect(response.content[0].text).toContain("File created");
-    });
+    async with TestClient(mcp) as client:
+        yield client
+
+class TestMCPServer:
+    """Test suite for MCP server"""
     
-    it("should validate tool arguments", async () => {
-      await expect(
-        client.request("tools/call", {
-          name: "create_file",
-          arguments: {
-            // Missing required 'content' field
-            path: "/tmp/test.txt",
-          },
-        })
-      ).rejects.toThrow("Invalid tool arguments");
-    });
-  });
-});
+    async def test_list_resources(self, test_client: TestClient):
+        """Test listing available resources"""
+        response = await test_client.request("resources/list")
+        
+        assert len(response["resources"]) == 2
+        assert response["resources"][0]["uri"] == "file:///config.json"
+    
+    async def test_read_resource(self, test_client: TestClient):
+        """Test reading resource content"""
+        response = await test_client.request(
+            "resources/read",
+            {"uri": "file:///config.json"}
+        )
+        
+        assert response["contents"][0]["mimeType"] == "application/json"
+        content = json.loads(response["contents"][0]["text"])
+        assert "version" in content
+    
+    async def test_execute_tool(self, test_client: TestClient):
+        """Test tool execution"""
+        response = await test_client.request(
+            "tools/call",
+            {
+                "name": "create_file",
+                "arguments": {
+                    "path": "/tmp/test.txt",
+                    "content": "Hello, MCP!",
+                }
+            }
+        )
+        
+        assert "File created" in response["content"][0]["text"]
+    
+    async def test_validate_tool_arguments(self, test_client: TestClient):
+        """Test tool argument validation"""
+        with pytest.raises(Exception, match="Invalid tool arguments"):
+            await test_client.request(
+                "tools/call",
+                {
+                    "name": "create_file",
+                    "arguments": {
+                        # Missing required 'content' field
+                        "path": "/tmp/test.txt",
+                    }
+                }
+            )
 ```
 
 ### Integration Testing
-```typescript
-describe("MCP Server Integration", () => {
-  it("should handle concurrent requests", async () => {
-    const promises = Array.from({ length: 10 }, (_, i) =>
-      client.request("tools/call", {
-        name: "process_data",
-        arguments: { id: i },
-      })
-    );
+```python
+import asyncio
+import json
+import pytest
+from mcp.server.fastmcp.testing import TestClient
+
+class TestMCPServerIntegration:
+    """Integration tests for MCP server"""
     
-    const results = await Promise.all(promises);
-    expect(results).toHaveLength(10);
-    results.forEach((result, i) => {
-      expect(result.content[0].text).toContain(`Processed: ${i}`);
-    });
-  });
-  
-  it("should maintain state across requests", async () => {
-    // Create a session
-    const createResponse = await client.request("tools/call", {
-      name: "create_session",
-      arguments: { userId: "test-user" },
-    });
-    const sessionId = JSON.parse(createResponse.content[0].text).sessionId;
+    async def test_handle_concurrent_requests(self, test_client: TestClient):
+        """Test handling concurrent requests"""
+        # Create 10 concurrent requests
+        tasks = [
+            test_client.request(
+                "tools/call",
+                {
+                    "name": "process_data",
+                    "arguments": {"id": i}
+                }
+            )
+            for i in range(10)
+        ]
+        
+        results = await asyncio.gather(*tasks)
+        assert len(results) == 10
+        
+        for i, result in enumerate(results):
+            assert f"Processed: {i}" in result["content"][0]["text"]
     
-    // Use the session
-    const useResponse = await client.request("tools/call", {
-      name: "use_session",
-      arguments: { sessionId },
-    });
-    expect(useResponse.content[0].text).toContain("test-user");
-  });
-});
+    async def test_maintain_state_across_requests(self, test_client: TestClient):
+        """Test state persistence across requests"""
+        # Create a session
+        create_response = await test_client.request(
+            "tools/call",
+            {
+                "name": "create_session",
+                "arguments": {"userId": "test-user"}
+            }
+        )
+        
+        session_data = json.loads(create_response["content"][0]["text"])
+        session_id = session_data["sessionId"]
+        
+        # Use the session
+        use_response = await test_client.request(
+            "tools/call",
+            {
+                "name": "use_session",
+                "arguments": {"sessionId": session_id}
+            }
+        )
+        
+        assert "test-user" in use_response["content"][0]["text"]
 ```
 
 ## Deployment
 
 ### Docker Deployment
 ```dockerfile
-FROM node:18-alpine
+FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --only=production
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 # Security: Run as non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-USER nodejs
+RUN addgroup --gid 1001 mcp && \
+    adduser --uid 1001 --gid 1001 --disabled-password --gecos "" mcp
+USER mcp
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["python", "server.py"]
 ```
 
 ### Docker Compose
@@ -878,53 +862,93 @@ volumes:
 ### Production Considerations
 
 #### Health Checks
-```typescript
-server.setRequestHandler("health", async () => {
-  const checks = {
-    server: "healthy",
-    database: await checkDatabaseConnection(),
-    memory: process.memoryUsage().heapUsed < 500 * 1024 * 1024 ? "healthy" : "warning",
-    uptime: process.uptime(),
-  };
-  
-  const isHealthy = Object.values(checks).every(
-    (status) => status === "healthy" || typeof status === "number"
-  );
-  
-  return {
-    status: isHealthy ? "healthy" : "degraded",
-    checks,
-  };
-});
+```python
+import psutil
+import time
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP()
+
+@mcp.tool(
+    name="health",
+    description="Check server health status"
+)
+async def health_check() -> dict:
+    """Health check endpoint"""
+    # Check database connection
+    db_status = await check_database_connection()
+    
+    # Check memory usage
+    memory = psutil.Process().memory_info()
+    memory_status = "healthy" if memory.rss < 500 * 1024 * 1024 else "warning"
+    
+    checks = {
+        "server": "healthy",
+        "database": db_status,
+        "memory": memory_status,
+        "uptime": time.time() - SERVER_START_TIME,
+    }
+    
+    # Determine overall health
+    is_healthy = all(
+        status == "healthy" or isinstance(status, (int, float))
+        for status in checks.values()
+    )
+    
+    return {
+        "status": "healthy" if is_healthy else "degraded",
+        "checks": checks,
+    }
 ```
 
 #### Monitoring
-```typescript
-import { createMetricsCollector } from "./metrics";
+```python
+import time
+from typing import Dict, Any, Callable
+from prometheus_client import Counter, Histogram, generate_latest
+from mcp.server.fastmcp import FastMCP
 
-const metrics = createMetricsCollector();
+# Define metrics
+request_counter = Counter(
+    'mcp_requests_total',
+    'Total MCP requests',
+    ['method', 'status']
+)
 
-// Track request metrics
-server.use(async (request, next) => {
-  const start = Date.now();
-  const method = request.method;
-  
-  try {
-    const response = await next();
-    metrics.recordRequest(method, "success", Date.now() - start);
-    return response;
-  } catch (error) {
-    metrics.recordRequest(method, "error", Date.now() - start);
-    throw error;
-  }
-});
+request_duration = Histogram(
+    'mcp_request_duration_seconds',
+    'MCP request duration',
+    ['method']
+)
 
-// Expose metrics endpoint
-server.setRequestHandler("metrics", async () => {
-  return {
-    metrics: metrics.getAll(),
-  };
-});
+mcp = FastMCP()
+
+# Middleware for tracking metrics
+@mcp.middleware
+async def track_metrics(request: Dict[str, Any], handler: Callable) -> Any:
+    """Track request metrics"""
+    start_time = time.time()
+    method = request.get('method', 'unknown')
+    
+    try:
+        response = await handler(request)
+        request_counter.labels(method=method, status='success').inc()
+        return response
+    except Exception as error:
+        request_counter.labels(method=method, status='error').inc()
+        raise error
+    finally:
+        duration = time.time() - start_time
+        request_duration.labels(method=method).observe(duration)
+
+# Expose metrics endpoint
+@mcp.tool(
+    name="metrics",
+    description="Get server metrics"
+)
+async def get_metrics() -> str:
+    """Return Prometheus metrics"""
+    return generate_latest().decode('utf-8')
 ```
 
 ## Best Practices
@@ -966,42 +990,56 @@ server.setRequestHandler("metrics", async () => {
 - Version your API
 
 ### Example: Well-Designed Tool
-```typescript
-{
-  name: "query_database",
-  description: "Execute a safe database query with pagination",
-  inputSchema: {
-    type: "object",
-    properties: {
-      table: {
-        type: "string",
-        enum: ["users", "orders", "products"],
-        description: "Table to query",
-      },
-      filters: {
-        type: "object",
-        description: "Filter conditions",
-        additionalProperties: {
-          type: "string",
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import Optional, Dict, Any
+
+mcp = FastMCP()
+
+@mcp.tool(
+    name="query_database",
+    description="Execute a safe database query with pagination",
+    parameters={
+        "type": "object",
+        "properties": {
+            "table": {
+                "type": "string",
+                "enum": ["users", "orders", "products"],
+                "description": "Table to query",
+            },
+            "filters": {
+                "type": "object",
+                "description": "Filter conditions",
+                "additionalProperties": {
+                    "type": "string",
+                },
+            },
+            "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "default": 10,
+                "description": "Number of results to return",
+            },
+            "offset": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 0,
+                "description": "Number of results to skip",
+            },
         },
-      },
-      limit: {
-        type: "integer",
-        minimum: 1,
-        maximum: 100,
-        default: 10,
-        description: "Number of results to return",
-      },
-      offset: {
-        type: "integer",
-        minimum: 0,
-        default: 0,
-        description: "Number of results to skip",
-      },
-    },
-    required: ["table"],
-  },
-}
+        "required": ["table"],
+    }
+)
+async def query_database(
+    table: str,
+    filters: Optional[Dict[str, Any]] = None,
+    limit: int = 10,
+    offset: int = 0
+) -> Dict[str, Any]:
+    """Execute a safe database query with pagination"""
+    # Implementation would go here
+    pass
 ```
 
 ## Next Steps

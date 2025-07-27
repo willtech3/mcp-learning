@@ -117,17 +117,19 @@ Select from pre-built servers or create custom ones:
 
 ### Step 2: Connect AI Applications
 Configure your AI application to connect to MCP servers:
-```typescript
-// Example: Connecting to an MCP server
-const client = new McpClient({
-  name: "my-ai-app",
-  version: "1.0.0"
-});
+```python
+# Example: Connecting to an MCP server
+from mcp import McpClient
 
-await client.connect({
-  serverCommand: "npx",
-  args: ["@modelcontextprotocol/server-github"]
-});
+client = McpClient(
+    name="my-ai-app",
+    version="1.0.0"
+)
+
+await client.connect(
+    server_command="uvx",
+    args=["mcp-server-github"]
+)
 ```
 
 ### Step 3: Work with Context
@@ -171,8 +173,8 @@ AI applications can now:
    - **Client Developer**: Create AI applications that consume MCP
    
 2. **Select an SDK**:
+   - Python (includes FastMCP high-level API - recommended for this project)
    - TypeScript/JavaScript
-   - Python
    - C# (.NET)
    - Ruby
    - Java
@@ -185,29 +187,31 @@ AI applications can now:
 
 ### Quick Example: Building a Simple Server
 
-```typescript
-import { McpServer } from "@modelcontextprotocol/sdk";
+```python
+from mcp.server.fastmcp import FastMCP
+import json
 
-const server = new McpServer({
-  name: "my-server",
-  version: "1.0.0"
-});
+# Create server instance
+mcp = FastMCP(
+    name="my-server",
+    version="1.0.0"
+)
 
-// Expose a resource
-server.registerResource("users", {
-  description: "Get user information",
-  handler: async () => ({
-    contents: [
-      {
-        type: "text",
-        text: JSON.stringify(await fetchUsers())
-      }
+# Expose a resource
+@mcp.resource("users")
+async def get_users():
+    """Get user information"""
+    users = await fetch_users()
+    return [
+        {
+            "type": "text",
+            "text": json.dumps(users)
+        }
     ]
-  })
-});
 
-// Start the server
-server.start();
+# Start the server
+if __name__ == "__main__":
+    mcp.run()
 ```
 
 ## Next Steps

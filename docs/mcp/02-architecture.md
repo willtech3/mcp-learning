@@ -60,27 +60,52 @@ The protocol implementation within a host that manages server connections. Clien
 - **State Management**: Tracking connection state and server capabilities
 
 Key responsibilities:
-```typescript
-interface McpClient {
-  // Connection management
-  connect(serverConfig: ServerConfig): Promise<void>;
-  disconnect(): Promise<void>;
-  
-  // Capability discovery
-  getCapabilities(): Promise<ServerCapabilities>;
-  
-  // Resource operations
-  listResources(): Promise<Resource[]>;
-  readResource(uri: string): Promise<ResourceContent>;
-  
-  // Tool operations
-  listTools(): Promise<Tool[]>;
-  callTool(name: string, args: any): Promise<ToolResult>;
-  
-  // Prompt operations
-  listPrompts(): Promise<Prompt[]>;
-  getPrompt(name: string, args: any): Promise<PromptResult>;
-}
+```python
+from typing import List, Any, Dict
+from dataclasses import dataclass
+
+@dataclass
+class McpClient:
+    """MCP Client interface"""
+    
+    async def connect(self, server_config: ServerConfig) -> None:
+        """Establish connection to server"""
+        pass
+    
+    async def disconnect(self) -> None:
+        """Close server connection"""
+        pass
+    
+    async def get_capabilities(self) -> ServerCapabilities:
+        """Discover server capabilities"""
+        pass
+    
+    # Resource operations
+    async def list_resources(self) -> List[Resource]:
+        """List available resources"""
+        pass
+    
+    async def read_resource(self, uri: str) -> ResourceContent:
+        """Read resource content"""
+        pass
+    
+    # Tool operations
+    async def list_tools(self) -> List[Tool]:
+        """List available tools"""
+        pass
+    
+    async def call_tool(self, name: str, args: Dict[str, Any]) -> ToolResult:
+        """Execute a tool"""
+        pass
+    
+    # Prompt operations
+    async def list_prompts(self) -> List[Prompt]:
+        """List available prompts"""
+        pass
+    
+    async def get_prompt(self, name: str, args: Dict[str, Any]) -> PromptResult:
+        """Get prompt with arguments"""
+        pass
 ```
 
 ### 3. MCP Server
@@ -92,26 +117,40 @@ Programs that expose data and functionality to clients. Servers provide:
 - **State Persistence**: Managing server-side state when needed
 
 Server capabilities:
-```typescript
-interface McpServer {
-  // Server metadata
-  name: string;
-  version: string;
-  capabilities: ServerCapabilities;
-  
-  // Resource handlers
-  registerResource(name: string, handler: ResourceHandler): void;
-  
-  // Tool handlers
-  registerTool(name: string, schema: ToolSchema, handler: ToolHandler): void;
-  
-  // Prompt handlers
-  registerPrompt(name: string, handler: PromptHandler): void;
-  
-  // Lifecycle
-  start(): Promise<void>;
-  stop(): Promise<void>;
-}
+```python
+from mcp.server.fastmcp import FastMCP
+from typing import Callable, Awaitable
+
+class McpServer:
+    """MCP Server interface"""
+    
+    def __init__(self, name: str, version: str):
+        self.name = name
+        self.version = version
+        self.mcp = FastMCP(name=name, version=version)
+    
+    def register_resource(self, name: str, handler: Callable) -> None:
+        """Register a resource handler"""
+        # Using FastMCP decorator pattern
+        self.mcp.resource(name)(handler)
+    
+    def register_tool(self, name: str, schema: dict, handler: Callable) -> None:
+        """Register a tool handler"""
+        # Using FastMCP decorator pattern
+        self.mcp.tool(name, schema=schema)(handler)
+    
+    def register_prompt(self, name: str, handler: Callable) -> None:
+        """Register a prompt handler"""
+        # Using FastMCP decorator pattern
+        self.mcp.prompt(name)(handler)
+    
+    async def start(self) -> None:
+        """Start the server"""
+        await self.mcp.run()
+    
+    async def stop(self) -> None:
+        """Stop the server"""
+        await self.mcp.shutdown()
 ```
 
 ## Architecture Principles
@@ -277,26 +316,51 @@ Domain-specific implementations:
 ## Scalability Patterns
 
 ### 1. **Connection Pooling**
-```typescript
-class ConnectionPool {
-  private connections: Map<string, McpClient>;
-  private maxConnections: number;
-  
-  async getConnection(serverId: string): Promise<McpClient> {
-    // Reuse existing or create new connection
-  }
-}
+```python
+from typing import Dict, Optional
+import asyncio
+
+class ConnectionPool:
+    """Manage MCP client connections"""
+    
+    def __init__(self, max_connections: int = 10):
+        self.connections: Dict[str, McpClient] = {}
+        self.max_connections = max_connections
+        self._lock = asyncio.Lock()
+    
+    async def get_connection(self, server_id: str) -> McpClient:
+        """Get or create connection for server"""
+        async with self._lock:
+            if server_id in self.connections:
+                return self.connections[server_id]
+            
+            if len(self.connections) >= self.max_connections:
+                # Evict least recently used
+                await self._evict_lru()
+            
+            # Create new connection
+            client = McpClient()
+            await client.connect(server_id)
+            self.connections[server_id] = client
+            return client
 ```
 
 ### 2. **Request Batching**
-```typescript
-// Batch multiple requests to reduce overhead
-const batch = [
-  { method: "resources/list" },
-  { method: "tools/list" },
-  { method: "prompts/list" }
-];
-const results = await client.sendBatch(batch);
+```python
+# Batch multiple requests to reduce overhead
+batch_requests = [
+    {"method": "resources/list"},
+    {"method": "tools/list"},
+    {"method": "prompts/list"}
+]
+
+# Send all requests in a single batch
+results = await client.send_batch(batch_requests)
+
+# Process results
+resources = results[0]
+tools = results[1]
+prompts = results[2]
 ```
 
 ### 3. **Caching Strategies**

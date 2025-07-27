@@ -85,24 +85,26 @@ A one-way message that doesn't expect a response:
 
 ### Base Message Structure
 All MCP messages follow this base structure:
-```typescript
-interface JsonRpcMessage {
-  jsonrpc: "2.0";
-  id?: string | number;  // Required for requests/responses
-  method?: string;        // Required for requests/notifications
-  params?: any;          // Optional parameters
-  result?: any;          // Only in responses
-  error?: JsonRpcError;  // Only in error responses
-}
+```python
+from typing import Optional, Union, Any, TypedDict
+
+class JsonRpcMessage(TypedDict, total=False):
+    """Base structure for all JSON-RPC messages"""
+    jsonrpc: str  # Always "2.0"
+    id: Optional[Union[str, int]]  # Required for requests/responses
+    method: Optional[str]  # Required for requests/notifications
+    params: Optional[Any]  # Optional parameters
+    result: Optional[Any]  # Only in responses
+    error: Optional['JsonRpcError']  # Only in error responses
 ```
 
 ### Error Structure
-```typescript
-interface JsonRpcError {
-  code: number;
-  message: string;
-  data?: any;
-}
+```python
+class JsonRpcError(TypedDict):
+    """JSON-RPC error structure"""
+    code: int
+    message: str
+    data: Optional[Any]
 ```
 
 ### Standard Error Codes
