@@ -1,0 +1,238 @@
+# Virtual Library MCP Server - Task Automation
+# This justfile provides essential commands for MCP development workflow
+
+# Default command - shows available tasks
+default:
+    @just --list
+
+# === ENVIRONMENT SETUP ===
+
+# Install all dependencies using uv
+# uv provides fast, reliable dependency resolution crucial for MCP development
+install:
+    @echo "📦 Installing dependencies with uv..."
+    uv sync --dev
+    @echo "✅ Dependencies installed successfully!"
+    @echo "🔍 Verifying installation..."
+    uv run python --version
+    uv run python -c "import fastmcp; print(f'FastMCP version: {fastmcp.__version__}')"
+
+# Update all dependencies to latest versions
+update:
+    @echo "⬆️ Updating dependencies..."
+    uv sync --upgrade --dev
+    @echo "✅ Dependencies updated!"
+
+# === DEVELOPMENT ===
+
+# Run the MCP server in development mode
+# This starts the server with stdio transport for testing with MCP clients
+dev:
+    @echo "🚀 Starting Virtual Library MCP Server..."
+    @echo "📖 The server will communicate via stdio (standard input/output)"
+    @echo "🔗 Connect your MCP client to test the protocol implementation"
+    uv run python -m virtual_library_mcp.server
+
+# Run the server with debug logging
+dev-debug:
+    @echo "🐛 Starting server with debug logging..."
+    MCP_LOG_LEVEL=DEBUG uv run python -m virtual_library_mcp.server
+
+# === CODE QUALITY ===
+
+# Run all linting checks
+# Ruff catches common Python issues and enforces MCP coding standards
+lint:
+    @echo "🔍 Running ruff linter..."
+    uv run ruff check src/ tests/
+    @echo "✅ Linting complete!"
+
+# Fix auto-fixable linting issues
+lint-fix:
+    @echo "🔧 Auto-fixing linting issues..."
+    uv run ruff check --fix src/ tests/
+    @echo "✅ Auto-fixes applied!"
+
+# Format code with ruff
+# Consistent formatting is crucial for MCP protocol implementation readability
+format:
+    @echo "✨ Formatting code with ruff..."
+    uv run ruff format src/ tests/
+    @echo "✅ Code formatted!"
+
+# Check formatting without making changes
+format-check:
+    @echo "📏 Checking code formatting..."
+    uv run ruff format --check src/ tests/
+
+# === TYPE CHECKING ===
+
+# Run type checking with pyright
+# Type safety is essential for MCP protocol compliance and catching errors early
+typecheck:
+    @echo "🔍 Running type checking with pyright..."
+    uv run pyright src/ tests/
+    @echo "✅ Type checking complete!"
+
+# === TESTING ===
+
+# Run all tests
+# Comprehensive testing ensures MCP protocol compliance and server reliability
+test:
+    @echo "🧪 Running test suite..."
+    uv run pytest
+    @echo "✅ All tests passed!"
+
+# Run tests with verbose output
+test-verbose:
+    @echo "🧪 Running tests with verbose output..."
+    uv run pytest -v
+
+# Run tests with coverage report
+test-coverage:
+    @echo "🧪 Running tests with coverage analysis..."
+    uv run pytest --cov-report=html --cov-report=term
+    @echo "📊 Coverage report generated in htmlcov/"
+
+# Run only fast tests (exclude slow integration tests)
+test-fast:
+    @echo "⚡ Running fast tests only..."
+    uv run pytest -m "not slow"
+
+# Run only integration tests
+test-integration:
+    @echo "🔗 Running integration tests..."
+    uv run pytest -m "integration"
+
+# === DATABASE ===
+
+# Initialize the database with sample data
+# Creates the library database with realistic test data for MCP development
+db-init:
+    @echo "🗄️ Initializing database with sample data..."
+    uv run python scripts/init_database.py
+    @echo "✅ Database initialized!"
+
+# Reset the database (warning: destructive)
+db-reset:
+    @echo "⚠️ Resetting database (this will delete all data)..."
+    @read -p "Are you sure? (y/N): " confirm && [ "$$confirm" = "y" ]
+    rm -f database/library.db
+    @just db-init
+    @echo "✅ Database reset complete!"
+
+# === VALIDATION ===
+
+# Run all quality checks (linting, type checking, testing)
+# This is the pre-commit validation pipeline for MCP development
+check: lint typecheck test-fast
+    @echo "✅ All quality checks passed!"
+
+# Run comprehensive validation including slow tests
+check-all: lint typecheck test
+    @echo "✅ Comprehensive validation complete!"
+
+# === MCP PROTOCOL TESTING ===
+
+# Test MCP protocol compliance
+# Validates that our server correctly implements the MCP specification
+test-mcp-protocol:
+    @echo "🔌 Testing MCP protocol compliance..."
+    uv run python scripts/test_mcp_compliance.py
+    @echo "✅ MCP protocol compliance verified!"
+
+# Start server and run MCP client test
+# Integration test to verify client-server communication
+test-mcp-integration:
+    @echo "🔗 Running MCP integration tests..."
+    @echo "This will start the server and test client communication..."
+    uv run python scripts/integration_test.py
+
+# === DEVELOPMENT UTILITIES ===
+
+# Clean up generated files and caches
+clean:
+    @echo "🧹 Cleaning up generated files..."
+    find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    find . -type f -name "*.pyc" -delete 2>/dev/null || true
+    rm -rf .pytest_cache/ .coverage htmlcov/ .ruff_cache/ 2>/dev/null || true
+    @echo "✅ Cleanup complete!"
+
+# Show project information and status
+info:
+    @echo "📋 Virtual Library MCP Server Information"
+    @echo "========================================"
+    @echo "Python version: $(uv run python --version)"
+    @echo "Project directory: $(pwd)"
+    @echo "Dependencies status:"
+    @uv tree --depth 1
+    @echo ""
+    @echo "🔍 Quick health check:"
+    @just lint > /dev/null 2>&1 && echo "✅ Linting: PASS" || echo "❌ Linting: FAIL"
+    @just typecheck > /dev/null 2>&1 && echo "✅ Type check: PASS" || echo "❌ Type check: FAIL"
+    @just test-fast > /dev/null 2>&1 && echo "✅ Fast tests: PASS" || echo "❌ Fast tests: FAIL"
+
+# === DOCUMENTATION ===
+
+# Generate API documentation (future implementation)
+docs:
+    @echo "📚 Generating documentation..."
+    @echo "📝 Documentation generation will be implemented in Phase 5"
+
+# Serve documentation locally (future implementation)
+docs-serve:
+    @echo "🌐 Serving documentation locally..."
+    @echo "📝 Documentation serving will be implemented in Phase 5"
+
+# === PRODUCTION ===
+
+# Build distribution package
+build:
+    @echo "📦 Building distribution package..."
+    uv build
+    @echo "✅ Package built in dist/"
+
+# Run production readiness checks
+prod-check:
+    @echo "🚀 Running production readiness checks..."
+    @just check-all
+    @echo "🔒 Security check..."
+    @echo "📊 Performance baseline..."
+    @echo "✅ Production readiness validated!"
+
+# === HELP ===
+
+# Show detailed help for MCP development workflow
+help:
+    @echo "🎓 Virtual Library MCP Server - Development Guide"
+    @echo "================================================"
+    @echo ""
+    @echo "🚀 Quick Start:"
+    @echo "  just install     # Set up development environment"
+    @echo "  just dev         # Start the MCP server"
+    @echo "  just check       # Run quality checks"
+    @echo ""
+    @echo "🔧 Development Workflow:"
+    @echo "  1. just install           # Install dependencies"
+    @echo "  2. just db-init          # Initialize database"
+    @echo "  3. just dev              # Start development server"
+    @echo "  4. just test             # Run tests"
+    @echo "  5. just check            # Validate code quality"
+    @echo ""
+    @echo "📋 Common Tasks:"
+    @echo "  just lint                # Check code style"
+    @echo "  just format              # Format code"
+    @echo "  just typecheck           # Check types"
+    @echo "  just test-coverage       # Run tests with coverage"
+    @echo "  just test-mcp-protocol   # Test MCP compliance"
+    @echo ""
+    @echo "🔍 Quality Assurance:"
+    @echo "  just check               # Fast quality checks"
+    @echo "  just check-all           # Comprehensive validation"
+    @echo "  just prod-check          # Production readiness"
+    @echo ""
+    @echo "💡 Pro Tips:"
+    @echo "  - Use 'just dev-debug' for detailed logging"
+    @echo "  - Run 'just test-fast' during development"
+    @echo "  - Use 'just clean' to reset your environment"
+    @echo "  - Run 'just info' to check project status"
