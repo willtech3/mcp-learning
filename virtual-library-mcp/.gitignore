@@ -1,0 +1,222 @@
+# Python Development
+# ===================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+# Critical for MCP: Never commit environment files
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# uv package manager
+# Important: uv.lock should be committed for reproducible builds
+.uv/
+uv-cache/
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+*.code-workspace
+# Note: You may want to commit .vscode/settings.json for team consistency
+
+# Testing and Coverage
+# MCP servers need comprehensive testing
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+.hypothesis/
+nosetests.xml
+test-results/
+test-reports/
+
+# Type Checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+# Pyright cache
+.pyright/
+
+# Linting
+.ruff_cache/
+
+# Documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+site/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Database
+# MCP servers often use SQLite for development
+*.db
+*.sqlite
+*.sqlite3
+instance/
+# But keep initial schema files
+!migrations/*.sql
+!schema/*.sql
+
+# Logs
+# MCP servers generate logs for protocol debugging
+*.log
+logs/
+log/
+# But keep log configuration
+!logging.conf
+!log_config.yaml
+
+# Environment Variables
+# CRITICAL: Never commit MCP server secrets
+.env
+.env.*
+!.env.example
+!.env.template
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+
+# Linux
+*~
+.directory
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+tmp/
+temp/
+
+# MCP Server Specific
+# ===================
+
+# MCP server runtime files
+mcp-server.pid
+mcp-server.sock
+
+# Generated protocol files
+generated/
+gen/
+
+# Client test files
+test-client/
+client-tests/
+
+# Performance profiling
+*.prof
+*.pstats
+profiles/
+
+# Debug dumps
+*.dump
+*.core
+core.*
+
+# Secrets and credentials
+# NEVER commit these for MCP servers
+credentials/
+secrets/
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# Local development config
+# Commit templates but not actual configs
+config.local.yaml
+config.local.json
+settings.local.py
+!config.example.yaml
+!config.template.json
+
+# FastMCP specific
+.fastmcp/
+fastmcp-cache/
+
+# Data files (except test fixtures)
+data/*.json
+data/*.csv
+data/*.xml
+!data/fixtures/
+!data/test/
+!data/examples/
+
+# Backup files
+backup/
+backups/
+*.backup
+
+# Editor autosave
+*~
+.*.sw?
+\#*\#
+*.orig
+
+# Package manager locks (except uv.lock)
+# uv.lock should be committed for reproducibility
+poetry.lock
+Pipfile.lock
+# Keep these for version pinning:
+# requirements.txt
+# requirements-dev.txt

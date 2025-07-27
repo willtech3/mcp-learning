@@ -78,29 +78,65 @@ build-backend = "hatchling.build"
 [tool.ruff]
 # Python version compatibility
 target-version = "py312"
-line-length = 88
+# MCP servers often have longer function names due to protocol requirements
+# (e.g., handle_tools_list_request, validate_json_rpc_message)
+line-length = 100
 indent-width = 4
 
 [tool.ruff.lint]
 # Enable comprehensive linting rules for MCP development
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings  
-    "F",   # Pyflakes
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-    "SIM", # flake8-simplify
-    "I",   # isort
-    "N",   # pep8-naming
-    "C4",  # flake8-comprehensions
-    "TCH", # flake8-type-checking
-    "T20", # flake8-print (avoid print statements in production)
+    "E",   # pycodestyle errors - catches basic Python errors
+    "W",   # pycodestyle warnings - identifies potential issues
+    "F",   # Pyflakes - finds undefined names, crucial for protocol handlers
+    "UP",  # pyupgrade - keeps code modern, important for async MCP operations
+    "B",   # flake8-bugbear - catches common bugs in protocol implementations
+    "SIM", # flake8-simplify - simplifies complex protocol handling logic
+    "I",   # isort - maintains consistent imports for protocol modules
+    "N",   # pep8-naming - ensures protocol methods follow conventions
+    "C4",  # flake8-comprehensions - optimizes data transformations
+    "TCH", # flake8-type-checking - prevents circular imports in type annotations
+    "T20", # flake8-print - prevents debug prints in production MCP servers
+    "RUF", # Ruff-specific rules - additional safety checks
+    "ASYNC", # flake8-async - critical for async MCP server operations
+    "DTZ", # flake8-datetimez - ensures timezone-aware timestamps in logs
+    "LOG", # flake8-logging - proper logging for protocol debugging
+    "G",   # flake8-logging-format - consistent log formatting
+    "PIE", # flake8-pie - miscellaneous lints
+    "PT",  # flake8-pytest-style - consistent test patterns for protocol tests
+    "RET", # flake8-return - simplifies return statements in handlers
+    "SLF", # flake8-self - prevents private member access
+    "ARG", # flake8-unused-arguments - catches unused protocol parameters
+    "PTH", # flake8-use-pathlib - modern path handling for resources
+    "ERA", # eradicate - removes commented code
+    "PD",  # pandas-vet - even though we don't use pandas, good practices
+    "PGH", # pygrep-hooks - various code quality checks
+    "PL",  # Pylint - additional code quality checks
+    "TRY", # tryceratops - exception handling best practices
+    "NPY", # NumPy-specific rules - good practices even without NumPy
+    "PERF", # Perflint - performance anti-patterns
 ]
 
-# Ignore rules that conflict with Black or are too strict for educational code
+# Ignore rules that conflict with MCP development patterns
 ignore = [
     "E501",  # line too long (handled by line-length setting)
     "T20",   # Allow print statements for educational/debugging purposes
+    "TRY003", # Long exception messages are OK for protocol errors
+    "PLR0913", # MCP handlers may need many parameters
+    "PLR2004", # Magic values are OK for protocol constants
+    "SLF001", # Private member access needed for some FastMCP internals
+]
+
+# MCP-specific configurations
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "S101",  # assert is OK in tests
+    "ARG",   # unused arguments OK in test fixtures
+    "PLR2004", # magic values OK in tests
+    "SLF001", # private access OK for testing internals
+]
+"src/virtual_library_mcp/server.py" = [
+    "PLR0913", # Many parameters OK for server initialization
 ]
 
 [tool.ruff.format]
@@ -109,23 +145,84 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+# Preserve string quotes style to match JSON protocol examples
+docstring-code-format = true
+docstring-code-line-length = 80
 
 [tool.pyright]
 # Type checking configuration - essential for MCP protocol implementation
 include = ["src", "tests"]
-exclude = ["**/__pycache__"]
+exclude = [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.venv",
+    "**/venv",
+    "**/htmlcov",
+    "**/build",
+    "**/dist",
+]
 pythonVersion = "3.12"
 pythonPlatform = "All"
 
-# Strict type checking helps catch MCP protocol violations early
-typeCheckingMode = "standard"
-reportMissingImports = true
-reportMissingTypeStubs = false
-reportUnusedImport = true
-reportUnusedVariable = true
-reportDuplicateImport = true
-reportUntypedFunctionDecorator = true
-reportUntypedClassDecorator = true
+# Strict type checking for MCP protocol compliance
+# MCP servers MUST handle JSON-RPC types correctly
+typeCheckingMode = "strict"
+
+# Import resolution for MCP modules
+stubPath = "typings"
+venvPath = "."
+venv = ".venv"
+
+# Critical for MCP: All protocol handlers must be fully typed
+reportMissingImports = "error"
+reportMissingTypeStubs = "warning"  # Some deps may lack stubs
+reportMissingModuleSource = "warning"
+
+# Type safety for protocol implementation
+reportUnusedImport = "error"
+reportUnusedClass = "error"
+reportUnusedFunction = "error"
+reportUnusedVariable = "error"
+reportDuplicateImport = "error"
+
+# MCP protocol requires precise type handling
+reportGeneralTypeIssues = "error"
+reportPropertyTypeMismatch = "error"
+reportFunctionMemberAccess = "error"
+reportMissingTypeArgument = "error"
+reportInvalidTypeVarUse = "error"
+reportDataclassFieldWithoutDefault = "error"
+reportUntypedFunctionDecorator = "error"
+reportUntypedClassDecorator = "error"
+reportUntypedBaseClass = "error"
+reportUntypedNamedTuple = "error"
+
+# Async handling critical for MCP servers
+reportInvalidStringEscapeSequence = "error"
+reportUnusedCoroutine = "error"
+reportUnnecessaryAwait = "error"
+
+# Optional but recommended for code quality
+reportOptionalSubscript = "error"
+reportOptionalMemberAccess = "error"
+reportOptionalCall = "error"
+reportOptionalIterable = "error"
+reportOptionalContextManager = "error"
+reportOptionalOperand = "error"
+
+# Type completeness for protocol messages
+reportUnknownParameterType = "error"
+reportUnknownArgumentType = "error"
+reportUnknownLambdaType = "error"
+reportUnknownVariableType = "error"
+reportUnknownMemberType = "error"
+reportMissingParameterType = "error"
+
+# Allow some flexibility for educational code
+reportCallInDefaultInitializer = "none"  # OK for simple defaults
+reportImplicitStringConcatenation = "none"  # OK for long strings
+reportMissingSuperCall = "warning"  # Warn but don't error
+reportUninitializedInstanceVariable = "error"
 
 [tool.pytest.ini_options]
 # Testing configuration for MCP server
