@@ -15,6 +15,7 @@ The model follows MCP best practices:
 """
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -104,7 +105,7 @@ class Book(BaseModel):
         description="Timestamp when the book was added to the catalog",
     )
 
-    updated_at: datetime = Field(
+    updated_at: datetime | None = Field(
         default=None,
         description="Timestamp when the book record was last updated",
     )
@@ -139,7 +140,7 @@ class Book(BaseModel):
             raise ValueError("Available copies cannot exceed total copies")
         return self
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, __context: dict[str, Any] | None) -> None:
         """Initialize updated_at to match created_at on creation."""
         if self.updated_at is None:
             self.updated_at = self.created_at

@@ -12,7 +12,7 @@ for library patrons.
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 
 class Author(BaseModel):
@@ -107,7 +107,7 @@ class Author(BaseModel):
 
     @field_validator("birth_date", "death_date")
     @classmethod
-    def validate_dates(cls, v: date | None, info) -> date | None:
+    def validate_dates(cls, v: date | None, info: ValidationInfo) -> date | None:
         """Validate birth and death dates."""
         if v is None:
             return v
@@ -136,7 +136,7 @@ class Author(BaseModel):
     @classmethod
     def validate_book_ids(cls, v: list[str]) -> list[str]:
         """Ensure all book IDs are valid ISBN format."""
-        normalized_ids = []
+        normalized_ids: list[str] = []
         for book_id in v:
             # Remove hyphens and validate length
             normalized = book_id.replace("-", "")
