@@ -95,9 +95,9 @@ Provide comprehensive understanding of protocol mechanics:
 
 ### Transport Mechanisms
 - **stdio**: Process communication, local tools
-- **HTTP+SSE**: Web-based, firewall-friendly
-- **WebSocket**: Full duplex, real-time
+- **Streamable HTTP**: Web-based, firewall-friendly, supports SSE
 - **Selection Criteria**: Use case requirements
+- **Note**: WebSocket not yet available in current spec
 
 ### Message Flow Patterns
 ```

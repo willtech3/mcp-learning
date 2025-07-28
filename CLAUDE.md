@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **Read protocol specs before implementing** - Always use Context7 to read the latest MCP protocol specification from `/modelcontextprotocol/specification` before implementing any MCP features. This ensures compliance with the current protocol version.
 6. **Always use feature branches and PRs** - All implementation changes MUST be committed to a feature branch and pushed to a PR for review. Only when a PR is merged can we resolve an issue as complete. Never commit directly to main.
 7. **All tests must pass and code must be lint-free** - Before committing to a feature branch and creating a PR, ALL tests MUST pass (`just test`) and ALL linting errors MUST be resolved (`just lint`). No exceptions. This ensures code quality and prevents broken code from entering the codebase.
+8. **Virtual environment MUST be active** - The virtual environment MUST ALWAYS be active when working in the virtual-library-mcp directory (non-negotiable). Use `just activate` to get the activation command. This ensures correct Python version (3.12+) and dependencies are used.
 
 ## Repository Overview
 
