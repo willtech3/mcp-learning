@@ -9,6 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Never commit secrets** - Double-check that no API keys, tokens, passwords, or sensitive data are included in any commits.
 4. **Use MCP Protocol Mentor for MCP implementations** - When implementing MCP features, use the mcp-protocol-mentor agent defined in `.claude/agents/mcp-protocol-mentor.md` (non-negotiable). This ensures proper understanding and implementation of MCP concepts.
 5. **Read protocol specs before implementing** - Always use Context7 to read the latest MCP protocol specification from `/modelcontextprotocol/specification` before implementing any MCP features. This ensures compliance with the current protocol version.
+6. **Always use feature branches and PRs** - All implementation changes MUST be committed to a feature branch and pushed to a PR for review. Only when a PR is merged can we resolve an issue as complete. Never commit directly to main.
+7. **All tests must pass and code must be lint-free** - Before committing to a feature branch and creating a PR, ALL tests MUST pass (`just test`) and ALL linting errors MUST be resolved (`just lint`). No exceptions. This ensures code quality and prevents broken code from entering the codebase.
 
 ## Repository Overview
 
@@ -16,7 +18,7 @@ This is an MCP (Model Context Protocol) learning repository focused on building 
 
 ## Current Project: Virtual Library MCP Server
 
-The repository is currently developing a Virtual Library MCP Server as outlined in `virtual-library-implementation-plan.md`. This server demonstrates all MCP concepts through a simulated library management system.
+The repository is developing a Virtual Library MCP Server that demonstrates all MCP concepts through a simulated library management system. Implementation is tracked through GitHub Issues organized into 5 epic phases.
 
 ### Technology Stack
 
@@ -55,18 +57,6 @@ The `docs/mcp/` directory contains comprehensive MCP documentation:
 - `06-client-development.md`: Client implementation guide
 - `07-sdk-reference.md`: SDK documentation for all languages
 - `09-examples.md`: Example implementations
-
-## Implementation Approach
-
-Follow the 25-step implementation plan in `virtual-library-implementation-plan.md`:
-
-- Phase 1: Project Setup (Steps 1-5)
-- Phase 2: Data Models and Database (Steps 6-10)
-- Phase 3: MCP Server Core (Steps 11-15)
-- Phase 4: Advanced Features (Steps 16-20)
-- Phase 5: Testing and Documentation (Steps 21-25)
-
-Each step includes specific tasks and verification criteria.
 
 ## Key MCP Concepts to Implement
 
