@@ -134,9 +134,15 @@ ignore = [
     "ARG",   # unused arguments OK in test fixtures
     "PLR2004", # magic values OK in tests
     "SLF001", # private access OK for testing internals
+    "DTZ011", # date.today() is OK in tests - using local timezone
+    "DTZ005", # datetime.now() without timezone - using local timezone consistently
 ]
 "src/virtual_library_mcp/server.py" = [
     "PLR0913", # Many parameters OK for server initialization
+]
+"src/virtual_library_mcp/models/*.py" = [
+    "DTZ011", # date.today() is appropriate for local date comparisons
+    "DTZ005", # datetime.now() without timezone - using local timezone consistently
 ]
 
 [tool.ruff.format]

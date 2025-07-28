@@ -7,6 +7,21 @@ default:
 
 # === ENVIRONMENT SETUP ===
 
+# Execute commands in the virtual environment without explicit activation
+# This is the preferred way to ensure correct Python environment is used
+venv command *args:
+    @.venv/bin/python {{command}} {{args}}
+
+# Check virtual environment status
+check-venv:
+    @echo "🐍 Virtual Environment Status:"
+    @which python | grep -q ".venv" && echo "✅ Virtual environment is ACTIVE" || echo "❌ Virtual environment is NOT active"
+    @echo "📌 Current Python: $$(which python)"
+    @echo "📌 venv Python: $$(.venv/bin/python --version)"
+    @echo ""
+    @echo "💡 Use 'just venv <command>' to run commands in the virtual environment"
+    @echo "💡 Or activate manually: source .venv/bin/activate"
+
 # Install all dependencies using uv
 # uv provides fast, reliable dependency resolution crucial for MCP development
 install:
@@ -31,7 +46,7 @@ dev:
     @echo "🚀 Starting Virtual Library MCP Server..."
     @echo "📖 The server will communicate via stdio (standard input/output)"
     @echo "🔗 Connect your MCP client to test the protocol implementation"
-    uv run python -m virtual_library_mcp.server
+    .venv/bin/python -m virtual_library_mcp.server
 
 # Run the server with debug logging
 dev-debug:
