@@ -59,10 +59,10 @@ class TestAuthorModel:
 
         # Invalid IDs
         invalid_ids = [
-            "smith001",          # Missing prefix
-            "author_123",        # Too short
-            "AUTHOR_smith001",   # Wrong case
-            "author-smith001",   # Wrong separator
+            "smith001",  # Missing prefix
+            "author_123",  # Too short
+            "AUTHOR_smith001",  # Wrong case
+            "author-smith001",  # Wrong separator
         ]
 
         for author_id in invalid_ids:

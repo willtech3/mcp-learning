@@ -320,9 +320,9 @@ class TestBookModel:
         # Invalid URLs
         invalid_urls = [
             "https://example.com/cover.gif",  # Wrong format
-            "https://example.com/cover",      # No extension
-            "not-a-url",                      # Not a URL
-            "ftp://example.com/cover.jpg",    # Wrong protocol
+            "https://example.com/cover",  # No extension
+            "not-a-url",  # Not a URL
+            "ftp://example.com/cover.jpg",  # Wrong protocol
         ]
 
         for url in invalid_urls:

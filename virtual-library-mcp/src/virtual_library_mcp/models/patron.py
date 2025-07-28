@@ -155,7 +155,9 @@ class Patron(BaseModel):
         if v is None:
             return v
         # Remove common formatting characters including +
-        return v.replace("-", "").replace(" ", "").replace("(", "").replace(")", "").replace("+", "")
+        return (
+            v.replace("-", "").replace(" ", "").replace("(", "").replace(")", "").replace("+", "")
+        )
 
     @field_validator("membership_date")
     @classmethod
@@ -299,16 +301,12 @@ class Patron(BaseModel):
     model_config = ConfigDict(
         # Validate field values on assignment (critical for MCP real-time validation)
         validate_assignment=True,
-
         # Use Enum values instead of names (PatronStatus.ACTIVE = "active" not "ACTIVE")
         use_enum_values=True,
-
         # Populate models by field name (required for MCP JSON-RPC compatibility)
         populate_by_name=True,
-
         # Validate default values (ensures MCP resource consistency)
         validate_default=True,
-
         # Generate JSON schema with examples for MCP introspection
         json_schema_extra={
             "example": {
@@ -333,10 +331,8 @@ class Patron(BaseModel):
                 },
             }
         },
-
         # Forbid extra fields to ensure strict MCP message validation
         extra="forbid",
-
         # Use Python's standard string representation
         str_strip_whitespace=True,
     )

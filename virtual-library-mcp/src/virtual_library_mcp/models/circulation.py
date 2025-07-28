@@ -214,16 +214,12 @@ class CheckoutRecord(BaseModel):
     model_config = ConfigDict(
         # Validate field values on assignment for real-time MCP tool validation
         validate_assignment=True,
-
         # Use string values for enums in JSON serialization
         use_enum_values=True,
-
         # Allow field population by name for flexible MCP client compatibility
         populate_by_name=True,
-
         # Validate default values for data integrity
         validate_default=True,
-
         # Provide examples for MCP introspection and documentation
         json_schema_extra={
             "example": {
@@ -237,7 +233,7 @@ class CheckoutRecord(BaseModel):
                 "fine_amount": 0.0,
                 "fine_paid": False,
             }
-        }
+        },
     )
 
 
@@ -339,16 +335,12 @@ class ReturnRecord(BaseModel):
     model_config = ConfigDict(
         # Validate field values on assignment for MCP tool validation
         validate_assignment=True,
-
         # Use string values for enums (condition status)
         use_enum_values=True,
-
         # Allow flexible field naming for MCP clients
         populate_by_name=True,
-
         # Ensure default values are valid
         validate_default=True,
-
         # Example for MCP resource documentation
         json_schema_extra={
             "example": {
@@ -362,7 +354,7 @@ class ReturnRecord(BaseModel):
                 "fine_assessed": 0.0,
                 "fine_paid": 0.0,
             }
-        }
+        },
     )
 
 
@@ -448,7 +440,11 @@ class ReservationRecord(BaseModel):
             raise ValueError("Expiration date must be after reservation date")
 
         # Ensure pickup deadline is after notification date
-        if self.pickup_deadline and self.notification_date and self.pickup_deadline <= self.notification_date.date():
+        if (
+            self.pickup_deadline
+            and self.notification_date
+            and self.pickup_deadline <= self.notification_date.date()
+        ):
             raise ValueError("Pickup deadline must be after notification date")
 
         return self
@@ -511,16 +507,12 @@ class ReservationRecord(BaseModel):
     model_config = ConfigDict(
         # Validate field values on assignment for MCP reservation tools
         validate_assignment=True,
-
         # Use string values for ReservationStatus enum
         use_enum_values=True,
-
         # Support various field naming conventions from MCP clients
         populate_by_name=True,
-
         # Validate defaults to ensure data integrity
         validate_default=True,
-
         # Example for MCP resource introspection
         json_schema_extra={
             "example": {
@@ -532,5 +524,5 @@ class ReservationRecord(BaseModel):
                 "status": "pending",
                 "queue_position": 1,
             }
-        }
+        },
     )
