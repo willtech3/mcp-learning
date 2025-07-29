@@ -125,16 +125,32 @@ test-integration:
 # Creates the library database with realistic test data for MCP development
 db-init:
     @echo "🗄️ Initializing database with sample data..."
-    uv run python scripts/init_database.py
+    uv run python scripts/init_database.py --sample-data
     @echo "✅ Database initialized!"
 
 # Reset the database (warning: destructive)
 db-reset:
     @echo "⚠️ Resetting database (this will delete all data)..."
-    @read -p "Are you sure? (y/N): " confirm && [ "$$confirm" = "y" ]
-    rm -f database/library.db
-    @just db-init
+    @echo "Press Ctrl+C to cancel, or wait to continue..."
+    @sleep 2
+    uv run python scripts/init_database.py --drop-existing --sample-data
     @echo "✅ Database reset complete!"
+
+# Initialize empty database (no sample data)
+db-init-empty:
+    @echo "🗄️ Initializing empty database..."
+    uv run python scripts/init_database.py --drop-existing
+    @echo "✅ Empty database initialized!"
+
+# Show database location and status
+db-info:
+    @echo "🗄️ Database Information:"
+    @echo "Location: src/virtual_library_mcp/data/library.db"
+    @ls -lh src/virtual_library_mcp/data/library.db 2>/dev/null && echo "✅ Database exists" || echo "❌ Database not found"
+    @if [ -f src/virtual_library_mcp/data/library.db ]; then \
+        echo "Size: $(du -h src/virtual_library_mcp/data/library.db | cut -f1)"; \
+        echo "Tables: $(sqlite3 src/virtual_library_mcp/data/library.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "Unable to read")"; \
+    fi
 
 # === VALIDATION ===
 

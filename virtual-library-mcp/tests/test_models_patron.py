@@ -61,8 +61,8 @@ class TestPatronModel:
 
         # Invalid IDs
         invalid_ids = [
-            "smith001",         # Missing prefix
-            "patron_123",       # Too short
+            "smith001",  # Missing prefix
+            "patron_123",  # Too short
             "PATRON_smith001",  # Wrong case
             "patron-smith001",  # Wrong separator
         ]

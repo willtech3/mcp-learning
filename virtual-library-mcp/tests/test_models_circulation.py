@@ -65,8 +65,8 @@ class TestCheckoutRecord:
 
         # Invalid IDs
         invalid_ids = [
-            "202312150001",         # Missing prefix
-            "checkout_12345",       # Too short
+            "202312150001",  # Missing prefix
+            "checkout_12345",  # Too short
             "CHECKOUT_202312150001",  # Wrong case
         ]
 
