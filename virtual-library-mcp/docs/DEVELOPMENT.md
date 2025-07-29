@@ -80,10 +80,33 @@ pre-commit autoupdate
 # Install dependencies
 just install
 
+# Initialize database with test data
+just db-seed
+
 # Verify tool configuration
 just lint
 just typecheck
 ```
+
+### Database Setup
+
+The Virtual Library MCP Server uses a SQLite database populated with realistic test data:
+
+```bash
+# Seed database with test data
+just db-seed
+```
+
+This generates:
+- **120+ authors** with biographical information
+- **1200+ books** across 20 genres with valid ISBNs  
+- **60+ patrons** with varying membership statuses
+- **500+ circulation records** including checkouts, returns, and reservations
+
+The seed script (`database/seed.py`) demonstrates:
+- Progress reporting for long operations (MCP progress feature)
+- Realistic data relationships for testing MCP resources and tools
+- State management across multiple tables for subscriptions
 
 ### 2. During Development
 
