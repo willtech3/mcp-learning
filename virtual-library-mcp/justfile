@@ -152,6 +152,19 @@ db-info:
         echo "Tables: $(sqlite3 src/virtual_library_mcp/data/library.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "Unable to read")"; \
     fi
 
+# Seed database with generated test data
+# Creates realistic library data for MCP server testing
+db-seed:
+    @echo "🌱 Seeding database with test data..."
+    @echo "📊 This will generate:"
+    @echo "   - 120+ authors with biographical information"
+    @echo "   - 1200+ books across multiple genres"
+    @echo "   - 60+ patrons with varying membership statuses"
+    @echo "   - 500+ circulation records (checkouts, returns, reservations)"
+    @echo ""
+    uv run python database/seed.py
+    @echo "✅ Database seeding complete!"
+
 # === VALIDATION ===
 
 # Run all quality checks (linting, type checking, testing)
