@@ -20,7 +20,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -54,7 +54,7 @@ class DatabaseManager:
             db_path = Path(__file__).parent.parent / "data" / "library.db"
             db_path.parent.mkdir(exist_ok=True)
             database_url = f"sqlite:///{db_path}"
-            logger.info(f"Using SQLite database at: {db_path}")
+            logger.info("Using SQLite database at: %s", db_path)
 
         self.database_url = database_url
         self._engine: Engine | None = None
@@ -102,7 +102,7 @@ class DatabaseManager:
                     echo=False,
                 )
 
-            logger.info(f"Database engine created: {self._engine.url}")
+            logger.info("Database engine created: %s", self._engine.url)
 
         return self._engine
 
@@ -159,8 +159,8 @@ class DatabaseManager:
             yield session
             session.commit()
             logger.debug("Database transaction committed successfully")
-        except Exception as e:
-            logger.error(f"Database error, rolling back: {e}")
+        except Exception:
+            logger.exception("Database error, rolling back")
             session.rollback()
             raise
         finally:
@@ -197,14 +197,12 @@ class DatabaseManager:
         This is useful for MCP server health checks.
         """
         try:
-            from sqlalchemy import text
-
             with self.engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             logger.info("Database connection verified")
-            return True
-        except Exception as e:
-            logger.error(f"Database connection failed: {e}")
+            return True  # noqa: TRY300 - Clear intent: verify success or return failure
+        except Exception:
+            logger.exception("Database connection failed")
             return False
 
     def close(self) -> None:
@@ -238,7 +236,7 @@ def get_db_manager(database_url: str | None = None) -> DatabaseManager:
     This follows the singleton pattern to ensure consistent database
     access across all MCP handlers and tools.
     """
-    global _db_manager
+    global _db_manager  # noqa: PLW0603 - Singleton pattern for database manager
 
     if _db_manager is None:
         _db_manager = DatabaseManager(database_url)
@@ -293,7 +291,7 @@ def mcp_safe_commit(session: Session, operation: str) -> None:
     except Exception as e:
         session.rollback()
         # Provide MCP-friendly error message
-        raise ValueError(f"Database operation '{operation}' failed: {e!s}")
+        raise ValueError(f"Database operation '{operation}' failed: {e!s}") from e
 
 
 def mcp_safe_query(session: Session, query_func, error_msg: str):
@@ -312,9 +310,9 @@ def mcp_safe_query(session: Session, query_func, error_msg: str):
         ValueError: If query fails (with MCP-friendly message)
     """
     try:
-        return query_func()
+        return query_func(session)
     except Exception as e:
         # Log the detailed error
-        logger.error(f"Query failed: {e}")
+        logger.exception("Query failed")
         # Raise MCP-friendly error
-        raise ValueError(f"{error_msg}: Database query failed")
+        raise ValueError(f"{error_msg}: Database query failed") from e

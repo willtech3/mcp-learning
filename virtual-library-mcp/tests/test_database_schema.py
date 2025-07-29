@@ -46,7 +46,7 @@ class TestDatabaseSchema:
 
     def test_tables_created(self, session):
         """Verify all expected tables are created."""
-        from sqlalchemy import inspect
+        from sqlalchemy import inspect  # noqa: PLC0415 - Test-specific import
 
         inspector = inspect(session.bind)
         tables = inspector.get_table_names()
@@ -184,34 +184,36 @@ class TestDatabaseSchema:
             session.add(patron1)
 
         # Try to add duplicate email in new session
-        with pytest.raises(IntegrityError):
-            with db_manager.session_scope() as session:
-                patron2 = Patron(
-                    id="patron_unique2",
-                    name="Patron 2",
-                    email="duplicate@example.com",  # Duplicate email
-                    membership_date=date.today(),
-                )
-                session.add(patron2)
+        # PT012: This test needs to setup data within the session before triggering the constraint.
+        # The setup is integral to the test logic and extracting it would reduce clarity.
+        with pytest.raises(IntegrityError), db_manager.session_scope() as session:  # noqa: PT012
+            patron2 = Patron(
+                id="patron_unique2",
+                name="Patron 2",
+                email="duplicate@example.com",  # Duplicate email
+                membership_date=date.today(),
+            )
+            session.add(patron2)
 
         # Test check constraint on book copies in new session
-        with pytest.raises(IntegrityError):
-            with db_manager.session_scope() as session:
-                # First create the author
-                author = Author(id="author_constraint", name="Constraint Test Author")
-                session.add(author)
-                session.flush()
+        # PT012: This test requires creating an author first, then a book with invalid data.
+        # The multi-step setup within the session context is necessary to test the constraint.
+        with pytest.raises(IntegrityError), db_manager.session_scope() as session:  # noqa: PT012
+            # First create the author
+            author = Author(id="author_constraint", name="Constraint Test Author")
+            session.add(author)
+            session.flush()
 
-                book = Book(
-                    isbn="9789999999999",
-                    title="Invalid Book",
-                    author_id="author_constraint",
-                    genre="Fiction",
-                    publication_year=2024,
-                    available_copies=5,  # More than total!
-                    total_copies=3,
-                )
-                session.add(book)
+            book = Book(
+                isbn="9789999999999",
+                title="Invalid Book",
+                author_id="author_constraint",
+                genre="Fiction",
+                publication_year=2024,
+                available_copies=5,  # More than total!
+                total_copies=3,
+            )
+            session.add(book)
 
 
 class TestSessionManagement:
@@ -241,7 +243,9 @@ class TestSessionManagement:
                 )
                 session.add(author)
                 # Force an error
-                raise ValueError("Test error")
+                # TRY301: This raise is intentional - we're testing rollback behavior
+                # when an exception occurs within a transaction context.
+                raise ValueError("Test error")  # noqa: TRY301
         except ValueError:
             pass
 

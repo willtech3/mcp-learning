@@ -35,20 +35,17 @@ from .session import (
 )
 
 __all__ = [
-    # Schema classes
     "Author",
     "Base",
     "Book",
     "CheckoutRecord",
-    "Patron",
-    "ReservationRecord",
-    "ReturnRecord",
-    # Enums
     "CirculationStatusEnum",
-    "PatronStatusEnum",
-    "ReservationStatusEnum",
-    # Session management
     "DatabaseManager",
+    "Patron",
+    "PatronStatusEnum",
+    "ReservationRecord",
+    "ReservationStatusEnum",
+    "ReturnRecord",
     "get_db_manager",
     "get_session",
     "mcp_safe_commit",

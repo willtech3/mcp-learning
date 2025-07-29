@@ -13,7 +13,7 @@ Key MCP Integration Points:
 """
 
 import enum
-from datetime import date
+from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
@@ -224,7 +224,7 @@ class Patron(Base):
         if self.status != PatronStatusEnum.ACTIVE:
             return False
 
-        return not (self.expiration_date and self.expiration_date < date.today())
+        return not (self.expiration_date and self.expiration_date < datetime.now().date())  # noqa: DTZ005
 
     @property
     def can_checkout(self) -> bool:
@@ -377,7 +377,7 @@ class ReservationRecord(Base):
 
 # Database event listeners for MCP integration
 @event.listens_for(Book, "after_update")
-def book_after_update(mapper, connection, target):  # noqa: ARG001
+def book_after_update(mapper, connection, target):
     """
     Event listener for book updates - triggers MCP subscriptions.
 
@@ -388,12 +388,11 @@ def book_after_update(mapper, connection, target):  # noqa: ARG001
     """
     # This is where we'd integrate with the MCP subscription system
     # to notify clients of availability changes
-    pass
 
 
 @event.listens_for(ReservationRecord, "after_insert")
 @event.listens_for(ReservationRecord, "after_update")
-def reservation_queue_update(mapper, connection, target):  # noqa: ARG001
+def reservation_queue_update(mapper, connection, target):
     """
     Event listener for reservation changes - manages queue positions.
 
@@ -401,4 +400,3 @@ def reservation_queue_update(mapper, connection, target):  # noqa: ARG001
     that requires coordination across multiple records.
     """
     # Queue management logic would go here
-    pass
