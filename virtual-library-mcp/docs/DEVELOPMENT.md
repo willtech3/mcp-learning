@@ -108,17 +108,33 @@ The seed script (`database/seed.py`) demonstrates:
 - Realistic data relationships for testing MCP resources and tools
 - State management across multiple tables for subscriptions
 
-### 2. During Development
+### 2. Running the MCP Server
 
 ```bash
-# Run development server with auto-reload
+# Start the MCP server with stdio transport
 just dev
 
+# The server will output:
+# - Startup banner with version info
+# - "MCP Server ready and waiting for connections..."
+# - JSON-RPC messages will flow via stdin/stdout
+# - Logs appear on stderr
+
+# To test the server, you'll need an MCP client
+# The server expects JSON-RPC messages on stdin
+```
+
+### 3. During Development
+
+```bash
 # Run tests continuously
 just test-watch
 
 # Check types as you code
 just typecheck
+
+# View real-time logs (debug mode)
+just dev-debug
 ```
 
 ### 3. Before Committing
