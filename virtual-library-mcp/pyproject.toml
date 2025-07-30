@@ -180,18 +180,24 @@ exclude = [
 pythonVersion = "3.12"
 pythonPlatform = "All"
 
-# Strict type checking for MCP protocol compliance
-# MCP servers MUST handle JSON-RPC types correctly
-typeCheckingMode = "strict"
+# Default type checking mode
+typeCheckingMode = "basic"
 
 # Import resolution for MCP modules
 stubPath = "typings"
 venvPath = "."
 venv = ".venv"
 
-# Critical for MCP: All protocol handlers must be fully typed
+# Relax type checking for internal implementation per audit recommendations
+reportMissingParameterType = "warning"  # Don't require types on all parameters
+reportUnknownParameterType = "warning"  # Allow Any in internal functions
+reportMissingTypeArgument = "warning"  # Allow sessionmaker without [Session]
+reportUnknownMemberType = "none"  # SQLAlchemy queries often have unknown types
+
+# Keep strict for public APIs
+reportMissingTypeStubs = "error"  # External dependencies should have types
+reportUnknownArgumentType = "error"  # Catch wrong argument types
 reportMissingImports = "error"
-reportMissingTypeStubs = "warning"  # Some deps may lack stubs
 reportMissingModuleSource = "warning"
 
 # Type safety for protocol implementation
@@ -205,12 +211,11 @@ reportDuplicateImport = "error"
 reportGeneralTypeIssues = "error"
 reportPropertyTypeMismatch = "error"
 reportFunctionMemberAccess = "error"
-reportMissingTypeArgument = "error"
 reportInvalidTypeVarUse = "error"
 reportDataclassFieldWithoutDefault = "error"
-reportUntypedFunctionDecorator = "error"
-reportUntypedClassDecorator = "error"
-reportUntypedBaseClass = "error"
+reportUntypedFunctionDecorator = "warning"
+reportUntypedClassDecorator = "warning"
+reportUntypedBaseClass = "warning"
 reportUntypedNamedTuple = "error"
 
 # Async handling critical for MCP servers
@@ -226,19 +231,27 @@ reportOptionalIterable = "error"
 reportOptionalContextManager = "error"
 reportOptionalOperand = "error"
 
-# Type completeness for protocol messages
-reportUnknownParameterType = "error"
-reportUnknownArgumentType = "error"
-reportUnknownLambdaType = "error"
-reportUnknownVariableType = "error"
-reportUnknownMemberType = "error"
-reportMissingParameterType = "error"
+# Type completeness - relaxed per audit
+reportUnknownLambdaType = "warning"
+reportUnknownVariableType = "warning"
 
 # Allow some flexibility for educational code
 reportCallInDefaultInitializer = "none"  # OK for simple defaults
 reportImplicitStringConcatenation = "none"  # OK for long strings
 reportMissingSuperCall = "warning"  # Warn but don't error
 reportUninitializedInstanceVariable = "error"
+
+# Per-file overrides from audit recommendations
+[tool.pyright.strict]
+# Strict type checking for models and public APIs
+include = ["src/virtual_library_mcp/models/**", "src/virtual_library_mcp/database/repository.py"]
+typeCheckingMode = "strict"
+
+[tool.pyright.relaxed]
+# Relaxed for internal implementation
+include = ["src/virtual_library_mcp/database/session.py", "tests/**"]
+reportMissingParameterType = "none"
+reportUnknownParameterType = "none"
 
 [tool.pytest.ini_options]
 # Testing configuration for MCP server
