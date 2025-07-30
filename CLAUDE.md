@@ -78,3 +78,9 @@ The `docs/mcp/` directory contains comprehensive MCP documentation:
 - Keep tests simple and straightforward
 - Focus on critical paths rather than exhaustive edge cases
 - This is a learning project - no specific coverage requirement
+
+## Date/Time Handling
+
+- **Use local timezone throughout** - Since this is a learning project for MCP concepts, we'll use local timezone (datetime.now() without timezone) for simplicity
+- This avoids timezone complexity while focusing on MCP protocol implementation
+- All datetime operations should use local time consistently
