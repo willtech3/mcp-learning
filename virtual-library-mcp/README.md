@@ -24,15 +24,17 @@ just dev
   - Author, Book, Patron, and Circulation models
   - Repository pattern with pagination
   - 1200+ books, 120+ authors, 60+ patrons in seed data
-- **Phase 3** (In Progress): MCP Server initialization
+- **Phase 3**: MCP Server initialization
   - FastMCP 2.0 integration
   - Three-phase initialization handshake
   - Stdio transport configuration
   - Comprehensive logging
+- **Step 12**: Basic Resources ✅
+  - `/books/list` - Browse catalog with pagination
+  - `/books/{isbn}` - Get book details by ISBN
 
 ### 🚧 Coming Next
 
-- **Step 12**: Resources (`/books/list`, `/books/{isbn}`, `/authors/{id}`)
 - **Step 14**: Tools (`search_catalog`, `checkout_book`, `return_book`)
 - **Step 16**: Subscriptions (real-time availability updates)
 - **Step 18**: Prompts (AI-powered book recommendations)
@@ -87,10 +89,10 @@ echo '{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "
 
 ## 📚 MCP Features Demonstrated
 
-1. **Resources** (Coming Soon)
-   - Browse library catalog
-   - View book details
-   - Check patron history
+1. **Resources** ✅
+   - Browse library catalog with pagination and filtering
+   - View book details by ISBN
+   - (More resources coming: authors, patrons, circulation)
 
 2. **Tools** (Coming Soon)
    - Search for books
@@ -111,6 +113,60 @@ echo '{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "
 - **Error Handling**: MCP-compliant error responses
 - **Testing**: 100+ tests with fixtures
 - **Documentation**: Extensive inline documentation explaining MCP concepts
+
+## 🔄 Async/Sync Architecture Pattern
+
+### Understanding the Mixed Async/Sync Approach
+
+This MCP server uses a specific pattern that might seem unusual at first: **async handlers with synchronous database operations**. This is intentional and correct for our use case.
+
+#### Why Async Handlers?
+
+MCP protocol and FastMCP require async handlers because:
+- The protocol layer needs non-blocking I/O for handling multiple concurrent requests
+- Long-running operations shouldn't block other requests
+- Future operations might need async capabilities (external APIs, etc.)
+
+#### Why Sync Database Operations?
+
+We use synchronous SQLAlchemy with SQLite because:
+- SQLite is a local, file-based database with fast operations
+- Async SQLite provides no performance benefit (still single-threaded)
+- Synchronous code is simpler to understand and debug
+- SQLAlchemy's sync API is more mature and well-documented
+
+#### The Pattern in Practice
+
+```python
+# MCP requires async handlers
+async def list_books_handler(
+    uri: str,
+    context: Context,
+    params: BookListParams | None = None,
+) -> dict[str, Any]:
+    # But we can use sync operations inside
+    with session_scope() as session:  # Sync context manager
+        repo = BookRepository(session)
+        result = repo.search(...)     # Sync database query
+        return result.model_dump()    # Return sync result from async function
+```
+
+#### Key Points
+
+1. **This is not a mistake** - Async functions can contain sync code
+2. **Performance is fine** - SQLite operations are fast enough to not block
+3. **Future flexibility** - Easy to add async operations later if needed
+4. **Best of both worlds** - Protocol compliance + implementation simplicity
+
+#### When to Use Full Async
+
+You would use async all the way down when:
+- Using PostgreSQL/MySQL with async drivers (asyncpg, aiomysql)
+- Making external HTTP API calls
+- Dealing with slow I/O operations
+- Handling many concurrent database connections
+
+For a learning project with SQLite, the mixed approach provides the best balance of correctness and simplicity.
 
 ## 📖 Learning Resources
 

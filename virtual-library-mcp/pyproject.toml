@@ -241,18 +241,6 @@ reportImplicitStringConcatenation = "none"  # OK for long strings
 reportMissingSuperCall = "warning"  # Warn but don't error
 reportUninitializedInstanceVariable = "error"
 
-# Per-file overrides from audit recommendations
-[tool.pyright.strict]
-# Strict type checking for models and public APIs
-include = ["src/virtual_library_mcp/models/**", "src/virtual_library_mcp/database/repository.py"]
-typeCheckingMode = "strict"
-
-[tool.pyright.relaxed]
-# Relaxed for internal implementation
-include = ["src/virtual_library_mcp/database/session.py", "tests/**"]
-reportMissingParameterType = "none"
-reportUnknownParameterType = "none"
-
 [tool.pytest.ini_options]
 # Testing configuration for MCP server
 testpaths = ["tests"]

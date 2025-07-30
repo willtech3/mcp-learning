@@ -488,7 +488,9 @@ class PatronRepository(
             raise RepositoryException("Invalid operation - cannot have negative checkout count")
 
         if delta > 0 and new_checkouts > patron.borrowing_limit:
-            raise RepositoryException(f"Checkout limit exceeded - would exceed borrowing limit of {patron.borrowing_limit}")
+            raise RepositoryException(
+                f"Checkout limit exceeded - would exceed borrowing limit of {patron.borrowing_limit}"
+            )
 
         # Update counts
         patron.current_checkouts = new_checkouts

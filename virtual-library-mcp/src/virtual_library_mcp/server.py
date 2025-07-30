@@ -26,6 +26,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from virtual_library_mcp.config import get_config
+from virtual_library_mcp.resources import book_resources
 
 # Initialize logging for protocol debugging
 # MCP servers should provide detailed logging for troubleshooting
@@ -33,7 +34,9 @@ from virtual_library_mcp.config import get_config
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(sys.stderr)],  # Use stderr to keep stdout clean for stdio transport
+    handlers=[
+        logging.StreamHandler(sys.stderr)
+    ],  # Use stderr to keep stdout clean for stdio transport
 )
 
 logger = logging.getLogger(__name__)
@@ -82,8 +85,40 @@ mcp = FastMCP(
 # This follows the MCP principle of "capabilities follow implementation".
 
 # =============================================================================
+# RESOURCE REGISTRATION
+# =============================================================================
+
+# Register all book resources with the MCP server
+# WHY: Resources must be registered before the server starts
+# HOW: FastMCP uses decorators or direct registration
+# WHAT: Each resource gets a URI pattern and handler function
+
+for resource in book_resources:
+    if "uri_template" in resource:
+        # Resources with URI templates (e.g., /books/{isbn})
+        # These support parameterized URIs for accessing specific items
+        mcp.resource(
+            uri_template=resource["uri_template"],
+            name=resource["name"],
+            description=resource["description"],
+            mime_type=resource["mime_type"],
+        )(resource["handler"])
+    else:
+        # Static URI resources (e.g., /books/list)
+        # These have fixed URIs without parameters
+        mcp.resource(
+            uri=resource["uri"],
+            name=resource["name"],
+            description=resource["description"],
+            mime_type=resource["mime_type"],
+        )(resource["handler"])
+
+logger.info("Registered %d book resources", len(book_resources))
+
+# =============================================================================
 # LIFECYCLE MANAGEMENT
 # =============================================================================
+
 
 async def handle_initialization(params: dict[str, Any]) -> None:
     """Handle server initialization phase.
@@ -108,9 +143,9 @@ async def handle_initialization(params: dict[str, Any]) -> None:
 
     logger.info(
         "MCP Client connecting: %s v%s (Protocol: %s)",
-        client_info.get('name', 'Unknown'),
-        client_info.get('version', 'Unknown'),
-        protocol_version
+        client_info.get("name", "Unknown"),
+        client_info.get("version", "Unknown"),
+        protocol_version,
     )
 
     # Log client capabilities for debugging
@@ -156,6 +191,7 @@ async def handle_shutdown() -> None:
 # ERROR HANDLING
 # =============================================================================
 
+
 async def handle_error(error: Exception) -> None:
     """Handle server-level errors.
 
@@ -186,6 +222,7 @@ async def handle_error(error: Exception) -> None:
 # =============================================================================
 # TRANSPORT CONFIGURATION
 # =============================================================================
+
 
 def run_stdio_server() -> None:
     """Run the MCP server using stdio transport.
@@ -244,6 +281,7 @@ def run_stdio_server() -> None:
 # =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
+
 
 def main() -> None:
     """Main entry point for the MCP server.
@@ -321,7 +359,7 @@ if __name__ == "__main__":
 #    - Progress notifications
 #
 # Next Steps:
-# - Implement resources (Step 12): Add /books/list, /books/{isbn}
+# - Implement resources (Step 12): Add /books/list, /books/{isbn} ✓
 # - Implement tools (Step 14): Add search_catalog, checkout_book
 # - Add subscriptions (Step 16): Real-time updates
 # - Implement prompts (Step 18): AI-assisted recommendations
