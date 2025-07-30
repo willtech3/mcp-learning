@@ -221,3 +221,5 @@ Pipfile.lock
 # Keep these for version pinning:
 # requirements.txt
 # requirements-dev.txt
+type_annotation_analysis.md
+type_annotation_audit.md
