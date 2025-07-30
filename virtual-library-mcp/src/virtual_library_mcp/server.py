@@ -26,7 +26,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from virtual_library_mcp.config import get_config
-from virtual_library_mcp.resources import book_resources
+from virtual_library_mcp.resources import all_resources
 
 # Initialize logging for protocol debugging
 # MCP servers should provide detailed logging for troubleshooting
@@ -88,12 +88,12 @@ mcp = FastMCP(
 # RESOURCE REGISTRATION
 # =============================================================================
 
-# Register all book resources with the MCP server
+# Register all resources with the MCP server
 # WHY: Resources must be registered before the server starts
 # HOW: FastMCP uses decorators or direct registration
 # WHAT: Each resource gets a URI pattern and handler function
 
-for resource in book_resources:
+for resource in all_resources:
     if "uri_template" in resource:
         # Resources with URI templates (e.g., /books/{isbn})
         # These support parameterized URIs for accessing specific items
@@ -113,7 +113,7 @@ for resource in book_resources:
             mime_type=resource["mime_type"],
         )(resource["handler"])
 
-logger.info("Registered %d book resources", len(book_resources))
+logger.info("Registered %d resources", len(all_resources))
 
 # =============================================================================
 # LIFECYCLE MANAGEMENT

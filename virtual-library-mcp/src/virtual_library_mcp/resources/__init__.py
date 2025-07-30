@@ -21,6 +21,26 @@ This separation follows the Command Query Responsibility Segregation (CQRS)
 pattern, making the protocol more predictable and secure.
 """
 
+from .advanced_books import advanced_book_resources
 from .books import book_resources
+from .patrons import patron_resources
+from .recommendations import recommendation_resources
+from .stats import stats_resources
 
-__all__ = ["book_resources"]
+# Combine all resources
+all_resources = (
+    book_resources
+    + advanced_book_resources
+    + patron_resources
+    + stats_resources
+    + recommendation_resources
+)
+
+__all__ = [
+    "advanced_book_resources",
+    "all_resources",
+    "book_resources",
+    "patron_resources",
+    "recommendation_resources",
+    "stats_resources",
+]
