@@ -21,9 +21,7 @@ DESIGN DECISIONS:
 import logging
 from datetime import datetime, timedelta
 from typing import Any
-from urllib.parse import urlparse
 
-from fastmcp import Context
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
@@ -33,8 +31,7 @@ from ..database.repository import PaginationParams
 from ..database.session import session_scope
 from ..models.patron import PatronStatus
 
-# Import our centralized URI utilities
-from .uri_utils import URIParseError, extract_patron_id_from_history_uri
+# URI utilities are no longer needed with FastMCP 2.0's automatic parameter extraction
 
 logger = logging.getLogger(__name__)
 
@@ -93,11 +90,7 @@ class PatronHistoryResponse(BaseModel):
 # =============================================================================
 
 
-async def get_patron_history_handler(
-    uri: str,
-    context: Context,  # noqa: ARG001
-    params: PatronHistoryParams | None = None,
-) -> dict[str, Any]:
+async def get_patron_history_handler(patron_id: str) -> dict[str, Any]:
     """Handle requests for patron borrowing history.
 
     MCP NESTED RESOURCES:
@@ -108,9 +101,7 @@ async def get_patron_history_handler(
     and follows RESTful design principles.
 
     Args:
-        uri: The resource URI (e.g., "library://patrons/patron_smith001/history")
-        context: FastMCP context
-        params: Optional parameters for filtering history
+        patron_id: The patron ID from the URI template
 
     Returns:
         Dictionary containing the patron's borrowing history
@@ -119,12 +110,8 @@ async def get_patron_history_handler(
         ResourceError: If patron not found or other errors
     """
     try:
-        # Extract patron ID from URI
-        patron_id = extract_patron_id_from_history_uri(uri)
-
-        # Default parameters if none provided
-        if params is None:
-            params = PatronHistoryParams()
+        # Use default parameters for history filtering
+        params = PatronHistoryParams()
 
         logger.debug(
             "MCP Resource Request - patrons/%s/history: days=%d, include_active=%s",
@@ -194,9 +181,6 @@ async def get_patron_history_handler(
 
             return response.model_dump()
 
-    except URIParseError as e:
-        # Convert URI parsing errors to ResourceError
-        raise ResourceError(str(e)) from e
     except ResourceError:
         raise
     except Exception as e:
@@ -204,55 +188,41 @@ async def get_patron_history_handler(
         raise ResourceError(f"Failed to retrieve patron history: {e!s}") from e
 
 
-async def list_patrons_by_status_handler(
-    uri: str,
-    context: Context,  # noqa: ARG001
-    params: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+async def list_patrons_by_status_handler(status: str) -> dict[str, Any]:
     """Handle requests for patrons filtered by status.
 
-    MCP QUERY PARAMETERS:
-    Resources can accept query parameters through the URI query string.
-    This handler demonstrates filtering based on patron status.
+    MCP URI TEMPLATES:
+    This handler receives the status parameter directly from the URI template
+    library://patrons/by-status/{status}. FastMCP 2.0 extracts and passes
+    the parameter automatically.
 
     Example URIs:
     - library://patrons/by-status/active
-    - library://patrons/by-status/suspended?page=2
+    - library://patrons/by-status/suspended
 
     Args:
-        uri: The resource URI
-        context: FastMCP context
-        params: Query parameters (page, limit, etc.)
+        status: The patron status from the URI template
 
     Returns:
         Dictionary containing filtered patron list
     """
     try:
-        # Extract status from URI
-        parsed = urlparse(uri)
-        path_parts = parsed.path.lstrip("/").split("/") if parsed.path else []
-
-        if len(path_parts) < 3 or path_parts[1] != "by-status":
-            raise ValueError("Invalid URI format for by-status resource")
-
-        status_str = path_parts[2].upper()
+        # Convert status string to enum (case-insensitive)
+        status_str = status.upper()
 
         # Validate status
         try:
-            status = PatronStatus[status_str]
+            patron_status = PatronStatus[status_str]
         except KeyError as e:
-            raise ResourceError(f"Invalid patron status: {status_str}") from e
+            raise ResourceError(f"Invalid patron status: {status}") from e
 
-        # Parse query parameters
-        if params is None:
-            params = {}
-
-        page = int(params.get("page", 1))
-        limit = min(int(params.get("limit", 20)), 100)  # Cap at 100
+        # Use default pagination parameters
+        page = 1
+        limit = 20
 
         logger.debug(
             "MCP Resource Request - patrons/by-status/%s: page=%d, limit=%d",
-            status.value,
+            patron_status.value,
             page,
             limit,
         )
@@ -261,7 +231,7 @@ async def list_patrons_by_status_handler(
             patron_repo = PatronRepository(session)
 
             # Search for patrons with specific status
-            search_params = PatronSearchParams(status=status)
+            search_params = PatronSearchParams(status=patron_status)
             result = patron_repo.search(
                 search_params=search_params, pagination=PaginationParams(page=page, page_size=limit)
             )
@@ -287,7 +257,7 @@ async def list_patrons_by_status_handler(
                 )
 
             return {
-                "status_filter": status.value,
+                "status_filter": patron_status.value,
                 "patrons": patrons_data,
                 "total": result.total,
                 "page": result.page,

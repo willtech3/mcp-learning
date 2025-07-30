@@ -23,7 +23,6 @@ from collections import Counter
 from datetime import datetime, timedelta
 from typing import Any
 
-from fastmcp import Context
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, func, select
@@ -34,14 +33,7 @@ from ..database.schema import CheckoutRecord as CheckoutDB
 from ..database.schema import Patron as PatronDB
 from ..database.session import session_scope
 
-# Import our centralized URI utilities
-from .uri_utils import URIParseError, extract_patron_id_from_recommendations_uri
-
 logger = logging.getLogger(__name__)
-
-
-# Helper functions are now imported from uri_utils module
-# This demonstrates the DRY principle - Don't Repeat Yourself
 
 
 # =============================================================================
@@ -450,11 +442,7 @@ class RecommendationEngine:
 # =============================================================================
 
 
-async def get_patron_recommendations_handler(
-    uri: str,
-    context: Context,  # noqa: ARG001
-    params: RecommendationParams | None = None,
-) -> dict[str, Any]:
+async def get_patron_recommendations_handler(patron_id: str) -> dict[str, Any]:
     """Handle requests for personalized book recommendations.
 
     MCP PERSONALIZATION:
@@ -467,20 +455,14 @@ async def get_patron_recommendations_handler(
     to ensure patrons can only access their own recommendations.
 
     Args:
-        uri: The resource URI (e.g., "library://recommendations/patron_smith001")
-        context: FastMCP context
-        params: Parameters for recommendation generation
+        patron_id: The patron ID from the URI template
 
     Returns:
         Dictionary containing personalized recommendations
     """
     try:
-        # Extract patron ID from URI
-        patron_id = extract_patron_id_from_recommendations_uri(uri)
-
-        # Default parameters if none provided
-        if params is None:
-            params = RecommendationParams()
+        # Use default parameters for recommendations
+        params = RecommendationParams()
 
         logger.debug(
             "MCP Resource Request - recommendations/%s: strategy=%s, limit=%d",
@@ -496,9 +478,6 @@ async def get_patron_recommendations_handler(
 
             return response.model_dump()
 
-    except URIParseError as e:
-        # Convert URI parsing errors to ResourceError
-        raise ResourceError(str(e)) from e
     except ResourceError:
         raise
     except Exception as e:

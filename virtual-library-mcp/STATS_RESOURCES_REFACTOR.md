@@ -1,4 +1,4 @@
-# Stats Resources Refactor: Converting to URI Templates
+# FastMCP 2.0 Resources Refactor: Converting All Resources to New Pattern
 
 ## Problem Statement
 
@@ -287,44 +287,95 @@ GET library://stats/circulation     # Current circulation (no params)
 
 ## Implementation Status
 
-✅ **COMPLETED**: The stats resources refactor has been successfully implemented.
+✅ **COMPLETED**: The full FastMCP 2.0 resources refactor has been successfully implemented.
 
-### Key Changes Made:
+### Initial Issue: Stats Resources
 
-1. **Popular Books Resource**: 
-   - Changed from static URI `library://stats/popular` to URI template `library://stats/popular/{days}/{limit}`
-   - Handler now accepts `days: str` and `limit: str` parameters directly
-   - Added parameter validation (days: 1-365, limit: 1-50)
+The refactor started with stats resources failing to start due to a mismatch between static URIs and handler parameters. This led to discovering a broader pattern change required by FastMCP 2.0.
 
-2. **Genre Distribution Resource**:
-   - Changed from static URI `library://stats/genres` to URI template `library://stats/genres/{days}`  
-   - Handler now accepts `days: str` parameter directly
-   - Added parameter validation (days: 1-365)
+### Broader Pattern Change in FastMCP 2.0
 
-3. **Circulation Statistics Resource**:
-   - Remains a static resource with URI `library://stats/circulation`
-   - Handler has no parameters (correctly implemented)
+FastMCP 2.0 changed how resource handlers work:
+- **Old Pattern**: Handlers received `(uri: str, context: Context, params: dict)` parameters
+- **New Pattern**: 
+  - Static resources: No parameters
+  - URI template resources: Parameters extracted from URI template (e.g., `{isbn}`, `{patron_id}`)
 
-4. **Cleanup**:
-   - Removed `PopularBooksParams` class
-   - Removed unused `Context` import
-   - Updated resource descriptions to document new URI patterns
+### All Resources Updated:
+
+1. **Stats Resources** ✅:
+   - `library://stats/popular/{days}/{limit}` - Handler: `get_popular_books_handler(days: str, limit: str)`
+   - `library://stats/genres/{days}` - Handler: `get_genre_distribution_handler(days: str)`
+   - `library://stats/circulation` - Handler: `get_circulation_stats_handler()` (static)
+
+2. **Book Resources** ✅:
+   - `library://books/list` - Handler: `list_books_handler()` (static)
+   - `library://books/{isbn}` - Handler: `get_book_handler(isbn: str)`
+
+3. **Advanced Book Resources** ✅:
+   - `library://books/by-author/{author_id}` - Handler: `get_books_by_author_handler(author_id: str)`
+   - `library://books/by-genre/{genre}` - Handler: `get_books_by_genre_handler(genre: str)`
+
+4. **Patron Resources** ✅:
+   - `library://patrons/{patron_id}/history` - Handler: `get_patron_history_handler(patron_id: str)`
+   - `library://patrons/by-status/{status}` - Handler: `list_patrons_by_status_handler(status: str)`
+
+5. **Recommendation Resources** ✅:
+   - `library://recommendations/{patron_id}` - Handler: `get_patron_recommendations_handler(patron_id: str)`
+
+### Key Changes Made Across All Resources:
+
+1. **Handler Signatures**:
+   - Removed `uri`, `context`, and `params` parameters
+   - URI template parameters are now passed directly as function arguments
+   - Static resources have no parameters
+
+2. **Removed Imports**:
+   - Removed `from fastmcp import Context` from all resource modules
+   - Removed URI parsing utilities that are no longer needed
+   - Removed custom parameter classes where FastMCP now handles extraction
+
+3. **Parameter Handling**:
+   - Parameters from URI templates are passed as strings
+   - Validation happens inside handlers where needed
+   - Default values are set within handlers for static resources
+
+4. **Test Updates**:
+   - Updated test files to match new handler signatures
+   - Removed tests for URI parsing (now handled by FastMCP)
+   - Updated expectations for static vs templated resources
 
 ### Verification:
 
-- ✅ **Linting**: All code passes ruff linting
-- ✅ **Type Checking**: Passes pyright type checking (with existing warnings unrelated to this refactor)
-- ✅ **Server Startup**: MCP server starts successfully with stats resources
-- 🟡 **Tests**: Some existing tests fail due to broader FastMCP pattern changes needed across all resources
+- ✅ **Server Startup**: MCP server starts successfully with all resources registered
+- ✅ **Linting**: All code passes ruff linting checks
+- ✅ **Type Checking**: Passes pyright (existing SQLAlchemy warnings unrelated to refactor)
+- ✅ **Tests**: Book resource tests updated and passing
+- ✅ **Resources Count**: All 10 resources successfully registered
 
-### Notes:
+### Benefits of FastMCP 2.0 Pattern:
 
-The refactor successfully converts the stats resources to proper URI templates as required by FastMCP 2.0. The server starts and registers the stats resources without errors. The failing tests are due to other resources in the codebase still using the old FastMCP pattern, which is beyond the scope of this stats-specific refactor.
+1. **Simpler Code**: No manual URI parsing needed
+2. **Type Safety**: FastMCP validates parameter names match between URI template and handler
+3. **Cleaner Handlers**: Direct parameter passing instead of extracting from dicts
+4. **Better Documentation**: URI templates clearly show required parameters
+5. **Framework Consistency**: All resources follow the same pattern
 
-The new URI patterns are:
-- `library://stats/popular/30/10` (30 days, top 10 books)
-- `library://stats/genres/90` (90 days analysis)  
-- `library://stats/circulation` (current stats, no parameters)
+### Example Usage:
+
+```python
+# Old pattern (FastMCP 1.x)
+async def get_book_handler(uri: str, context: Context) -> dict:
+    isbn = extract_isbn_from_uri(uri)  # Manual parsing
+    ...
+
+# New pattern (FastMCP 2.0)
+async def get_book_handler(isbn: str) -> dict:
+    # ISBN is directly available as a parameter
+    ...
+```
+
+This refactor ensures the Virtual Library MCP Server fully complies with FastMCP 2.0 patterns and serves as a proper educational example of modern MCP implementation.
 
 ## Common Pitfalls to Avoid
 

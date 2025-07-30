@@ -109,8 +109,8 @@ for resource in all_resources:
             description=resource["description"],
             mime_type=resource["mime_type"],
         )(resource["handler"])
-    except Exception as e:
-        logger.error("Failed to register resource %s: %s", resource["name"], e)
+    except Exception:
+        logger.exception("Failed to register resource %s", resource["name"])
         raise
 
 logger.info("Registered %d resources", len(all_resources))

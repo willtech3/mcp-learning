@@ -11,6 +11,7 @@ MCP TESTING PHILOSOPHY:
 """
 
 import inspect
+import re
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -21,7 +22,6 @@ from virtual_library_mcp.database.book_repository import BookSortOptions
 from virtual_library_mcp.database.repository import PaginatedResponse
 from virtual_library_mcp.models.book import Book
 from virtual_library_mcp.resources.books import (
-    BookListParams,
     BookListResponse,
     book_resources,
     get_book_handler,
@@ -108,10 +108,8 @@ class TestBookListResource:
                 # Make search return the paginated response (not async)
                 mock_repo.search.return_value = paginated_response
                 MockBookRepo.return_value = mock_repo
-                # Call handler with no params (should use defaults)
-                result = await list_books_handler(
-                    uri="library://books/list", context=mock_context, params=None
-                )
+                # Call handler with no params (FastMCP 2.0 pattern)
+                result = await list_books_handler()
 
                 # Verify response structure matches MCP expectations
                 assert isinstance(result, dict)
@@ -141,27 +139,17 @@ class TestBookListResource:
                 assert call_args.kwargs["sort_desc"] is False
 
     @pytest.mark.asyncio
-    async def test_list_books_with_search_params(self, sample_book_list, mock_context):
-        """Test listing books with search parameters."""
-        # Create filtered response
-        filtered_books = [b for b in sample_book_list if b.genre == "Fiction"]
+    async def test_list_books_always_uses_defaults(self, sample_book_list, mock_context):
+        """Test that list books always uses default parameters (static resource)."""
+        # Create response with default pagination
         paginated_response = PaginatedResponse(
-            items=filtered_books[:2],
-            total=4,
+            items=sample_book_list[:2],
+            total=5,
             page=1,
-            page_size=2,
-            total_pages=2,
-            has_next=True,
+            page_size=20,  # Default limit
+            total_pages=1,
+            has_next=False,
             has_previous=False,
-        )
-
-        params = BookListParams(
-            page=1,
-            limit=2,
-            genre="Fiction",
-            sort_by=BookSortOptions.PUBLICATION_YEAR,
-            sort_order="desc",
-            available_only=True,
         )
 
         with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
@@ -174,24 +162,23 @@ class TestBookListResource:
                 # Make search return the paginated response (not async)
                 mock_repo.search.return_value = paginated_response
                 MockBookRepo.return_value = mock_repo
-                result = await list_books_handler(
-                    uri="library://books/list", context=mock_context, params=params
-                )
 
-                # Verify pagination in response
-                assert result["page"] == 1
-                assert result["page_size"] == 2
-                assert result["total_pages"] == 2
-                assert result["has_next"] is True
-                assert result["has_previous"] is False
+                # Handler doesn't accept parameters anymore (static resource)
+                await list_books_handler()
 
-                # Verify search params were passed correctly
+                # Verify it always uses default values
                 call_args = mock_repo.search.call_args
+                pagination = call_args.kwargs["pagination"]
+                assert pagination.page == 1  # Default page
+                assert pagination.page_size == 20  # Default limit
+                assert call_args.kwargs["sort_by"] == BookSortOptions.TITLE  # Default sort
+                assert call_args.kwargs["sort_desc"] is False  # Default order
+
+                # Verify search params are defaults
                 search_params = call_args.kwargs["search_params"]
-                assert search_params.genre == "Fiction"
-                assert search_params.available_only is True
-                assert call_args.kwargs["sort_by"] == BookSortOptions.PUBLICATION_YEAR
-                assert call_args.kwargs["sort_desc"] is True
+                assert search_params.query is None
+                assert search_params.genre is None
+                assert search_params.available_only is False
 
     @pytest.mark.asyncio
     async def test_list_books_error_handling(self, mock_context):
@@ -206,9 +193,7 @@ class TestBookListResource:
                 MockBookRepo.return_value = mock_repo
                 # Should raise ResourceError with proper code
                 with pytest.raises(ResourceError):
-                    await list_books_handler(
-                        uri="library://books/list", context=mock_context, params=None
-                    )
+                    await list_books_handler()
 
 
 # =============================================================================
@@ -223,7 +208,6 @@ class TestBookDetailResource:
     async def test_get_book_by_isbn(self, sample_book, mock_context):
         """Test retrieving a book by ISBN."""
         isbn = "978-0-134-68547-9"
-        uri = f"library://books/{isbn}"
 
         with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
@@ -233,7 +217,7 @@ class TestBookDetailResource:
                 mock_repo = Mock()
                 mock_repo.get_by_isbn.return_value = sample_book
                 MockBookRepo.return_value = mock_repo
-                result = await get_book_handler(uri=uri, context=mock_context)
+                result = await get_book_handler(isbn=isbn)
 
                 # Verify response is book data
                 assert isinstance(result, dict)
@@ -248,7 +232,6 @@ class TestBookDetailResource:
     async def test_get_book_not_found(self, mock_context):
         """Test 404 behavior for non-existent book."""
         isbn = "978-0-000-00000-0"
-        uri = f"library://books/{isbn}"
 
         with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
@@ -259,38 +242,41 @@ class TestBookDetailResource:
                 mock_repo.get_by_isbn.return_value = None  # Book not found
                 MockBookRepo.return_value = mock_repo
                 with pytest.raises(ResourceError) as exc_info:
-                    await get_book_handler(uri=uri, context=mock_context)
+                    await get_book_handler(isbn=isbn)
 
                 # Verify proper error message
                 assert f"Book not found: {isbn}" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_get_book_invalid_uri(self, mock_context):
-        """Test error handling for malformed URIs.
+    async def test_get_book_invalid_isbn(self, mock_context):
+        """Test error handling for invalid ISBN values.
 
-        With our improved URI parser, we now get more specific error messages
-        that help developers understand exactly what went wrong.
+        FastMCP 2.0 extracts the ISBN from the URI template, so we test
+        handling of invalid ISBN values rather than URI parsing.
         """
-        invalid_uris_and_errors = [
-            ("library://books", "Missing ISBN in URI"),  # Missing ISBN
-            ("library://book/123", "Invalid URI structure"),  # Wrong path
-            ("library://", "No path found in URI"),  # No path
-            ("books/123", "Invalid URI scheme"),  # No scheme
-        ]
+        # Test with an invalid ISBN that the repository can't find
+        invalid_isbn = "invalid-isbn-format"
 
-        for uri, expected_error in invalid_uris_and_errors:
-            with pytest.raises(ResourceError) as exc_info:
-                await get_book_handler(uri=uri, context=mock_context)
+        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+            mock_session = AsyncMock()
+            mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            # Should return specific error for bad URI format
-            assert expected_error in str(exc_info.value), (
-                f"For URI '{uri}', expected '{expected_error}' in error message"
-            )
+            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+                mock_repo = Mock()
+                # Repository returns None for invalid ISBN
+                mock_repo.get_by_isbn.return_value = None
+                MockBookRepo.return_value = mock_repo
+
+                with pytest.raises(ResourceError) as exc_info:
+                    await get_book_handler(isbn=invalid_isbn)
+
+                # Should return book not found error
+                assert f"Book not found: {invalid_isbn}" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_book_database_error(self, mock_context):
         """Test error handling for database failures."""
-        uri = "library://books/978-0-134-68547-9"
+        isbn = "978-0-134-68547-9"
 
         with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
@@ -301,7 +287,7 @@ class TestBookDetailResource:
                 mock_repo.get_by_isbn.side_effect = Exception("Connection timeout")
                 MockBookRepo.return_value = mock_repo
                 with pytest.raises(ResourceError) as exc_info:
-                    await get_book_handler(uri=uri, context=mock_context)
+                    await get_book_handler(isbn=isbn)
 
                 assert "Connection timeout" in str(exc_info.value)
 
@@ -391,8 +377,16 @@ async def test_resource_registration_with_fastmcp():
         assert callable(handler)
         assert hasattr(handler, "__name__")
 
-        # Verify handler signature matches MCP expectations
+        # Verify handler signature matches FastMCP 2.0 expectations
         sig = inspect.signature(handler)
         params = list(sig.parameters.keys())
-        assert "uri" in params
-        assert "context" in params
+
+        if "uri_template" in resource:
+            # Template resources should have parameters matching URI template
+            # Extract parameter names from URI template
+            template_params = re.findall(r"\{(\w+)\}", resource["uri_template"])
+            for param in template_params:
+                assert param in params, f"Handler missing parameter '{param}' from URI template"
+        else:
+            # Static resources should have no parameters
+            assert len(params) == 0, "Static resource handlers should have no parameters"

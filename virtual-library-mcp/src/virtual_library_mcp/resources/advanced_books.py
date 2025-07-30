@@ -16,16 +16,12 @@ MCP URI TEMPLATE CONCEPTS:
 import logging
 from typing import Any
 
-from fastmcp import Context
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
 from ..database.book_repository import BookRepository, BookSearchParams
 from ..database.repository import PaginationParams
 from ..database.session import session_scope
-
-# Import our centralized URI utilities
-from .uri_utils import URIParseError, extract_author_id_from_books_uri, extract_genre_from_books_uri
 
 logger = logging.getLogger(__name__)
 
@@ -76,11 +72,7 @@ class FilteredBooksResponse(BaseModel):
 # =============================================================================
 
 
-async def get_books_by_author_handler(
-    uri: str,
-    context: Context,  # noqa: ARG001
-    params: FilteredBooksParams | None = None,
-) -> dict[str, Any]:
+async def get_books_by_author_handler(author_id: str) -> dict[str, Any]:
     """Handle requests for books by a specific author.
 
     MCP FILTERED RESOURCES:
@@ -92,20 +84,14 @@ async def get_books_by_author_handler(
     and bookmarkable.
 
     Args:
-        uri: The resource URI (e.g., "library://books/by-author/Jane%20Austen")
-        context: FastMCP context
-        params: Pagination and sorting parameters
+        author_id: The author name/ID from the URI template
 
     Returns:
         Dictionary containing books by the specified author
     """
     try:
-        # Extract author from URI
-        author_id = extract_author_id_from_books_uri(uri)
-
-        # Default parameters if none provided
-        if params is None:
-            params = FilteredBooksParams()
+        # Use default parameters for pagination
+        params = FilteredBooksParams()
 
         logger.debug(
             "MCP Resource Request - books/by-author/%s: page=%d, limit=%d",
@@ -172,19 +158,12 @@ async def get_books_by_author_handler(
 
             return response.model_dump()
 
-    except URIParseError as e:
-        # Convert URI parsing errors to ResourceError
-        raise ResourceError(str(e)) from e
     except Exception as e:
         logger.exception("Error in books/by-author resource")
         raise ResourceError(f"Failed to retrieve books by author: {e!s}") from e
 
 
-async def get_books_by_genre_handler(
-    uri: str,
-    context: Context,  # noqa: ARG001
-    params: FilteredBooksParams | None = None,
-) -> dict[str, Any]:
+async def get_books_by_genre_handler(genre: str) -> dict[str, Any]:
     """Handle requests for books in a specific genre.
 
     MCP GENRE FILTERING:
@@ -193,20 +172,14 @@ async def get_books_by_genre_handler(
     the API predictable and easy to use.
 
     Args:
-        uri: The resource URI (e.g., "library://books/by-genre/Science%20Fiction")
-        context: FastMCP context
-        params: Pagination and sorting parameters
+        genre: The genre name from the URI template
 
     Returns:
         Dictionary containing books in the specified genre
     """
     try:
-        # Extract genre from URI
-        genre = extract_genre_from_books_uri(uri)
-
-        # Default parameters if none provided
-        if params is None:
-            params = FilteredBooksParams()
+        # Use default parameters for pagination
+        params = FilteredBooksParams()
 
         logger.debug(
             "MCP Resource Request - books/by-genre/%s: page=%d, limit=%d",
@@ -277,9 +250,6 @@ async def get_books_by_genre_handler(
 
             return response.model_dump()
 
-    except URIParseError as e:
-        # Convert URI parsing errors to ResourceError
-        raise ResourceError(str(e)) from e
     except Exception as e:
         logger.exception("Error in books/by-genre resource")
         raise ResourceError(f"Failed to retrieve books by genre: {e!s}") from e

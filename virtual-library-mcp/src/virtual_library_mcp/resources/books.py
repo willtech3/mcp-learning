@@ -28,7 +28,6 @@ This implementation demonstrates:
 import logging
 from typing import Any
 
-from fastmcp import Context
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
@@ -36,7 +35,6 @@ from ..database.book_repository import BookRepository, BookSearchParams, BookSor
 from ..database.repository import PaginationParams
 from ..database.session import session_scope
 from ..models.book import Book
-from .uri_utils import URIParseError, extract_isbn_from_uri
 
 logger = logging.getLogger(__name__)
 
@@ -94,16 +92,13 @@ class BookListResponse(BaseModel):
 # FastMCP calls these handlers when clients request the resource.
 
 
-async def list_books_handler(params: BookListParams | None = None) -> dict[str, Any]:
+async def list_books_handler() -> dict[str, Any]:
     """Handle requests for the book list resource.
 
     MCP PROTOCOL DETAILS:
     - This handler is called when a client requests "library://books/list"
     - The protocol automatically handles JSON serialization of the response
     - Errors are converted to proper JSON-RPC error responses
-
-    Args:
-        params: Optional parameters for filtering and pagination
 
     Returns:
         Dictionary containing the book list and pagination metadata
@@ -112,9 +107,8 @@ async def list_books_handler(params: BookListParams | None = None) -> dict[str, 
         ResourceError: If there's a problem accessing the data
     """
     try:
-        # Default parameters if none provided
-        if params is None:
-            params = BookListParams()
+        # Use default parameters since this is now a static resource
+        params = BookListParams()
 
         logger.debug(
             "MCP Resource Request - books/list: page=%d, limit=%d, sort=%s",
@@ -167,7 +161,7 @@ async def list_books_handler(params: BookListParams | None = None) -> dict[str, 
         raise ResourceError(f"Failed to retrieve book list: {e!s}") from e
 
 
-async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noqa: ARG001
+async def get_book_handler(isbn: str) -> dict[str, Any]:
     """Handle requests for individual book details.
 
     MCP URI TEMPLATES:
@@ -176,8 +170,7 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
     with the actual ISBN when requesting the resource.
 
     Args:
-        uri: The full resource URI (e.g., "library://books/978-0-134-68547-9")
-        context: FastMCP context
+        isbn: The book ISBN extracted from the URI template
 
     Returns:
         Dictionary containing the book details
@@ -186,10 +179,7 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
         ResourceError: If the book is not found or other errors occur
     """
     try:
-        # Extract ISBN from URI using robust validation
-        # WHY: MCP uses URI templates for parameterized resources
-        # HOW: Enhanced parsing validates scheme, path structure, and provides better error messages
-        isbn = extract_isbn_from_uri(uri)
+        # ISBN is now directly passed as a parameter from the URI template
         logger.debug("MCP Resource Request - books/%s", isbn)
 
         with session_scope() as session:
@@ -207,9 +197,6 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
             # The protocol adds metadata like URI and content type
             return book.model_dump()
 
-    except URIParseError as e:
-        # Convert URI parsing errors to ResourceError
-        raise ResourceError(str(e)) from e
     except ResourceError:
         raise  # Re-raise MCP errors as-is
     except Exception as e:
