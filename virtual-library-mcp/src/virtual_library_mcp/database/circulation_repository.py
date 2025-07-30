@@ -153,7 +153,9 @@ class CirculationRepository:
                 raise RepositoryException(
                     f"Patron has reached borrowing limit of {patron.borrowing_limit}"
                 )
-            raise RepositoryException("Checkout denied - patron has outstanding fines exceeding $10")
+            raise RepositoryException(
+                "Checkout denied - patron has outstanding fines exceeding $10"
+            )
 
         # Validate book availability
         book = mcp_safe_query(
@@ -168,12 +170,12 @@ class CirculationRepository:
             raise NotFoundError(f"Book {checkout_data.book_isbn} not found")
 
         if book.available_copies <= 0:
-            raise RepositoryException(f"Book unavailable for checkout - no copies of '{book.title}' available")
+            raise RepositoryException(
+                f"Book unavailable for checkout - no copies of '{book.title}' available"
+            )
 
         # Calculate due date if not provided (14-day loan period)
-        due_date = checkout_data.due_date or (
-            datetime.now().date() + timedelta(days=14)
-        )
+        due_date = checkout_data.due_date or (datetime.now().date() + timedelta(days=14))
 
         # Generate checkout ID
         checkout_id = self._generate_checkout_id()
@@ -253,7 +255,9 @@ class CirculationRepository:
             raise NotFoundError(f"Checkout {return_data.checkout_id} not found")
 
         if checkout.status != CirculationStatusEnum.ACTIVE:
-            raise RepositoryException(f"Return failed - checkout is not active (current status: {checkout.status})")
+            raise RepositoryException(
+                f"Return failed - checkout is not active (current status: {checkout.status})"
+            )
 
         # Calculate late days and fine
         return_date = datetime.now()
@@ -377,7 +381,9 @@ class CirculationRepository:
         )
 
         if existing:
-            raise RepositoryException("Reservation denied - patron already has an active reservation for this book")
+            raise RepositoryException(
+                "Reservation denied - patron already has an active reservation for this book"
+            )
 
         # Get next queue position
         max_position = (

@@ -11,7 +11,7 @@ MCP TESTING PHILOSOPHY:
 """
 
 import inspect
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastmcp import Context
@@ -98,15 +98,15 @@ class TestBookListResource:
         )
 
         # Mock the repository
-        with patch("virtual_library_mcp.resources.books.get_session") as mock_get_session:
+        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
-            mock_get_session.return_value.__aenter__.return_value = mock_session
+            mock_session_scope.return_value.__enter__.return_value = mock_session
 
             with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
                 # Create a mock instance with the search method
-                mock_repo = AsyncMock()
+                mock_repo = Mock()
                 # Make search return the paginated response (not async)
-                mock_repo.search = AsyncMock(return_value=paginated_response)
+                mock_repo.search.return_value = paginated_response
                 MockBookRepo.return_value = mock_repo
                 # Call handler with no params (should use defaults)
                 result = await list_books_handler(
@@ -134,9 +134,11 @@ class TestBookListResource:
                 # Verify repository was called with default params
                 mock_repo.search.assert_called_once()
                 call_args = mock_repo.search.call_args
-                assert call_args.kwargs["pagination"] == {"page": 1, "limit": 20}
-                assert call_args.kwargs["sort_by"] == "title"
-                assert call_args.kwargs["sort_order"] == "asc"
+                pagination = call_args.kwargs["pagination"]
+                assert pagination.page == 1
+                assert pagination.page_size == 20
+                assert call_args.kwargs["sort_by"] == BookSortOptions.TITLE
+                assert call_args.kwargs["sort_desc"] is False
 
     @pytest.mark.asyncio
     async def test_list_books_with_search_params(self, sample_book_list, mock_context):
@@ -162,15 +164,15 @@ class TestBookListResource:
             available_only=True,
         )
 
-        with patch("virtual_library_mcp.resources.books.get_session") as mock_get_session:
+        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
-            mock_get_session.return_value.__aenter__.return_value = mock_session
+            mock_session_scope.return_value.__enter__.return_value = mock_session
 
             with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
                 # Create a mock instance with the search method
-                mock_repo = AsyncMock()
+                mock_repo = Mock()
                 # Make search return the paginated response (not async)
-                mock_repo.search = AsyncMock(return_value=paginated_response)
+                mock_repo.search.return_value = paginated_response
                 MockBookRepo.return_value = mock_repo
                 result = await list_books_handler(
                     uri="library://books/list", context=mock_context, params=params
@@ -188,19 +190,19 @@ class TestBookListResource:
                 search_params = call_args.kwargs["search_params"]
                 assert search_params.genre == "Fiction"
                 assert search_params.available_only is True
-                assert call_args.kwargs["sort_by"] == "publication_year"
-                assert call_args.kwargs["sort_order"] == "desc"
+                assert call_args.kwargs["sort_by"] == BookSortOptions.PUBLICATION_YEAR
+                assert call_args.kwargs["sort_desc"] is True
 
     @pytest.mark.asyncio
     async def test_list_books_error_handling(self, mock_context):
         """Test error handling in list resource."""
-        with patch("virtual_library_mcp.resources.books.get_session") as mock_get_session:
+        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
-            mock_get_session.return_value.__aenter__.return_value = mock_session
+            mock_session_scope.return_value.__enter__.return_value = mock_session
 
             with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
-                mock_repo = AsyncMock()
-                mock_repo.search = AsyncMock(side_effect=Exception("Database connection failed"))
+                mock_repo = Mock()
+                mock_repo.search.side_effect = Exception("Database connection failed")
                 MockBookRepo.return_value = mock_repo
                 # Should raise ResourceError with proper code
                 with pytest.raises(ResourceError):
@@ -223,13 +225,13 @@ class TestBookDetailResource:
         isbn = "978-0-134-68547-9"
         uri = f"library://books/{isbn}"
 
-        with patch("virtual_library_mcp.resources.books.get_session") as mock_get_session:
+        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
-            mock_get_session.return_value.__aenter__.return_value = mock_session
+            mock_session_scope.return_value.__enter__.return_value = mock_session
 
             with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
-                mock_repo = AsyncMock()
-                mock_repo.get = AsyncMock(return_value=sample_book)
+                mock_repo = Mock()
+                mock_repo.get_by_isbn.return_value = sample_book
                 MockBookRepo.return_value = mock_repo
                 result = await get_book_handler(uri=uri, context=mock_context)
 
@@ -240,7 +242,7 @@ class TestBookDetailResource:
                 assert result["author_id"] == "author_knuth_donald"
 
                 # Verify repository was called correctly
-                mock_repo.get.assert_called_once_with(isbn)
+                mock_repo.get_by_isbn.assert_called_once_with(isbn)
 
     @pytest.mark.asyncio
     async def test_get_book_not_found(self, mock_context):
@@ -248,13 +250,13 @@ class TestBookDetailResource:
         isbn = "978-0-000-00000-0"
         uri = f"library://books/{isbn}"
 
-        with patch("virtual_library_mcp.resources.books.get_session") as mock_get_session:
+        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
-            mock_get_session.return_value.__aenter__.return_value = mock_session
+            mock_session_scope.return_value.__enter__.return_value = mock_session
 
             with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
-                mock_repo = AsyncMock()
-                mock_repo.get = AsyncMock(return_value=None)  # Book not found
+                mock_repo = Mock()
+                mock_repo.get_by_isbn.return_value = None  # Book not found
                 MockBookRepo.return_value = mock_repo
                 with pytest.raises(ResourceError) as exc_info:
                     await get_book_handler(uri=uri, context=mock_context)
@@ -284,13 +286,13 @@ class TestBookDetailResource:
         """Test error handling for database failures."""
         uri = "library://books/978-0-134-68547-9"
 
-        with patch("virtual_library_mcp.resources.books.get_session") as mock_get_session:
+        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
-            mock_get_session.return_value.__aenter__.return_value = mock_session
+            mock_session_scope.return_value.__enter__.return_value = mock_session
 
             with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
-                mock_repo = AsyncMock()
-                mock_repo.get = AsyncMock(side_effect=Exception("Connection timeout"))
+                mock_repo = Mock()
+                mock_repo.get_by_isbn.side_effect = Exception("Connection timeout")
                 MockBookRepo.return_value = mock_repo
                 with pytest.raises(ResourceError) as exc_info:
                     await get_book_handler(uri=uri, context=mock_context)

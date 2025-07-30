@@ -33,7 +33,8 @@ from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
 from ..database.book_repository import BookRepository, BookSearchParams, BookSortOptions
-from ..database.session import get_session
+from ..database.repository import PaginationParams
+from ..database.session import session_scope
 from ..models.book import Book
 
 logger = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ async def list_books_handler(
         # Get database session
         # WHY: Each request gets its own session for isolation
         # HOW: The session is properly closed after the request
-        async with get_session() as session:
+        with session_scope() as session:
             repo = BookRepository(session)
 
             # Build search parameters from request
@@ -142,11 +143,11 @@ async def list_books_handler(
             # Fetch paginated results
             # WHAT: The repository handles the complex SQL queries
             # WHERE: This abstracts database concerns from protocol concerns
-            result = await repo.search(
+            result = repo.search(
                 search_params=search_params,
-                pagination={"page": params.page, "limit": params.limit},
-                sort_by=params.sort_by.value,
-                sort_order=params.sort_order,
+                pagination=PaginationParams(page=params.page, page_size=params.limit),
+                sort_by=params.sort_by,
+                sort_desc=(params.sort_order == "desc"),
             )
 
             # Convert to response schema
@@ -201,12 +202,12 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
         isbn = parts[3]
         logger.debug("MCP Resource Request - books/%s", isbn)
 
-        async with get_session() as session:
+        with session_scope() as session:
             repo = BookRepository(session)
 
             # Fetch the book by ISBN
             # WHAT: The repository returns a Pydantic model or raises NotFoundError
-            book = await repo.get(isbn)
+            book = repo.get_by_isbn(isbn)
 
             if book is None:
                 # Return standard MCP error for resource not found
@@ -230,7 +231,7 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
 # This section defines the metadata and binds handlers to URIs.
 
 # Define the book resources that will be registered with FastMCP
-book_resources = [
+book_resources: list[dict[str, Any]] = [
     {
         "uri": "library://books/list",
         "name": "Book Catalog",

@@ -289,9 +289,7 @@ def test_circulation_edge_cases(repositories):
     circulation_repo = repositories["circulation"]
 
     # Test successful checkout
-    circulation_repo.checkout_book(
-        CheckoutCreateSchema(patron_id=patron1.id, book_isbn=book.isbn)
-    )
+    circulation_repo.checkout_book(CheckoutCreateSchema(patron_id=patron1.id, book_isbn=book.isbn))
 
     # Test checkout when no copies available
     with pytest.raises(Exception, match="(No copies|available)"):
