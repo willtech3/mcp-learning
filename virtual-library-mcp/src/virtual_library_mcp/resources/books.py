@@ -27,6 +27,7 @@ This implementation demonstrates:
 
 import logging
 from typing import Any
+from urllib.parse import urlparse
 
 from fastmcp import Context
 from fastmcp.exceptions import ResourceError
@@ -38,6 +39,66 @@ from ..database.session import session_scope
 from ..models.book import Book
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+
+def extract_isbn_from_uri(uri: str) -> str:
+    """Extract ISBN from library://books/{isbn} URI with robust validation.
+
+    MCP URI PARSING BEST PRACTICES:
+    Using urllib.parse provides more robust URI validation than simple string splitting.
+    This prevents issues with malformed URIs and provides better error messages.
+
+    Args:
+        uri: The full resource URI (e.g., "library://books/978-0-134-68547-9")
+
+    Returns:
+        The extracted ISBN string
+
+    Raises:
+        ValueError: If the URI format is invalid
+    """
+    try:
+        parsed = urlparse(uri)
+
+        # Validate scheme
+        if parsed.scheme != "library":
+            raise ValueError(f"Invalid scheme '{parsed.scheme}', expected 'library'")
+
+        # For "library://books/isbn" URIs, urlparse treats "books" as netloc
+        # and "/isbn" as path. We need to reconstruct the full path.
+        if parsed.netloc and parsed.path:
+            # Standard case: library://books/isbn
+            full_path = f"{parsed.netloc}{parsed.path}"
+        elif parsed.netloc:
+            # Edge case: library://books (no trailing slash)
+            full_path = parsed.netloc
+        elif parsed.path:
+            # Edge case: library:///books/isbn (triple slash)
+            full_path = parsed.path.lstrip("/")
+        else:
+            raise ValueError("No path information found in URI")
+
+        # Split full path and validate structure
+        path_parts = full_path.split("/")
+        if len(path_parts) < 2 or path_parts[0] != "books":
+            raise ValueError(
+                f"Invalid path structure, expected 'books/{{isbn}}', got '{full_path}'"
+            )
+
+        # Join remaining parts in case ISBN contains slashes (though unlikely)
+        isbn = "/".join(path_parts[1:])
+        if not isbn:
+            raise ValueError("Missing ISBN in URI")
+
+        return isbn
+
+    except Exception as e:
+        raise ValueError(f"Invalid book URI format '{uri}': {e}") from e
 
 
 # =============================================================================
@@ -192,14 +253,10 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
         ResourceError: If the book is not found or other errors occur
     """
     try:
-        # Extract ISBN from URI
+        # Extract ISBN from URI using robust validation
         # WHY: MCP uses URI templates for parameterized resources
-        # HOW: The URI format is "library://books/{isbn}"
-        parts = uri.split("/")
-        if len(parts) < 4 or parts[2] != "books":
-            raise ValueError(f"Invalid book URI format: {uri}")  # noqa: TRY301
-
-        isbn = parts[3]
+        # HOW: Enhanced parsing validates scheme, path structure, and provides better error messages
+        isbn = extract_isbn_from_uri(uri)
         logger.debug("MCP Resource Request - books/%s", isbn)
 
         with session_scope() as session:
