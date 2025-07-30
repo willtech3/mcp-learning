@@ -62,7 +62,9 @@ The `docs/mcp/` directory contains comprehensive MCP documentation:
 
 ## Key MCP Concepts to Implement
 
-1. **Resources**: Read-only data endpoints (e.g., `/books/list`, `/authors/{id}`)
+1. **Resources**: Read-only data endpoints ✅ IMPLEMENTED
+   - Basic resources: `/books/list`, `/books/{isbn}`, `/patrons/{id}`
+   - URI template resources: `/books/by-author/{author_id}`, `/books/by-genre/{genre}`
 2. **Tools**: Actions with side effects (e.g., `checkout_book`, `search_catalog`)
 3. **Prompts**: LLM interaction templates (e.g., `recommend_book`)
 4. **Subscriptions**: Real-time updates for resource changes

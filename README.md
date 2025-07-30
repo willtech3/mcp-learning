@@ -56,6 +56,8 @@ The main project is a Virtual Library MCP Server that simulates a complete libra
 ### MCP Concepts Demonstrated
 
 1. **Resources**: Browse catalog, view book details, check patron history
+   - Basic resources: `/books/list`, `/books/{isbn}`, `/patrons/{id}`
+   - URI template resources: `/books/by-author/{author_id}`, `/books/by-genre/{genre}`
 2. **Tools**: Check out books, search catalog, manage reservations
 3. **Prompts**: Get book recommendations, generate reading plans
 4. **Subscriptions**: Real-time book availability updates

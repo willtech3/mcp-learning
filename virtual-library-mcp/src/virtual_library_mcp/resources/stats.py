@@ -24,6 +24,7 @@ from fastmcp import Context
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, func, select
+from sqlalchemy.orm import joinedload
 
 from ..database.schema import Book as BookDB
 from ..database.schema import CheckoutRecord as CheckoutDB
@@ -169,9 +170,11 @@ async def get_popular_books_handler(
             rank = 1
 
             for stat in checkout_stats:
-                # Get book details
+                # Get book details with author joined
                 book = session.execute(
-                    select(BookDB).where(BookDB.isbn == stat.book_isbn)
+                    select(BookDB)
+                    .where(BookDB.isbn == stat.book_isbn)
+                    .options(joinedload(BookDB.author))
                 ).scalar_one_or_none()
 
                 if book:
@@ -180,7 +183,7 @@ async def get_popular_books_handler(
                             rank=rank,
                             isbn=book.isbn,
                             title=book.title,
-                            author=book.author,
+                            author=book.author.name if book.author else "Unknown",
                             checkout_count=stat.checkout_count,
                             unique_borrowers=stat.unique_borrowers,
                             avg_loan_days=round(stat.avg_loan_days or 0, 1),
@@ -559,4 +562,3 @@ POTENTIAL ENHANCEMENTS:
 - Seasonal adjustments for fair comparisons
 - Export formats (CSV) for further analysis
 """
-

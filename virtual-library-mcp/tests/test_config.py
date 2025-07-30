@@ -31,8 +31,8 @@ class TestServerConfig:
         # Default transport is stdio (simplest for development)
         assert config.transport == "stdio"
 
-        # Database path is relative by default
-        assert config.database_path == Path("virtual_library.db").absolute()
+        # Database path is relative by default (now points to data/library.db)
+        assert config.database_path == Path("data/library.db").absolute()
 
         # Security: sensitive fields are None by default
         assert config.external_api_key is None

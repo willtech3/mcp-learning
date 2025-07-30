@@ -33,63 +33,14 @@ from ..database.repository import PaginationParams
 from ..database.session import session_scope
 from ..models.patron import PatronStatus
 
+# Import our centralized URI utilities
+from .uri_utils import URIParseError, extract_patron_id_from_history_uri
+
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-
-def extract_patron_id_from_uri(uri: str) -> str:
-    """Extract patron ID from library://patrons/{patron_id} URI.
-
-    MCP URI PARSING:
-    Similar to book ISBN extraction, but handles patron IDs which
-    may contain underscores and alphanumeric characters.
-
-    Args:
-        uri: The full resource URI
-
-    Returns:
-        The extracted patron ID
-
-    Raises:
-        ValueError: If URI format is invalid
-    """
-    try:
-        parsed = urlparse(uri)
-
-        # Validate scheme
-        if parsed.scheme != "library":
-            raise ValueError(f"Invalid scheme '{parsed.scheme}', expected 'library'")
-
-        # Reconstruct full path from netloc and path
-        if parsed.netloc and parsed.path:
-            full_path = f"{parsed.netloc}{parsed.path}"
-        elif parsed.netloc:
-            full_path = parsed.netloc
-        elif parsed.path:
-            full_path = parsed.path.lstrip("/")
-        else:
-            raise ValueError("No path information found in URI")
-
-        # Split path and validate structure
-        path_parts = full_path.split("/")
-        if len(path_parts) < 2 or path_parts[0] != "patrons":
-            raise ValueError(
-                f"Invalid path structure, expected 'patrons/{{id}}' or 'patrons/{{id}}/resource', got '{full_path}'"
-            )
-
-        # Extract patron ID (second part)
-        patron_id = path_parts[1]
-        if not patron_id:
-            raise ValueError("Missing patron ID in URI")
-
-        return patron_id
-
-    except Exception as e:
-        raise ValueError(f"Invalid patron URI format '{uri}': {e}") from e
+# Helper functions are now imported from uri_utils module
+# This demonstrates the DRY principle - Don't Repeat Yourself
 
 
 # =============================================================================
@@ -169,7 +120,7 @@ async def get_patron_history_handler(
     """
     try:
         # Extract patron ID from URI
-        patron_id = extract_patron_id_from_uri(uri.rsplit("/history", 1)[0])
+        patron_id = extract_patron_id_from_history_uri(uri)
 
         # Default parameters if none provided
         if params is None:
@@ -243,6 +194,9 @@ async def get_patron_history_handler(
 
             return response.model_dump()
 
+    except URIParseError as e:
+        # Convert URI parsing errors to ResourceError
+        raise ResourceError(str(e)) from e
     except ResourceError:
         raise
     except Exception as e:
@@ -417,4 +371,3 @@ NEXT STEPS:
 - Add filtering by multiple criteria
 - Consider adding resource subscriptions for real-time updates
 """
-

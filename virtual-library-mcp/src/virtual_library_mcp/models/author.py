@@ -136,7 +136,7 @@ class Author(BaseModel):
     @classmethod
     def validate_book_ids(cls, v: list[str]) -> list[str]:
         """Ensure all book IDs are valid ISBN format."""
-        normalized_ids: list[str] = []
+        normalized_ids = []
         for book_id in v:
             # Remove hyphens and validate length
             normalized = book_id.replace("-", "")

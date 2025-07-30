@@ -34,40 +34,14 @@ from ..database.schema import CheckoutRecord as CheckoutDB
 from ..database.schema import Patron as PatronDB
 from ..database.session import session_scope
 
+# Import our centralized URI utilities
+from .uri_utils import URIParseError, extract_patron_id_from_recommendations_uri
+
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-
-def extract_patron_id_from_recommendation_uri(uri: str) -> str:
-    """Extract patron ID from library://recommendations/{patron_id} URI.
-
-    Args:
-        uri: The full resource URI
-
-    Returns:
-        The extracted patron ID
-
-    Raises:
-        ValueError: If URI format is invalid
-    """
-    try:
-        # Simple extraction for recommendations URI
-        parts = uri.split("/")
-        if len(parts) < 4 or parts[2] != "recommendations":
-            raise ValueError("Invalid recommendations URI format")
-
-        patron_id = parts[3]
-        if not patron_id:
-            raise ValueError("Missing patron ID in URI")
-
-        return patron_id
-
-    except Exception as e:
-        raise ValueError(f"Invalid recommendation URI format '{uri}': {e}") from e
+# Helper functions are now imported from uri_utils module
+# This demonstrates the DRY principle - Don't Repeat Yourself
 
 
 # =============================================================================
@@ -289,6 +263,7 @@ class RecommendationEngine:
                             available=book.available_copies > 0,
                             avg_rating=book.average_rating,
                             checkout_count=book.total_checkouts,
+                            similar_patrons_borrowed=0,  # Not applicable for genre-based recommendations
                         )
                     )
 
@@ -336,6 +311,7 @@ class RecommendationEngine:
                         available=book.available_copies > 0,
                         avg_rating=book.average_rating,
                         checkout_count=book.total_checkouts,
+                        similar_patrons_borrowed=0,  # Not applicable for author-based recommendations
                     )
                 )
 
@@ -375,6 +351,7 @@ class RecommendationEngine:
                         available=book.available_copies > 0,
                         avg_rating=book.average_rating,
                         checkout_count=book.total_checkouts,
+                        similar_patrons_borrowed=0,  # Not applicable for trending recommendations
                     )
                 )
 
@@ -499,7 +476,7 @@ async def get_patron_recommendations_handler(
     """
     try:
         # Extract patron ID from URI
-        patron_id = extract_patron_id_from_recommendation_uri(uri)
+        patron_id = extract_patron_id_from_recommendations_uri(uri)
 
         # Default parameters if none provided
         if params is None:
@@ -519,6 +496,9 @@ async def get_patron_recommendations_handler(
 
             return response.model_dump()
 
+    except URIParseError as e:
+        # Convert URI parsing errors to ResourceError
+        raise ResourceError(str(e)) from e
     except ResourceError:
         raise
     except Exception as e:
@@ -590,4 +570,3 @@ FUTURE ENHANCEMENTS:
 - Integration with external book databases
 - Reading list management
 """
-

@@ -318,4 +318,4 @@ class BaseRepository(
         count = mcp_safe_query(
             self.session, lambda s: s.execute(query).scalar(), "Failed to check existence"
         )
-        return count > 0
+        return (count or 0) > 0

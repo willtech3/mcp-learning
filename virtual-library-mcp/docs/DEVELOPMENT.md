@@ -182,6 +182,62 @@ If pre-commit fails:
 3. Stage the fixes: `git add -u`
 4. Retry the commit
 
+## URI Template Resources
+
+The Virtual Library MCP Server demonstrates advanced resource patterns using URI templates. This allows for dynamic, RESTful-style resource URIs.
+
+### URI Template Pattern
+
+MCP supports URI templates for resources that need dynamic parameters. For example:
+
+- `library://books/by-author/{author_id}` - Books filtered by author
+- `library://books/by-genre/{genre}` - Books filtered by genre
+- `library://books/{isbn}` - Specific book by ISBN
+
+### Centralized URI Parsing
+
+The project uses a centralized `uri_utils.py` module for consistent URI parsing:
+
+```python
+from .uri_utils import extract_author_id_from_books_uri, URIParseError
+
+try:
+    author_id = extract_author_id_from_books_uri(uri)
+except URIParseError as e:
+    raise ResourceError(str(e)) from e
+```
+
+### Key Principles
+
+1. **DRY (Don't Repeat Yourself)**: All URI parsing logic is centralized
+2. **Clear Error Messages**: Specific errors help developers debug URI issues
+3. **URL Encoding Support**: Handles special characters properly (e.g., "Jane%20Austen")
+4. **Type Safety**: Strong typing for all URI components
+
+### Implementation Example
+
+See `advanced_books.py` for a complete example of URI template resources:
+
+```python
+advanced_book_resources = [
+    {
+        "uri_template": "library://books/by-author/{author_id}",
+        "name": "Books by Author",
+        "description": "Browse all books by a specific author...",
+        "mime_type": "application/json",
+        "handler": get_books_by_author_handler,
+    },
+]
+```
+
+### Best Practices for URI Resources
+
+1. **Use Meaningful Paths**: `/by-author/` not `/a/`
+2. **Be Consistent**: Similar resources should follow similar patterns
+3. **Document Encoding**: Always mention when URL encoding is required
+4. **Validate Early**: Check URI structure before database operations
+5. **Handle Edge Cases**: Empty strings, special characters, etc.
+
 ## Best Practices
 
 1. **Type Everything**: Every function parameter and return value
@@ -189,6 +245,7 @@ If pre-commit fails:
 3. **Log Appropriately**: Use structured logging for debugging
 4. **Test Thoroughly**: Write tests for all protocol handlers
 5. **Document Code**: Especially protocol-specific logic
+6. **Use URI Utils**: Leverage centralized parsing for consistency
 
 ## Getting Help
 

@@ -15,7 +15,6 @@ MCP URI TEMPLATE CONCEPTS:
 
 import logging
 from typing import Any
-from urllib.parse import unquote, urlparse
 
 from fastmcp import Context
 from fastmcp.exceptions import ResourceError
@@ -25,98 +24,14 @@ from ..database.book_repository import BookRepository, BookSearchParams
 from ..database.repository import PaginationParams
 from ..database.session import session_scope
 
+# Import our centralized URI utilities
+from .uri_utils import URIParseError, extract_author_id_from_books_uri, extract_genre_from_books_uri
+
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-
-def extract_author_id_from_uri(uri: str) -> str:
-    """Extract author ID from library://books/by-author/{author_id} URI.
-
-    MCP URI DECODING:
-    Author IDs might contain spaces or special characters that need
-    URL decoding. This ensures proper handling of author names.
-
-    Args:
-        uri: The full resource URI
-
-    Returns:
-        The extracted and decoded author ID
-
-    Raises:
-        ValueError: If URI format is invalid
-    """
-    try:
-        parsed = urlparse(uri)
-
-        # Reconstruct path
-        if parsed.netloc and parsed.path:
-            full_path = f"{parsed.netloc}{parsed.path}"
-        elif parsed.path:
-            full_path = parsed.path.lstrip("/")
-        else:
-            raise ValueError("No path information found in URI")
-
-        # Split and validate structure
-        path_parts = full_path.split("/")
-        if len(path_parts) < 3 or path_parts[0] != "books" or path_parts[1] != "by-author":
-            raise ValueError(
-                f"Invalid path structure, expected 'books/by-author/{{author_id}}', got '{full_path}'"
-            )
-
-        # Extract and decode author ID
-        author_id = unquote(path_parts[2])
-        if not author_id:
-            raise ValueError("Missing author ID in URI")
-
-        return author_id
-
-    except Exception as e:
-        raise ValueError(f"Invalid author books URI format '{uri}': {e}") from e
-
-
-def extract_genre_from_uri(uri: str) -> str:
-    """Extract genre from library://books/by-genre/{genre} URI.
-
-    Args:
-        uri: The full resource URI
-
-    Returns:
-        The extracted and decoded genre
-
-    Raises:
-        ValueError: If URI format is invalid
-    """
-    try:
-        parsed = urlparse(uri)
-
-        # Reconstruct path
-        if parsed.netloc and parsed.path:
-            full_path = f"{parsed.netloc}{parsed.path}"
-        elif parsed.path:
-            full_path = parsed.path.lstrip("/")
-        else:
-            raise ValueError("No path information found in URI")
-
-        # Split and validate structure
-        path_parts = full_path.split("/")
-        if len(path_parts) < 3 or path_parts[0] != "books" or path_parts[1] != "by-genre":
-            raise ValueError(
-                f"Invalid path structure, expected 'books/by-genre/{{genre}}', got '{full_path}'"
-            )
-
-        # Extract and decode genre
-        genre = unquote(path_parts[2])
-        if not genre:
-            raise ValueError("Missing genre in URI")
-
-        return genre
-
-    except Exception as e:
-        raise ValueError(f"Invalid genre books URI format '{uri}': {e}") from e
+# Helper functions are now imported from uri_utils module
+# This demonstrates the DRY principle - Don't Repeat Yourself
 
 
 # =============================================================================
@@ -186,7 +101,7 @@ async def get_books_by_author_handler(
     """
     try:
         # Extract author from URI
-        author_id = extract_author_id_from_uri(uri)
+        author_id = extract_author_id_from_books_uri(uri)
 
         # Default parameters if none provided
         if params is None:
@@ -204,7 +119,7 @@ async def get_books_by_author_handler(
 
             # Create search parameters for author filter
             search_params = BookSearchParams(
-                author=author_id,  # Exact author match
+                author_name=author_id,  # Search by author name
                 available_only=params.available_only,
             )
 
@@ -257,7 +172,8 @@ async def get_books_by_author_handler(
 
             return response.model_dump()
 
-    except ValueError as e:
+    except URIParseError as e:
+        # Convert URI parsing errors to ResourceError
         raise ResourceError(str(e)) from e
     except Exception as e:
         logger.exception("Error in books/by-author resource")
@@ -286,7 +202,7 @@ async def get_books_by_genre_handler(
     """
     try:
         # Extract genre from URI
-        genre = extract_genre_from_uri(uri)
+        genre = extract_genre_from_books_uri(uri)
 
         # Default parameters if none provided
         if params is None:
@@ -337,7 +253,7 @@ async def get_books_by_genre_handler(
                         "publication_year": book.publication_year,
                         "publisher": book.publisher,
                         "description": book.description[:200] + "..."
-                        if len(book.description) > 200
+                        if book.description and len(book.description) > 200
                         else book.description,
                         "average_rating": book.average_rating,
                         "total_copies": book.total_copies,
@@ -361,7 +277,8 @@ async def get_books_by_genre_handler(
 
             return response.model_dump()
 
-    except ValueError as e:
+    except URIParseError as e:
+        # Convert URI parsing errors to ResourceError
         raise ResourceError(str(e)) from e
     except Exception as e:
         logger.exception("Error in books/by-genre resource")
@@ -443,4 +360,3 @@ BEST PRACTICES:
 - Consider internationalization (non-ASCII characters)
 - Keep URI templates simple and intuitive
 """
-

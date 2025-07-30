@@ -266,20 +266,26 @@ class TestBookDetailResource:
 
     @pytest.mark.asyncio
     async def test_get_book_invalid_uri(self, mock_context):
-        """Test error handling for malformed URIs."""
-        invalid_uris = [
-            "library://books",  # Missing ISBN
-            "library://book/123",  # Wrong path
-            "library://",  # No path
-            "books/123",  # No scheme
+        """Test error handling for malformed URIs.
+
+        With our improved URI parser, we now get more specific error messages
+        that help developers understand exactly what went wrong.
+        """
+        invalid_uris_and_errors = [
+            ("library://books", "Missing ISBN in URI"),  # Missing ISBN
+            ("library://book/123", "Invalid URI structure"),  # Wrong path
+            ("library://", "No path found in URI"),  # No path
+            ("books/123", "Invalid URI scheme"),  # No scheme
         ]
 
-        for uri in invalid_uris:
+        for uri, expected_error in invalid_uris_and_errors:
             with pytest.raises(ResourceError) as exc_info:
                 await get_book_handler(uri=uri, context=mock_context)
 
-            # Should return error for bad URI format
-            assert "Failed to retrieve book details" in str(exc_info.value)
+            # Should return specific error for bad URI format
+            assert expected_error in str(exc_info.value), (
+                f"For URI '{uri}', expected '{expected_error}' in error message"
+            )
 
     @pytest.mark.asyncio
     async def test_get_book_database_error(self, mock_context):

@@ -135,7 +135,7 @@ class CirculationRepository:
             RepositoryException: If checkout not allowed
         """
         # Validate patron
-        patron = mcp_safe_query(
+        patron: PatronDB | None = mcp_safe_query(
             self.session,
             lambda s: s.execute(
                 select(PatronDB).where(PatronDB.id == checkout_data.patron_id)
@@ -158,7 +158,7 @@ class CirculationRepository:
             )
 
         # Validate book availability
-        book = mcp_safe_query(
+        book: BookDB | None = mcp_safe_query(
             self.session,
             lambda s: s.execute(
                 select(BookDB).where(BookDB.isbn == checkout_data.book_isbn).with_for_update()

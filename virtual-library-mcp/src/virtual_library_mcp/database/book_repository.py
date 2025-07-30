@@ -373,7 +373,7 @@ class BookRepository(BaseRepository[BookDB, BookCreateSchema, BookUpdateSchema, 
 
         # Get book with lock for update
         query = select(BookDB).where(BookDB.isbn == normalized_isbn).with_for_update()
-        book = mcp_safe_query(
+        book: BookDB | None = mcp_safe_query(
             self.session,
             lambda s: s.execute(query).scalar_one_or_none(),
             "Failed to get book for availability update",
@@ -436,34 +436,28 @@ class BookRepository(BaseRepository[BookDB, BookCreateSchema, BookUpdateSchema, 
 
         # Validate new author if changing
         if data.author_id is not None and data.author_id != book.author_id:
-            author_exists = (
-                mcp_safe_query(
-                    self.session,
-                    lambda s: s.execute(
-                        select(func.count())
-                        .select_from(AuthorDB)
-                        .where(AuthorDB.id == data.author_id)
-                    ).scalar(),
-                    "Failed to check author existence",
-                )
-                > 0
+            author_count = mcp_safe_query(
+                self.session,
+                lambda s: s.execute(
+                    select(func.count()).select_from(AuthorDB).where(AuthorDB.id == data.author_id)
+                ).scalar(),
+                "Failed to check author existence",
             )
+            author_exists = (author_count or 0) > 0
 
             if not author_exists:
                 raise NotFoundError(f"Author {data.author_id} not found")
 
         # Validate new ISBN if changing
         if data.isbn is not None and data.isbn != book.isbn:
-            isbn_exists = (
-                mcp_safe_query(
-                    self.session,
-                    lambda s: s.execute(
-                        select(func.count()).select_from(BookDB).where(BookDB.isbn == data.isbn)
-                    ).scalar(),
-                    "Failed to check ISBN existence",
-                )
-                > 0
+            isbn_count = mcp_safe_query(
+                self.session,
+                lambda s: s.execute(
+                    select(func.count()).select_from(BookDB).where(BookDB.isbn == data.isbn)
+                ).scalar(),
+                "Failed to check ISBN existence",
             )
+            isbn_exists = (isbn_count or 0) > 0
 
             if isbn_exists:
                 raise DuplicateError(f"Book with ISBN {data.isbn} already exists")

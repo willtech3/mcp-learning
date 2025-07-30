@@ -245,7 +245,7 @@ class TestSessionManagement:
                 # Force an error
                 # TRY301: This raise is intentional - we're testing rollback behavior
                 # when an exception occurs within a transaction context.
-                raise ValueError("Test error")  # noqa: TRY301
+                raise ValueError("Test error")
         except ValueError:
             pass
 
