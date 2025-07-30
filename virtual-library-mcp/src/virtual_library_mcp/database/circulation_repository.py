@@ -112,12 +112,16 @@ class CirculationRepository:
     def checkout_book(self, checkout_data: CheckoutCreateSchema) -> CheckoutModel:
         """
         Process a book checkout.
-
+        
+        MCP Tool Examples:
+        - checkout_book(patron_id="P-JANE123", book_id="B-PRIDE001")
+        - checkout_book(patron_id="P-JOHN456", book_id="B-GATSBY001", due_date="2024-02-15")
+        
         This method implements the core MCP Tool for borrowing books:
-        1. Validates patron can checkout
-        2. Validates book is available
-        3. Creates checkout record
-        4. Updates book availability
+        1. Validates patron can checkout (active membership, within limits)
+        2. Validates book is available (copies > 0)
+        3. Creates checkout record with due date
+        4. Updates book availability count
         5. Updates patron checkout count
 
         Args:
@@ -144,12 +148,12 @@ class CirculationRepository:
 
         if not patron.can_checkout:
             if not patron.is_active:
-                raise RepositoryException("Patron membership is not active")
+                raise RepositoryException("Checkout denied - patron membership is not active")
             if patron.current_checkouts >= patron.borrowing_limit:
                 raise RepositoryException(
                     f"Patron has reached borrowing limit of {patron.borrowing_limit}"
                 )
-            raise RepositoryException("Patron has outstanding fines exceeding $10")
+            raise RepositoryException("Checkout denied - patron has outstanding fines exceeding $10")
 
         # Validate book availability
         book = mcp_safe_query(
@@ -164,7 +168,7 @@ class CirculationRepository:
             raise NotFoundError(f"Book {checkout_data.book_isbn} not found")
 
         if book.available_copies <= 0:
-            raise RepositoryException(f"No copies of '{book.title}' are available")
+            raise RepositoryException(f"Book unavailable for checkout - no copies of '{book.title}' available")
 
         # Calculate due date if not provided (14-day loan period)
         due_date = checkout_data.due_date or (
@@ -249,7 +253,7 @@ class CirculationRepository:
             raise NotFoundError(f"Checkout {return_data.checkout_id} not found")
 
         if checkout.status != CirculationStatusEnum.ACTIVE:
-            raise RepositoryException(f"Checkout is not active (status: {checkout.status})")
+            raise RepositoryException(f"Return failed - checkout is not active (current status: {checkout.status})")
 
         # Calculate late days and fine
         return_date = datetime.now()
@@ -341,7 +345,7 @@ class CirculationRepository:
             raise NotFoundError(f"Patron {reservation_data.patron_id} not found")
 
         if not patron.is_active:
-            raise RepositoryException("Patron membership is not active")
+            raise RepositoryException("Reservation denied - patron membership is not active")
 
         # Validate book
         book = mcp_safe_query(
@@ -373,7 +377,7 @@ class CirculationRepository:
         )
 
         if existing:
-            raise RepositoryException("Patron already has an active reservation for this book")
+            raise RepositoryException("Reservation denied - patron already has an active reservation for this book")
 
         # Get next queue position
         max_position = (
@@ -458,13 +462,13 @@ class CirculationRepository:
             raise NotFoundError(f"Checkout {checkout_id} not found")
 
         if checkout.status != CirculationStatusEnum.ACTIVE:
-            raise RepositoryException("Can only renew active checkouts")
+            raise RepositoryException("Renewal denied - can only renew active checkouts")
 
         if checkout.renewal_count >= 3:
-            raise RepositoryException("Maximum renewal limit (3) reached")
+            raise RepositoryException("Renewal denied - maximum renewal limit (3) reached")
 
         if datetime.now().date() > checkout.due_date:
-            raise RepositoryException("Cannot renew overdue items")
+            raise RepositoryException("Renewal denied - cannot renew overdue items")
 
         # Check for reservations
         pending_reservations = (
@@ -486,7 +490,7 @@ class CirculationRepository:
         )
 
         if pending_reservations > 0:
-            raise RepositoryException("Cannot renew - other patrons waiting")
+            raise RepositoryException("Renewal denied - other patrons are waiting for this book")
 
         try:
             # Update checkout

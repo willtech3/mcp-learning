@@ -485,10 +485,10 @@ class PatronRepository(
         new_checkouts = patron.current_checkouts + delta
 
         if new_checkouts < 0:
-            raise RepositoryException("Cannot have negative checkouts")
+            raise RepositoryException("Invalid operation - cannot have negative checkout count")
 
         if delta > 0 and new_checkouts > patron.borrowing_limit:
-            raise RepositoryException(f"Would exceed borrowing limit of {patron.borrowing_limit}")
+            raise RepositoryException(f"Checkout limit exceeded - would exceed borrowing limit of {patron.borrowing_limit}")
 
         # Update counts
         patron.current_checkouts = new_checkouts
@@ -522,7 +522,7 @@ class PatronRepository(
             RepositoryException: On validation errors
         """
         if amount < 0:
-            raise RepositoryException("Fine amount must be positive")
+            raise RepositoryException("Invalid amount - fine amount must be positive")
 
         query = select(PatronDB).where(PatronDB.id == patron_id).with_for_update()
         patron = mcp_safe_query(
@@ -538,10 +538,10 @@ class PatronRepository(
             patron.outstanding_fines += amount
         elif operation == "pay":
             if amount > patron.outstanding_fines:
-                raise RepositoryException("Payment exceeds outstanding fines")
+                raise RepositoryException("Payment rejected - amount exceeds outstanding fines")
             patron.outstanding_fines -= amount
         else:
-            raise RepositoryException(f"Invalid operation: {operation}")
+            raise RepositoryException(f"Operation failed - invalid fine operation: {operation}")
 
         patron.updated_at = datetime.now()
 
