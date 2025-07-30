@@ -241,11 +241,6 @@ reportImplicitStringConcatenation = "none"  # OK for long strings
 reportMissingSuperCall = "warning"  # Warn but don't error
 reportUninitializedInstanceVariable = "error"
 
-# NOTE: Per-file overrides are not supported in pyright config
-# The strict/relaxed sections have been removed as they cause the error:
-# "Config 'strict' entry must contain an array"
-# Instead, we use the global relaxed settings defined above
-
 [tool.pytest.ini_options]
 # Testing configuration for MCP server
 testpaths = ["tests"]
