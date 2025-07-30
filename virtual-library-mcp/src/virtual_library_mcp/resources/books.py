@@ -63,9 +63,9 @@ class BookListParams(BaseModel):
     sort_order: str = Field(default="asc", pattern="^(asc|desc)$", description="Sort direction")
 
     # Search filters
-    query: str | None = Field(None, description="General search term")
-    genre: str | None = Field(None, description="Filter by genre")
-    available_only: bool = Field(False, description="Show only available books")
+    query: str | None = Field(default=None, description="General search term")
+    genre: str | None = Field(default=None, description="Filter by genre")
+    available_only: bool = Field(default=False, description="Show only available books")
 
 
 class BookListResponse(BaseModel):
