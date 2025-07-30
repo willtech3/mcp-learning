@@ -259,9 +259,9 @@ def get_config() -> ServerConfig:
     This singleton pattern ensures consistent configuration
     across all MCP server components.
     """
-    if _ConfigStore._instance is None:
-        _ConfigStore._instance = ServerConfig()
-    return _ConfigStore._instance
+    if _ConfigStore._instance is None:  # type: ignore[reportPrivateUsage]
+        _ConfigStore._instance = ServerConfig()  # type: ignore[reportPrivateUsage]
+    return _ConfigStore._instance  # type: ignore[reportPrivateUsage]
 
 
 def reset_config() -> None:
@@ -270,4 +270,4 @@ def reset_config() -> None:
     Allows tests to use different configurations
     without affecting other tests.
     """
-    _ConfigStore._instance = None
+    _ConfigStore._instance = None  # type: ignore[reportPrivateUsage]

@@ -16,9 +16,10 @@ Key MCP Considerations:
 """
 
 import logging
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import TypeVar
 
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
@@ -29,6 +30,9 @@ from .schema import Base
 
 # Configure logging for database operations
 logger = logging.getLogger(__name__)
+
+# Type variable for generic return types
+T = TypeVar("T")
 
 
 class DatabaseManager:
@@ -294,7 +298,7 @@ def mcp_safe_commit(session: Session, operation: str) -> None:
         raise ValueError(f"Database operation '{operation}' failed: {e!s}") from e
 
 
-def mcp_safe_query(session: Session, query_func, error_msg: str):
+def mcp_safe_query(session: Session, query_func: Callable[[Session], T], error_msg: str) -> T:
     """
     Execute a query with MCP-appropriate error handling.
 
