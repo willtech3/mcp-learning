@@ -224,7 +224,7 @@ class Patron(Base):
         if self.status != PatronStatusEnum.ACTIVE:
             return False
 
-        return not (self.expiration_date and self.expiration_date < datetime.now().date())  # noqa: DTZ005
+        return not (self.expiration_date and self.expiration_date < datetime.now().date())
 
     @property
     def can_checkout(self) -> bool:

@@ -125,6 +125,16 @@ ignore = [
     "PLR0913", # MCP handlers may need many parameters
     "PLR2004", # Magic values are OK for protocol constants
     "SLF001", # Private member access needed for some FastMCP internals
+    "UP017", # timezone.utc is the correct usage, not UTC alias
+    "UP046", # Generic[T] syntax is fine for this project
+    "PLR0912", # Complex search methods need many branches
+    "N818", # RepositoryException is a clear name
+    "TRY300", # Return in try block is acceptable
+    "RUF012", # Mutable defaults in Pydantic models are handled correctly
+    "SIM105", # Try-except-pass is fine for optional JSON parsing
+    "PERF401", # List comprehensions not always more readable
+    "N806", # Variable names in tests can use uppercase
+    "DTZ005", # datetime.now() without timezone - using local timezone for simulated library
 ]
 
 # MCP-specific configurations

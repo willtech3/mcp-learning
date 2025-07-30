@@ -13,6 +13,18 @@ In the MCP architecture, the database layer is critical for:
 4. Maintaining data integrity for tools (operations with side effects)
 """
 
+from .author_repository import AuthorRepository
+from .book_repository import BookRepository
+from .circulation_repository import CirculationRepository
+from .patron_repository import PatronRepository
+from .repository import (
+    BaseRepository,
+    DuplicateError,
+    NotFoundError,
+    PaginatedResponse,
+    PaginationParams,
+    RepositoryException,
+)
 from .schema import (
     Author,
     Base,
@@ -36,13 +48,23 @@ from .session import (
 
 __all__ = [
     "Author",
+    "AuthorRepository",
     "Base",
+    "BaseRepository",
     "Book",
+    "BookRepository",
     "CheckoutRecord",
+    "CirculationRepository",
     "CirculationStatusEnum",
     "DatabaseManager",
+    "DuplicateError",
+    "NotFoundError",
+    "PaginatedResponse",
+    "PaginationParams",
     "Patron",
+    "PatronRepository",
     "PatronStatusEnum",
+    "RepositoryException",
     "ReservationRecord",
     "ReservationStatusEnum",
     "ReturnRecord",

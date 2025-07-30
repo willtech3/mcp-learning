@@ -200,7 +200,7 @@ class DatabaseManager:
             with self.engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             logger.info("Database connection verified")
-            return True  # noqa: TRY300 - Clear intent: verify success or return failure
+            return True
         except Exception:
             logger.exception("Database connection failed")
             return False
