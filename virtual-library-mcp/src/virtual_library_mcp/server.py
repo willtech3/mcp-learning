@@ -128,12 +128,11 @@ logger.info("Registered %d resources", len(all_resources))
 for tool in all_tools:
     logger.debug("Registering tool: %s", tool["name"])
     try:
-        # FastMCP's tool decorator requires name, description, and schema
-        # The handler is passed as the decorated function
+        # FastMCP's tool decorator automatically generates schema from type hints
+        # We register the handler function with optional name and description
         mcp.tool(
             name=tool["name"],
             description=tool["description"],
-            schema=tool["inputSchema"],
         )(tool["handler"])
     except Exception:
         logger.exception("Failed to register tool %s", tool["name"])
