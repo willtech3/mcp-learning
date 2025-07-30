@@ -27,6 +27,7 @@ from fastmcp import FastMCP
 
 from virtual_library_mcp.config import get_config
 from virtual_library_mcp.resources import all_resources
+from virtual_library_mcp.tools import all_tools
 
 # Initialize logging for protocol debugging
 # MCP servers should provide detailed logging for troubleshooting
@@ -114,6 +115,30 @@ for resource in all_resources:
         raise
 
 logger.info("Registered %d resources", len(all_resources))
+
+# =============================================================================
+# TOOL REGISTRATION
+# =============================================================================
+
+# Register all tools with the MCP server
+# WHY: Tools provide write operations and actions with side effects
+# HOW: FastMCP uses the tool decorator to register handlers
+# WHAT: Each tool has a name, description, schema, and handler function
+
+for tool in all_tools:
+    logger.debug("Registering tool: %s", tool["name"])
+    try:
+        # FastMCP's tool decorator automatically generates schema from type hints
+        # We register the handler function with optional name and description
+        mcp.tool(
+            name=tool["name"],
+            description=tool["description"],
+        )(tool["handler"])
+    except Exception:
+        logger.exception("Failed to register tool %s", tool["name"])
+        raise
+
+logger.info("Registered %d tools", len(all_tools))
 
 # =============================================================================
 # LIFECYCLE MANAGEMENT
@@ -360,6 +385,6 @@ if __name__ == "__main__":
 #
 # Next Steps:
 # - Implement resources (Step 12): Add /books/list, /books/{isbn} ✓
-# - Implement tools (Step 14): Add search_catalog, checkout_book
+# - Implement tools (Step 14): Add search_catalog ✓, checkout_book
 # - Add subscriptions (Step 16): Real-time updates
 # - Implement prompts (Step 18): AI-assisted recommendations
