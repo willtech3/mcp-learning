@@ -94,24 +94,24 @@ mcp = FastMCP(
 # WHAT: Each resource gets a URI pattern and handler function
 
 for resource in all_resources:
-    if "uri_template" in resource:
-        # Resources with URI templates (e.g., /books/{isbn})
-        # These support parameterized URIs for accessing specific items
+    # FastMCP's resource decorator uses 'uri' for both static and templated URIs
+    # It automatically detects templates based on the presence of {param} placeholders
+    uri = resource.get("uri_template", resource.get("uri"))
+    if not uri:
+        logger.error("Resource missing URI: %s", resource)
+        continue
+
+    logger.debug("Registering resource: %s with URI: %s", resource["name"], uri)
+    try:
         mcp.resource(
-            uri_template=resource["uri_template"],
+            uri=uri,
             name=resource["name"],
             description=resource["description"],
             mime_type=resource["mime_type"],
         )(resource["handler"])
-    else:
-        # Static URI resources (e.g., /books/list)
-        # These have fixed URIs without parameters
-        mcp.resource(
-            uri=resource["uri"],
-            name=resource["name"],
-            description=resource["description"],
-            mime_type=resource["mime_type"],
-        )(resource["handler"])
+    except Exception as e:
+        logger.error("Failed to register resource %s: %s", resource["name"], e)
+        raise
 
 logger.info("Registered %d resources", len(all_resources))
 

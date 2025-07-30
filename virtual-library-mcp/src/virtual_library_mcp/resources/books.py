@@ -94,11 +94,7 @@ class BookListResponse(BaseModel):
 # FastMCP calls these handlers when clients request the resource.
 
 
-async def list_books_handler(
-    uri: str,  # noqa: ARG001
-    context: Context,  # noqa: ARG001
-    params: BookListParams | None = None,
-) -> dict[str, Any]:
+async def list_books_handler(params: BookListParams | None = None) -> dict[str, Any]:
     """Handle requests for the book list resource.
 
     MCP PROTOCOL DETAILS:
@@ -107,8 +103,6 @@ async def list_books_handler(
     - Errors are converted to proper JSON-RPC error responses
 
     Args:
-        uri: The resource URI (always "library://books/list" for this handler)
-        context: FastMCP context containing server state and helpers
         params: Optional parameters for filtering and pagination
 
     Returns:

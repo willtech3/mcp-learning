@@ -20,7 +20,6 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from fastmcp import Context
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, func, select
@@ -37,18 +36,6 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # RESOURCE SCHEMAS
 # =============================================================================
-
-
-class PopularBooksParams(BaseModel):
-    """Parameters for popular books resource.
-
-    WHAT: Controls the time window and limit for popularity calculations.
-    WHY: Different use cases need different time windows (trending vs all-time).
-    """
-
-    days: int = Field(default=30, ge=1, le=365, description="Number of days to analyze")
-    limit: int = Field(default=10, ge=1, le=50, description="Number of books to return")
-    min_checkouts: int = Field(default=1, ge=1, description="Minimum checkouts to be included")
 
 
 class PopularBookEntry(BaseModel):
@@ -110,38 +97,31 @@ class CirculationStatsResponse(BaseModel):
 # =============================================================================
 
 
-async def get_popular_books_handler(
-    uri: str,  # noqa: ARG001
-    context: Context,  # noqa: ARG001
-    params: PopularBooksParams | None = None,
-) -> dict[str, Any]:
+async def get_popular_books_handler(days: str, limit: str) -> dict[str, Any]:
     """Handle requests for popular books statistics.
 
-    MCP AGGREGATION EXAMPLE:
-    This handler demonstrates how to compute metrics across multiple tables.
-    It calculates popularity based on checkout frequency and unique borrowers.
-
-    The aggregation is done at the database level for efficiency, showing
-    how MCP resources can expose complex analytical queries.
-
     Args:
-        uri: The resource URI (always "library://stats/popular")
-        context: FastMCP context
-        params: Parameters controlling the analysis
+        days: Number of days to analyze (from URI template)
+        limit: Number of books to return (from URI template)
 
     Returns:
         Dictionary containing popular books ranking
     """
     try:
-        if params is None:
-            params = PopularBooksParams()
+        # Convert string parameters to integers with validation
+        days_int = int(days)
+        limit_int = int(limit)
 
-        logger.debug(
-            "MCP Resource Request - stats/popular: days=%d, limit=%d", params.days, params.limit
-        )
+        # Validate ranges (same as Pydantic model)
+        if not 1 <= days_int <= 365:
+            raise ResourceError("days must be between 1 and 365")
+        if not 1 <= limit_int <= 50:
+            raise ResourceError("limit must be between 1 and 50")
+
+        logger.debug("MCP Resource Request - stats/popular: days=%d, limit=%d", days_int, limit_int)
 
         # Calculate date range
-        start_date = datetime.now() - timedelta(days=params.days)
+        start_date = datetime.now() - timedelta(days=days_int)
 
         with session_scope() as session:
             # Query to get checkout counts by book
@@ -160,9 +140,9 @@ async def get_popular_books_handler(
                 )
                 .where(CheckoutDB.checkout_date >= start_date)
                 .group_by(CheckoutDB.book_isbn)
-                .having(func.count(CheckoutDB.id) >= params.min_checkouts)
+                .having(func.count(CheckoutDB.id) >= 1)  # Minimum checkouts threshold
                 .order_by(desc("checkout_count"))
-                .limit(params.limit)
+                .limit(limit_int)
             ).all()
 
             # Get book details for the popular books
@@ -193,11 +173,11 @@ async def get_popular_books_handler(
                     rank += 1
 
             return {
-                "analysis_period_days": params.days,
+                "analysis_period_days": days_int,
                 "analysis_start_date": start_date.date().isoformat(),
                 "analysis_end_date": datetime.now().date().isoformat(),
                 "total_results": len(popular_books),
-                "min_checkouts_threshold": params.min_checkouts,
+                "min_checkouts_threshold": 1,
                 "books": [book.model_dump() for book in popular_books],
             }
 
@@ -206,38 +186,24 @@ async def get_popular_books_handler(
         raise ResourceError(f"Failed to calculate popular books: {e!s}") from e
 
 
-async def get_genre_distribution_handler(
-    uri: str,  # noqa: ARG001
-    context: Context,  # noqa: ARG001
-    params: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+async def get_genre_distribution_handler(days: str) -> dict[str, Any]:
     """Handle requests for genre distribution statistics.
 
-    MCP DISTRIBUTION ANALYSIS:
-    This shows how resources can provide analytical insights by aggregating
-    data across dimensions (in this case, book genres).
-
-    The resource computes:
-    - Total books per genre
-    - Checkout activity per genre
-    - Relative popularity of genres
-
     Args:
-        uri: The resource URI
-        context: FastMCP context
-        params: Optional parameters (days to analyze)
+        days: Number of days to analyze (from URI template)
 
     Returns:
         Dictionary containing genre distribution analysis
     """
     try:
-        # Parse parameters
-        days = int(params.get("days", 90)) if params else 90
-        days = min(max(days, 1), 365)  # Clamp between 1 and 365
+        # Convert and validate parameter
+        days_int = int(days)
+        if not 1 <= days_int <= 365:
+            raise ResourceError("days must be between 1 and 365")
 
-        logger.debug("MCP Resource Request - stats/genres: days=%d", days)
+        logger.debug("MCP Resource Request - stats/genres: days=%d", days_int)
 
-        start_date = datetime.now() - timedelta(days=days)
+        start_date = datetime.now() - timedelta(days=days_int)
 
         with session_scope() as session:
             # Get all books with genres
@@ -299,7 +265,7 @@ async def get_genre_distribution_handler(
             distribution.sort(key=lambda x: x.checkout_count, reverse=True)
 
             return {
-                "analysis_period_days": days,
+                "analysis_period_days": days_int,
                 "analysis_start_date": start_date.date().isoformat(),
                 "analysis_end_date": datetime.now().date().isoformat(),
                 "total_checkouts_analyzed": total_checkouts,
@@ -311,11 +277,7 @@ async def get_genre_distribution_handler(
         raise ResourceError(f"Failed to calculate genre distribution: {e!s}") from e
 
 
-async def get_circulation_stats_handler(
-    uri: str,  # noqa: ARG001
-    context: Context,  # noqa: ARG001
-    params: dict[str, Any] | None = None,  # noqa: ARG001
-) -> dict[str, Any]:
+async def get_circulation_stats_handler() -> dict[str, Any]:
     """Handle requests for current circulation statistics.
 
     MCP REAL-TIME METRICS:
@@ -489,23 +451,23 @@ async def get_circulation_stats_handler(
 # Define statistics resources for FastMCP registration
 stats_resources: list[dict[str, Any]] = [
     {
-        "uri": "library://stats/popular",
+        "uri_template": "library://stats/popular/{days}/{limit}",
         "name": "Popular Books",
         "description": (
-            "Get the most borrowed books in a specified time period. "
-            "Shows checkout counts, unique borrowers, and average loan duration. "
-            "Useful for collection development and display recommendations."
+            "Get the most borrowed books for a specified time period. "
+            "URI format: library://stats/popular/{days}/{limit} where "
+            "days is 1-365 and limit is 1-50."
         ),
         "mime_type": "application/json",
         "handler": get_popular_books_handler,
     },
     {
-        "uri": "library://stats/genres",
+        "uri_template": "library://stats/genres/{days}",
         "name": "Genre Distribution",
         "description": (
             "Analyze the distribution of checkouts across different genres. "
-            "Shows which genres are most popular and their relative circulation rates. "
-            "Helps with collection planning and acquisition decisions."
+            "URI format: library://stats/genres/{days} where "
+            "days is 1-365."
         ),
         "mime_type": "application/json",
         "handler": get_genre_distribution_handler,
