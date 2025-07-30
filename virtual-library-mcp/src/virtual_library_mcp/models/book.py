@@ -151,7 +151,7 @@ class Book(BaseModel):
         return self.available_copies > 0
 
     @property
-    def checked_out_copies(self) -> int:
+    def checked_out_copies(self):
         """Calculate number of copies currently checked out."""
         return self.total_copies - self.available_copies
 

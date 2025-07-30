@@ -25,6 +25,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from ..config import get_config
 from .schema import Base
 
 # Configure logging for database operations
@@ -50,9 +51,17 @@ class DatabaseManager:
             database_url: SQLAlchemy database URL. If None, uses SQLite default.
         """
         if database_url is None:
-            # Default to SQLite database in the data directory
-            db_path = Path(__file__).parent.parent / "data" / "library.db"
-            db_path.parent.mkdir(exist_ok=True)
+            # Use database path from configuration
+            config = get_config()
+            db_path = config.database_path
+
+            # Make relative paths relative to project root
+            if not db_path.is_absolute():
+                db_path = Path.cwd() / db_path
+
+            # Ensure parent directory exists
+            db_path.parent.mkdir(exist_ok=True, parents=True)
+
             database_url = f"sqlite:///{db_path}"
             logger.info("Using SQLite database at: %s", db_path)
 

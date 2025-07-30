@@ -27,9 +27,7 @@ This implementation demonstrates:
 
 import logging
 from typing import Any
-from urllib.parse import urlparse
 
-from fastmcp import Context
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
@@ -39,67 +37,6 @@ from ..database.session import session_scope
 from ..models.book import Book
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-
-def extract_isbn_from_uri(uri: str) -> str:
-    """Extract ISBN from library://books/{isbn} URI with robust validation.
-
-    MCP URI PARSING BEST PRACTICES:
-    Using urllib.parse provides more robust URI validation than simple string splitting.
-    This prevents issues with malformed URIs and provides better error messages.
-
-    Args:
-        uri: The full resource URI (e.g., "library://books/978-0-134-68547-9")
-
-    Returns:
-        The extracted ISBN string
-
-    Raises:
-        ValueError: If the URI format is invalid
-    """
-    try:
-        parsed = urlparse(uri)
-
-        # Validate scheme
-        if parsed.scheme != "library":
-            raise ValueError(f"Invalid scheme '{parsed.scheme}', expected 'library'")
-
-        # For "library://books/isbn" URIs, urlparse treats "books" as netloc
-        # and "/isbn" as path. We need to reconstruct the full path.
-        if parsed.netloc and parsed.path:
-            # Standard case: library://books/isbn
-            full_path = f"{parsed.netloc}{parsed.path}"
-        elif parsed.netloc:
-            # Edge case: library://books (no trailing slash)
-            full_path = parsed.netloc
-        elif parsed.path:
-            # Edge case: library:///books/isbn (triple slash)
-            full_path = parsed.path.lstrip("/")
-        else:
-            raise ValueError("No path information found in URI")
-
-        # Split full path and validate structure
-        path_parts = full_path.split("/")
-        if len(path_parts) < 2 or path_parts[0] != "books":
-            raise ValueError(
-                f"Invalid path structure, expected 'books/{{isbn}}', got '{full_path}'"
-            )
-
-        # Join remaining parts in case ISBN contains slashes (though unlikely)
-        isbn = "/".join(path_parts[1:])
-        if not isbn:
-            raise ValueError("Missing ISBN in URI")
-
-        return isbn
-
-    except Exception as e:
-        raise ValueError(f"Invalid book URI format '{uri}': {e}") from e
-
 
 # =============================================================================
 # RESOURCE SCHEMAS
@@ -155,22 +92,13 @@ class BookListResponse(BaseModel):
 # FastMCP calls these handlers when clients request the resource.
 
 
-async def list_books_handler(
-    uri: str,  # noqa: ARG001
-    context: Context,  # noqa: ARG001
-    params: BookListParams | None = None,
-) -> dict[str, Any]:
+async def list_books_handler() -> dict[str, Any]:
     """Handle requests for the book list resource.
 
     MCP PROTOCOL DETAILS:
     - This handler is called when a client requests "library://books/list"
     - The protocol automatically handles JSON serialization of the response
     - Errors are converted to proper JSON-RPC error responses
-
-    Args:
-        uri: The resource URI (always "library://books/list" for this handler)
-        context: FastMCP context containing server state and helpers
-        params: Optional parameters for filtering and pagination
 
     Returns:
         Dictionary containing the book list and pagination metadata
@@ -179,9 +107,8 @@ async def list_books_handler(
         ResourceError: If there's a problem accessing the data
     """
     try:
-        # Default parameters if none provided
-        if params is None:
-            params = BookListParams()
+        # Use default parameters since this is now a static resource
+        params = BookListParams()
 
         logger.debug(
             "MCP Resource Request - books/list: page=%d, limit=%d, sort=%s",
@@ -234,7 +161,7 @@ async def list_books_handler(
         raise ResourceError(f"Failed to retrieve book list: {e!s}") from e
 
 
-async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noqa: ARG001
+async def get_book_handler(isbn: str) -> dict[str, Any]:
     """Handle requests for individual book details.
 
     MCP URI TEMPLATES:
@@ -243,8 +170,7 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
     with the actual ISBN when requesting the resource.
 
     Args:
-        uri: The full resource URI (e.g., "library://books/978-0-134-68547-9")
-        context: FastMCP context
+        isbn: The book ISBN extracted from the URI template
 
     Returns:
         Dictionary containing the book details
@@ -253,10 +179,7 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
         ResourceError: If the book is not found or other errors occur
     """
     try:
-        # Extract ISBN from URI using robust validation
-        # WHY: MCP uses URI templates for parameterized resources
-        # HOW: Enhanced parsing validates scheme, path structure, and provides better error messages
-        isbn = extract_isbn_from_uri(uri)
+        # ISBN is now directly passed as a parameter from the URI template
         logger.debug("MCP Resource Request - books/%s", isbn)
 
         with session_scope() as session:
@@ -268,7 +191,7 @@ async def get_book_handler(uri: str, context: Context) -> dict[str, Any]:  # noq
 
             if book is None:
                 # Return standard MCP error for resource not found
-                raise ResourceError(f"Book not found: {isbn}")  # noqa: TRY301
+                raise ResourceError(f"Book not found: {isbn}")
 
             # Return book data as dict
             # The protocol adds metadata like URI and content type

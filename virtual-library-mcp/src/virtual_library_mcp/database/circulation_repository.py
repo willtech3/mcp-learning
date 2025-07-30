@@ -18,7 +18,7 @@ import enum
 from datetime import date, datetime, timedelta
 
 from pydantic import BaseModel
-from sqlalchemy import and_, desc, func, select
+from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -135,7 +135,7 @@ class CirculationRepository:
             RepositoryException: If checkout not allowed
         """
         # Validate patron
-        patron = mcp_safe_query(
+        patron: PatronDB | None = mcp_safe_query(
             self.session,
             lambda s: s.execute(
                 select(PatronDB).where(PatronDB.id == checkout_data.patron_id)
@@ -158,7 +158,7 @@ class CirculationRepository:
             )
 
         # Validate book availability
-        book = mcp_safe_query(
+        book: BookDB | None = mcp_safe_query(
             self.session,
             lambda s: s.execute(
                 select(BookDB).where(BookDB.isbn == checkout_data.book_isbn).with_for_update()
@@ -738,6 +738,55 @@ class CirculationRepository:
             returns_this_week=returns_week,
             returns_this_month=returns_month,
         )
+
+    def get_patron_checkouts(
+        self,
+        patron_id: str,
+        include_active: bool = True,
+        include_completed: bool = True,
+        since_date: datetime | None = None,
+    ) -> list[CheckoutModel]:
+        """
+        Get checkout history for a specific patron.
+
+        Args:
+            patron_id: Patron ID to get history for
+            include_active: Include currently active checkouts
+            include_completed: Include completed/returned checkouts
+            since_date: Only include checkouts after this date
+
+        Returns:
+            List of checkout records with book details
+        """
+        query = select(CheckoutDB).where(CheckoutDB.patron_id == patron_id)
+
+        # Apply status filters
+        status_filters = []
+        if include_active:
+            status_filters.append(CheckoutDB.status == CirculationStatusEnum.ACTIVE)
+        if include_completed:
+            status_filters.append(CheckoutDB.status == CirculationStatusEnum.COMPLETED)
+
+        if status_filters:
+            query = query.where(or_(*status_filters))
+
+        # Apply date filter
+        if since_date:
+            query = query.where(CheckoutDB.checkout_date >= since_date)
+
+        # Include book details
+        query = query.options(joinedload(CheckoutDB.book))
+
+        # Order by checkout date descending
+        query = query.order_by(desc(CheckoutDB.checkout_date))
+
+        results = mcp_safe_query(
+            self.session,
+            lambda s: s.execute(query).unique().scalars().all(),
+            "Failed to get patron checkouts",
+        )
+
+        return [self._checkout_to_model(checkout) for checkout in results]
 
     def _check_reservations_for_notification(self, book_isbn: str) -> None:
         """Check if any reservations need notification after checkout."""

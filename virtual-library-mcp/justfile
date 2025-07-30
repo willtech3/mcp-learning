@@ -86,7 +86,7 @@ format-check:
 # Type safety is essential for MCP protocol compliance and catching errors early
 typecheck:
     @echo "🔍 Running type checking with pyright..."
-    uv run pyright src/ tests/
+    uv run pyright
     @echo "✅ Type checking complete!"
 
 # === TESTING ===

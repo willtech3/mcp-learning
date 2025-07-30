@@ -63,7 +63,7 @@ class ServerConfig(BaseSettings):
     # === Database Configuration ===
 
     database_path: Path = Field(
-        default=Path("virtual_library.db"),
+        default=Path("data/library.db"),
         description="SQLite database file path",
     )
 

@@ -26,7 +26,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from virtual_library_mcp.config import get_config
-from virtual_library_mcp.resources import book_resources
+from virtual_library_mcp.resources import all_resources
 
 # Initialize logging for protocol debugging
 # MCP servers should provide detailed logging for troubleshooting
@@ -88,32 +88,32 @@ mcp = FastMCP(
 # RESOURCE REGISTRATION
 # =============================================================================
 
-# Register all book resources with the MCP server
+# Register all resources with the MCP server
 # WHY: Resources must be registered before the server starts
 # HOW: FastMCP uses decorators or direct registration
 # WHAT: Each resource gets a URI pattern and handler function
 
-for resource in book_resources:
-    if "uri_template" in resource:
-        # Resources with URI templates (e.g., /books/{isbn})
-        # These support parameterized URIs for accessing specific items
-        mcp.resource(
-            uri_template=resource["uri_template"],
-            name=resource["name"],
-            description=resource["description"],
-            mime_type=resource["mime_type"],
-        )(resource["handler"])
-    else:
-        # Static URI resources (e.g., /books/list)
-        # These have fixed URIs without parameters
-        mcp.resource(
-            uri=resource["uri"],
-            name=resource["name"],
-            description=resource["description"],
-            mime_type=resource["mime_type"],
-        )(resource["handler"])
+for resource in all_resources:
+    # FastMCP's resource decorator uses 'uri' for both static and templated URIs
+    # It automatically detects templates based on the presence of {param} placeholders
+    uri = resource.get("uri_template", resource.get("uri"))
+    if not uri:
+        logger.error("Resource missing URI: %s", resource)
+        continue
 
-logger.info("Registered %d book resources", len(book_resources))
+    logger.debug("Registering resource: %s with URI: %s", resource["name"], uri)
+    try:
+        mcp.resource(
+            uri=uri,
+            name=resource["name"],
+            description=resource["description"],
+            mime_type=resource["mime_type"],
+        )(resource["handler"])
+    except Exception:
+        logger.exception("Failed to register resource %s", resource["name"])
+        raise
+
+logger.info("Registered %d resources", len(all_resources))
 
 # =============================================================================
 # LIFECYCLE MANAGEMENT

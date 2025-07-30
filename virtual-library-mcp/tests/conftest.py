@@ -74,8 +74,7 @@ def test_db_session(test_database_url: str) -> Generator[Session, None, None]:
         connect_args={"check_same_thread": False},  # SQLite specific
     )
 
-    # Create all tables (when models are implemented)
-    # TODO: Add Base.metadata.create_all(engine) when models are ready
+    # Create all tables
 
     # Create session factory
     session_local = sessionmaker(

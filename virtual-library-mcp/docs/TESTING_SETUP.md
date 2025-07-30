@@ -106,6 +106,48 @@ async def test_async_operation(async_test_config):
     await some_async_function(async_test_config)
 ```
 
+## Testing URI Template Resources
+
+When testing resources with URI templates, consider these additional patterns:
+
+### URI Parsing Tests
+
+```python
+def test_uri_parsing_edge_cases():
+    """Test URI parsing with special characters and edge cases."""
+    # Test URL-encoded author names
+    uri = "library://books/by-author/Jane%20Austen"
+    author = extract_author_id_from_books_uri(uri)
+    assert author == "Jane Austen"
+    
+    # Test invalid URI structures
+    with pytest.raises(URIParseError) as exc_info:
+        extract_author_id_from_books_uri("library://books/Jane%20Austen")
+    assert "Invalid URI structure" in str(exc_info.value)
+```
+
+### Resource Handler Tests
+
+```python
+@pytest.mark.asyncio
+async def test_books_by_author_resource(test_db_session, mock_context):
+    """Test URI template resource with dynamic parameters."""
+    # Create test data
+    book = create_test_book(author="Jane Austen", ...)
+    test_db_session.add(book)
+    test_db_session.commit()
+    
+    # Test the resource handler
+    result = await get_books_by_author_handler(
+        uri="library://books/by-author/Jane%20Austen",
+        context=mock_context
+    )
+    
+    assert result["filter_type"] == "author"
+    assert result["filter_value"] == "Jane Austen"
+    assert len(result["books"]) == 1
+```
+
 ## Running Tests
 
 ```bash
