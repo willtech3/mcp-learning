@@ -140,7 +140,7 @@ class AuthorRepository(
     ) -> PaginatedResponse[AuthorModel]:
         """
         Search for authors with various filters.
-        
+
         MCP Resource Examples:
         - library://authors/search?name=fitzgerald
         - library://authors/search?nationality=American&is_living=false
@@ -148,7 +148,7 @@ class AuthorRepository(
         - library://authors/search?birth_year_from=1900&birth_year_to=1950
         - library://authors/search?death_year_from=2000&is_living=false
         - library://authors/search?page_size=20&offset=40
-        
+
         Supports partial name matching and filtering by nationality,
         birth/death years, and living status.
 

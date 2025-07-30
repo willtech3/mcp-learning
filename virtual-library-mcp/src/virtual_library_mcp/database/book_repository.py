@@ -114,7 +114,7 @@ class BookRepository(BaseRepository[BookDB, BookCreateSchema, BookUpdateSchema, 
     ) -> PaginatedResponse[BookModel]:
         """
         Search for books with various filters.
-        
+
         MCP Resource Examples:
         - library://books/search?query=gatsby
         - library://books/search?genre=Fiction&available_only=true
@@ -122,7 +122,7 @@ class BookRepository(BaseRepository[BookDB, BookCreateSchema, BookUpdateSchema, 
         - library://books/search?isbn=978&publication_year_from=2020
         - library://books/search?title=great&sort_by=publication_year&sort_desc=true
         - library://books/search?available_only=true&page_size=10&offset=20
-        
+
         This method powers MCP Resources for book discovery and filtering,
         supporting full-text search across multiple fields as well as
         specific field filtering.

@@ -112,11 +112,11 @@ class CirculationRepository:
     def checkout_book(self, checkout_data: CheckoutCreateSchema) -> CheckoutModel:
         """
         Process a book checkout.
-        
+
         MCP Tool Examples:
         - checkout_book(patron_id="P-JANE123", book_id="B-PRIDE001")
         - checkout_book(patron_id="P-JOHN456", book_id="B-GATSBY001", due_date="2024-02-15")
-        
+
         This method implements the core MCP Tool for borrowing books:
         1. Validates patron can checkout (active membership, within limits)
         2. Validates book is available (copies > 0)
