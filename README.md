@@ -107,14 +107,6 @@ The main project is a Virtual Library MCP Server that simulates a complete libra
    - Check `CLAUDE.md` for development guidelines
    - Review `virtual-library-mcp/docs/DEVELOPMENT.md` for project details
 
-4. **Follow the implementation roadmap**:
-   The project is organized into 5 epic phases with 25 total implementation steps tracked as GitHub issues:
-   - **[Epic #1](https://github.com/willtech3/mcp-learning/issues/1)**: Phase 1 - Foundation (Project Setup) ✅ COMPLETE
-   - **[Epic #2](https://github.com/willtech3/mcp-learning/issues/2)**: Phase 2 - Data Layer (Models & Database) ✅ COMPLETE
-   - **[Epic #3](https://github.com/willtech3/mcp-learning/issues/3)**: Phase 3 - Core MCP (Basic Server) ✅ COMPLETE
-   - **[Epic #4](https://github.com/willtech3/mcp-learning/issues/4)**: Phase 4 - Advanced MCP (Subscriptions, Progress, Prompts)
-   - **[Epic #5](https://github.com/willtech3/mcp-learning/issues/5)**: Phase 5 - Production Ready (Testing & Documentation)
-
 ## 🧪 Development Workflow
 
 Once the project is set up, use these commands:
@@ -128,29 +120,11 @@ just typecheck    # Run pyright type checker
 just format       # Format code
 ```
 
-## 📖 Learning Path
-
-1. **Understand MCP**: Read the documentation in `docs/mcp/`
-2. **Follow the Issues**: Work through each GitHub issue in order, starting with [Issue #6](https://github.com/willtech3/mcp-learning/issues/6)
-3. **Test Everything**: Write tests as you implement features
-4. **Experiment**: Use the server to explore MCP capabilities
-5. **Extend**: Add your own features once comfortable
-
-## 🤝 Contributing
-
-This is a learning repository. Feel free to:
-
-- Report issues or suggestions
-- Share your learning experiences
-- Contribute improvements to documentation
-- Add example use cases
-- Pick up any open issue and submit a PR
 
 ## 📝 Important Notes
 
 - This is a learning project - code clarity is prioritized over performance
 - Tests focus on critical paths rather than exhaustive coverage
-- The MCP Protocol Mentor agent (`.claude/agents/mcp-protocol-mentor.md`) provides implementation guidance
 - Never commit secrets or sensitive data
 
 ## 🎓 Educational Value
@@ -158,11 +132,8 @@ This is a learning repository. Feel free to:
 This project teaches:
 
 - Model Context Protocol architecture and concepts
-- Building production-ready Python applications
 - Type-safe programming with Pydantic and pyright
-- Test-driven development practices
 - Database design and ORM usage
-- Real-time systems with subscriptions
 - AI/LLM integration patterns
 
 ## 📚 Additional Resources
