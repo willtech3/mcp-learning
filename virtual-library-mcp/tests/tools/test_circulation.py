@@ -159,7 +159,7 @@ class TestCheckoutBookTool:
         })
 
         assert result["isError"] is True
-        assert "Invalid checkout parameters" in result["content"][0]["text"]
+        assert "Invalid parameters" in result["content"][0]["text"]
         assert "patron_id" in result["content"][0]["text"].lower()
 
     async def test_checkout_patron_not_found(self, setup_test_data, mock_get_session):
@@ -421,7 +421,7 @@ class TestReturnBookTool:
         })
 
         assert result["isError"] is True
-        assert "Invalid return parameters" in result["content"][0]["text"]
+        assert "Invalid parameters" in result["content"][0]["text"]
 
 
 class TestReserveBookTool:

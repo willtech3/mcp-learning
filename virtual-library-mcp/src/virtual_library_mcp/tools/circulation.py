@@ -40,6 +40,43 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def _format_error_response(error_type: str, details: str) -> dict[str, Any]:
+    """Format error responses consistently across all tools.
+
+    Args:
+        error_type: Type of error (e.g., "Invalid parameters", "Not found", "Operation failed")
+        details: Specific error details
+
+    Returns:
+        Formatted error response dict
+    """
+    return {
+        "isError": True,
+        "content": [{
+            "type": "text",
+            "text": f"{error_type}: {details}"
+        }]
+    }
+
+
+def _log_operation(operation: str, **kwargs) -> None:
+    """Log operation details for audit trail.
+
+    Args:
+        operation: Operation name (e.g., "checkout_book", "return_book")
+        **kwargs: Operation details to log
+    """
+    logger.info(
+        "Operation: %s | Details: %s",
+        operation,
+        " | ".join(f"{k}={v}" for k, v in kwargs.items())
+    )
+
+
+# =============================================================================
 # CHECKOUT TOOL IMPLEMENTATION
 # =============================================================================
 
@@ -128,13 +165,16 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             params = CheckoutBookInput.model_validate(arguments)
         except Exception as e:
             logger.warning("Invalid checkout parameters: %s", e)
-            return {
-                "isError": True,
-                "content": [{
-                    "type": "text",
-                    "text": f"Invalid checkout parameters: {e}"
-                }]
-            }
+            return _format_error_response("Invalid parameters", str(e))
+
+        # Log operation start
+        _log_operation(
+            "checkout_book_start",
+            patron_id=params.patron_id,
+            book_isbn=params.book_isbn,
+            due_date=params.due_date,
+            has_notes=bool(params.notes)
+        )
 
         # STEP 2: Execute checkout with repository
         # WHY: Business logic is encapsulated in the repository layer
@@ -159,36 +199,39 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                 # MCP ERROR PATTERN: Entity not found
                 # Return specific error for missing patron or book
                 logger.info("Checkout failed - entity not found: %s", e)
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": str(e)
-                    }]
-                }
+                _log_operation(
+                    "checkout_book_failed",
+                    patron_id=params.patron_id,
+                    book_isbn=params.book_isbn,
+                    error_type="not_found",
+                    error_details=str(e)
+                )
+                return _format_error_response("Not found", str(e))
 
             except RepositoryException as e:
                 # MCP ERROR PATTERN: Business rule violation
                 # Return specific error for checkout restrictions
                 logger.info("Checkout failed - business rule: %s", e)
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": str(e)
-                    }]
-                }
+                _log_operation(
+                    "checkout_book_failed",
+                    patron_id=params.patron_id,
+                    book_isbn=params.book_isbn,
+                    error_type="business_rule",
+                    error_details=str(e)
+                )
+                return _format_error_response("Operation failed", str(e))
 
             except Exception as e:
                 # MCP ERROR PATTERN: Unexpected database error
                 logger.exception("Checkout database error")
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": f"Checkout failed: {e!s}"
-                    }]
-                }
+                _log_operation(
+                    "checkout_book_failed",
+                    patron_id=params.patron_id,
+                    book_isbn=params.book_isbn,
+                    error_type="database_error",
+                    error_details=str(e)
+                )
+                return _format_error_response("Database error", f"Checkout failed: {e!s}")
 
         # STEP 3: Format successful response
         # MCP RESPONSE FORMAT: Tools return structured content
@@ -203,6 +246,16 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             message += " (standard 14-day loan)"
         else:
             message += f" ({checkout.loan_period_days}-day loan)"
+
+        # Log successful operation
+        _log_operation(
+            "checkout_book_success",
+            checkout_id=checkout.id,
+            patron_id=checkout.patron_id,
+            book_isbn=checkout.book_isbn,
+            due_date=checkout.due_date.isoformat(),
+            loan_period_days=checkout.loan_period_days
+        )
 
         # Return MCP-compliant response
         return {
@@ -230,13 +283,7 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         # MCP ERROR PATTERN: Catch-all for unexpected errors
         # This ensures the tool never crashes the server
         logger.exception("Unexpected error in checkout_book tool")
-        return {
-            "isError": True,
-            "content": [{
-                "type": "text",
-                "text": f"An unexpected error occurred: {e!s}"
-            }]
-        }
+        return _format_error_response("Unexpected error", str(e))
 
 
 # =============================================================================
@@ -311,13 +358,17 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             params = ReturnBookInput.model_validate(arguments)
         except Exception as e:
             logger.warning("Invalid return parameters: %s", e)
-            return {
-                "isError": True,
-                "content": [{
-                    "type": "text",
-                    "text": f"Invalid return parameters: {e}"
-                }]
-            }
+            return _format_error_response("Invalid parameters", str(e))
+
+        # Log operation start
+        _log_operation(
+            "return_book_start",
+            checkout_id=params.checkout_id,
+            condition=params.condition,
+            has_notes=bool(params.notes),
+            has_rating=bool(params.rating),
+            has_review=bool(params.review)
+        )
 
         # Execute return
         with get_session() as session:
@@ -346,33 +397,33 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
 
             except NotFoundError as e:
                 logger.info("Return failed - checkout not found: %s", e)
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": str(e)
-                    }]
-                }
+                _log_operation(
+                    "return_book_failed",
+                    checkout_id=params.checkout_id,
+                    error_type="not_found",
+                    error_details=str(e)
+                )
+                return _format_error_response("Not found", str(e))
 
             except RepositoryException as e:
                 logger.info("Return failed - business rule: %s", e)
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": str(e)
-                    }]
-                }
+                _log_operation(
+                    "return_book_failed",
+                    checkout_id=params.checkout_id,
+                    error_type="business_rule",
+                    error_details=str(e)
+                )
+                return _format_error_response("Operation failed", str(e))
 
             except Exception as e:
                 logger.exception("Return database error")
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": f"Return failed: {e!s}"
-                    }]
-                }
+                _log_operation(
+                    "return_book_failed",
+                    checkout_id=params.checkout_id,
+                    error_type="database_error",
+                    error_details=str(e)
+                )
+                return _format_error_response("Database error", f"Return failed: {e!s}")
 
         # Format response with fine information
         message = f"Successfully returned book '{return_record.book_isbn}'."
@@ -387,6 +438,17 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
 
         if params.condition != "good":
             message += f" Book condition noted as: {params.condition}"
+
+        # Log successful operation
+        _log_operation(
+            "return_book_success",
+            return_id=return_record.id,
+            checkout_id=return_record.checkout_id,
+            book_isbn=return_record.book_isbn,
+            condition=return_record.condition,
+            late_days=return_record.late_days,
+            fine_assessed=return_record.fine_assessed
+        )
 
         return {
             "content": [{
@@ -409,13 +471,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
 
     except Exception as e:
         logger.exception("Unexpected error in return_book tool")
-        return {
-            "isError": True,
-            "content": [{
-                "type": "text",
-                "text": f"An unexpected error occurred: {e!s}"
-            }]
-        }
+        return _format_error_response("Unexpected error", str(e))
 
 
 # =============================================================================
@@ -492,13 +548,16 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             params = ReserveBookInput.model_validate(arguments)
         except Exception as e:
             logger.warning("Invalid reservation parameters: %s", e)
-            return {
-                "isError": True,
-                "content": [{
-                    "type": "text",
-                    "text": f"Invalid reservation parameters: {e}"
-                }]
-            }
+            return _format_error_response("Invalid parameters", str(e))
+
+        # Log operation start
+        _log_operation(
+            "reserve_book_start",
+            patron_id=params.patron_id,
+            book_isbn=params.book_isbn,
+            expiration_date=params.expiration_date,
+            has_notes=bool(params.notes)
+        )
 
         # Execute reservation
         with get_session() as session:
@@ -521,33 +580,36 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
 
             except NotFoundError as e:
                 logger.info("Reservation failed - entity not found: %s", e)
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": str(e)
-                    }]
-                }
+                _log_operation(
+                    "reserve_book_failed",
+                    patron_id=params.patron_id,
+                    book_isbn=params.book_isbn,
+                    error_type="not_found",
+                    error_details=str(e)
+                )
+                return _format_error_response("Not found", str(e))
 
             except RepositoryException as e:
                 logger.info("Reservation failed - business rule: %s", e)
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": str(e)
-                    }]
-                }
+                _log_operation(
+                    "reserve_book_failed",
+                    patron_id=params.patron_id,
+                    book_isbn=params.book_isbn,
+                    error_type="business_rule",
+                    error_details=str(e)
+                )
+                return _format_error_response("Operation failed", str(e))
 
             except Exception as e:
                 logger.exception("Reservation database error")
-                return {
-                    "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": f"Reservation failed: {e!s}"
-                    }]
-                }
+                _log_operation(
+                    "reserve_book_failed",
+                    patron_id=params.patron_id,
+                    book_isbn=params.book_isbn,
+                    error_type="database_error",
+                    error_details=str(e)
+                )
+                return _format_error_response("Database error", f"Reservation failed: {e!s}")
 
         # Format response with queue position
         message = (
@@ -560,6 +622,17 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             message += f" (estimated wait: {queue_info.estimated_wait_days} days)"
 
         message += f". Reservation expires on {reservation.expiration_date.strftime('%B %d, %Y')}"
+
+        # Log successful operation
+        _log_operation(
+            "reserve_book_success",
+            reservation_id=reservation.id,
+            patron_id=reservation.patron_id,
+            book_isbn=reservation.book_isbn,
+            queue_position=reservation.queue_position,
+            estimated_wait_days=queue_info.estimated_wait_days,
+            expiration_date=reservation.expiration_date.isoformat()
+        )
 
         return {
             "content": [{
@@ -583,13 +656,7 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
 
     except Exception as e:
         logger.exception("Unexpected error in reserve_book tool")
-        return {
-            "isError": True,
-            "content": [{
-                "type": "text",
-                "text": f"An unexpected error occurred: {e!s}"
-            }]
-        }
+        return _format_error_response("Unexpected error", str(e))
 
 
 # =============================================================================
