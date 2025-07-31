@@ -12,7 +12,6 @@ from datetime import date, datetime
 
 import pytest
 from pydantic import ValidationError
-
 from virtual_library_mcp.models.author import Author
 
 

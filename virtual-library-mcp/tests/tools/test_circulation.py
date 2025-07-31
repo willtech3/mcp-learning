@@ -13,7 +13,6 @@ from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 
 import pytest
-
 from virtual_library_mcp.database.schema import (
     Author as AuthorDB,
 )

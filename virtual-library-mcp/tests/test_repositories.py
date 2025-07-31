@@ -10,7 +10,6 @@ from datetime import date, timedelta
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-
 from virtual_library_mcp.database import (
     AuthorRepository,
     Base,

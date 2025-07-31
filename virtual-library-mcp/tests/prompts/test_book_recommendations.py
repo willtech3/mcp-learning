@@ -1,7 +1,6 @@
 """Tests for book recommendation prompt functionality."""
 
 import pytest
-
 from virtual_library_mcp.prompts.book_recommendations import recommend_books
 
 

@@ -13,7 +13,6 @@ from contextlib import contextmanager
 
 import pytest
 from pydantic import ValidationError
-
 from virtual_library_mcp.database.author_repository import AuthorCreateSchema, AuthorRepository
 from virtual_library_mcp.database.book_repository import BookCreateSchema, BookRepository
 from virtual_library_mcp.tools.search import SearchCatalogInput, search_catalog_handler

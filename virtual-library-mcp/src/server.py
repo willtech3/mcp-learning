@@ -16,10 +16,10 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from virtual_library_mcp.config import get_config
-from virtual_library_mcp.prompts import all_prompts
-from virtual_library_mcp.resources import all_resources
-from virtual_library_mcp.tools import all_tools
+from config import get_config
+from prompts import all_prompts
+from resources import all_resources
+from tools import all_tools
 
 # Initialize logging - stderr for logs, stdout for MCP protocol
 logging.basicConfig(

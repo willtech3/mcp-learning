@@ -8,9 +8,9 @@ Usage: prompt.get("generate_reading_plan", {"goal": "learn AI", "duration": "qua
 
 from typing import Literal
 
-from virtual_library_mcp.database.book_repository import BookRepository
-from virtual_library_mcp.database.repository import PaginationParams
-from virtual_library_mcp.database.session import get_session
+from ..database.book_repository import BookRepository
+from ..database.repository import PaginationParams
+from ..database.session import get_session
 
 
 async def generate_reading_plan(

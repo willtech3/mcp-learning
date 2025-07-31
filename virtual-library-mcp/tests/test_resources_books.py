@@ -17,7 +17,6 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastmcp import Context
 from fastmcp.exceptions import ResourceError
-
 from virtual_library_mcp.database.book_repository import BookSortOptions
 from virtual_library_mcp.database.repository import PaginatedResponse
 from virtual_library_mcp.models.book import Book

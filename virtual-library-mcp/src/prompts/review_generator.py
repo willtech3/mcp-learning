@@ -8,8 +8,8 @@ Usage: prompt.get("generate_book_review", {"isbn": "...", "review_type": "critic
 
 from typing import Literal
 
-from virtual_library_mcp.database.book_repository import BookRepository
-from virtual_library_mcp.database.session import get_session
+from ..database.book_repository import BookRepository
+from ..database.session import get_session
 
 
 async def generate_book_review(

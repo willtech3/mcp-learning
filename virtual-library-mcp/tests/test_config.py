@@ -13,7 +13,6 @@ from unittest.mock import patch
 
 import pytest
 from pydantic import ValidationError
-
 from virtual_library_mcp.config import ServerConfig, get_config, reset_config
 
 

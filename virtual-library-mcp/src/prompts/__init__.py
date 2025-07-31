@@ -17,9 +17,9 @@ KEY FEATURES:
 - Extensible prompt system for future additions
 """
 
-from virtual_library_mcp.prompts.book_recommendations import book_recommendation_prompt
-from virtual_library_mcp.prompts.reading_plan import reading_plan_prompt
-from virtual_library_mcp.prompts.review_generator import review_generator_prompt
+from .book_recommendations import book_recommendation_prompt
+from .reading_plan import reading_plan_prompt
+from .review_generator import review_generator_prompt
 
 # Export all prompts for server registration
 all_prompts = [
