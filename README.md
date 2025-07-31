@@ -13,30 +13,62 @@ A comprehensive educational repository for learning and implementing the Model C
 
 ```text
 mcp-learning/
-├── docs/mcp/                    # Comprehensive MCP documentation
-│   ├── 01-overview.md          # Introduction to MCP
-│   ├── 02-architecture.md      # Technical architecture
-│   ├── 03-protocol-specification.md  # Protocol details
-│   ├── 04-transport-layer.md   # Transport mechanisms
-│   ├── 05-server-development.md # Server development guide
-│   ├── 06-client-development.md # Client development guide
-│   ├── 07-sdk-reference.md     # SDK documentation
-│   ├── 08-security.md          # Security considerations
-│   └── 09-examples.md          # Example implementations
-├── virtual-library-mcp/         # Virtual Library MCP Server
-│   ├── src/                    # Source code
-│   ├── tests/                  # Test suite with fixtures
-│   ├── docs/                   # Project documentation
-│   ├── pyproject.toml          # Project configuration
-│   └── justfile                # Task automation
-├── .claude/                     # Claude Code configuration
-│   ├── agents/                  # Custom agents
-│   │   └── mcp-protocol-mentor.md  # MCP implementation guidance
-│   ├── commands/                # Custom commands
-│   │   └── review_prs.md       # PR review command
-│   └── settings.local.json     # Local settings
-├── CLAUDE.md                    # Claude Code guidance file
-└── README.md                    # This file
+├── docs/
+│   └── mcp/
+│       ├── 01-overview.md
+│       ├── 02-architecture.md
+│       ├── 03-protocol-specification.md
+│       ├── 04-transport-layer.md
+│       ├── 05-server-development.md
+│       ├── 06-client-development.md
+│       ├── 07-sdk-reference.md
+│       ├── 08-security.md
+│       ├── 09-examples.md
+│       └── 10-additional-resources.md
+├── virtual-library-mcp/
+│   ├── config.py
+│   ├── server.py
+│   ├── pyproject.toml
+│   ├── justfile
+│   ├── data/
+│   │   ├── library.db.old
+│   │   └── README.txt
+│   ├── database/
+│   │   ├── author_repository.py
+│   │   ├── book_repository.py
+│   │   ├── circulation_repository.py
+│   │   ├── patron_repository.py
+│   │   ├── repository.py
+│   │   ├── schema.py
+│   │   ├── seed.py
+│   │   └── session.py
+│   ├── models/
+│   │   ├── author.py
+│   │   ├── book.py
+│   │   ├── circulation.py
+│   │   └── patron.py
+│   ├── resources/
+│   │   ├── books.py
+│   │   ├── patrons.py
+│   │   ├── recommendations.py
+│   │   └── stats.py
+│   ├── prompts/
+│   │   ├── book_recommendations.py
+│   │   ├── reading_plan.py
+│   │   ├── review_generator.py
+│   │   └── README.md
+│   ├── tools/
+│   │   ├── circulation.py
+│   │   └── search.py
+│   ├── tests/
+│   │   └── ... (unit tests)
+│   ├── docs/
+│   │   ├── DEVELOPMENT.md
+│   │   └── TESTING_SETUP.md
+│   └── scripts/
+│       └── init_database.py
+├── CLAUDE.md
+└── README.md
 ```
 
 ## 🚀 Virtual Library MCP Server
