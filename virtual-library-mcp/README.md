@@ -19,25 +19,36 @@ just dev
 
 ### ✅ Implemented
 
-- **Phase 1**: Project setup and configuration
-- **Phase 2**: Data models and database layer
+- **Phase 1**: Project setup and configuration ✅
+- **Phase 2**: Data models and database layer ✅
   - Author, Book, Patron, and Circulation models
   - Repository pattern with pagination
   - 1200+ books, 120+ authors, 60+ patrons in seed data
-- **Phase 3**: MCP Server initialization
-  - FastMCP 2.0 integration
-  - Three-phase initialization handshake
-  - Stdio transport configuration
-  - Comprehensive logging
-- **Step 12**: Basic Resources ✅
-  - `/books/list` - Browse catalog with pagination
-  - `/books/{isbn}` - Get book details by ISBN
+- **Phase 3**: Core MCP Implementation ✅ **COMPLETED**
+  - FastMCP 2.0 server initialization
+  - Basic Resources:
+    - `/books/list` - Browse catalog with pagination
+    - `/books/{isbn}` - Get book details by ISBN
+  - Advanced Resources with URI templates:
+    - `/books/by-author/{author_id}` - Books by specific author
+    - `/books/by-genre/{genre}` - Books in a genre
+    - `/patrons/{id}/history` - Patron borrowing history
+    - `/stats/popular` - Most borrowed books
+    - `/stats/genres` - Genre distribution
+    - `/stats/circulation` - Current circulation stats
+    - `/recommendations/{patron_id}` - Personalized recommendations
+  - Tools with validation:
+    - `search_catalog` - Full-text search with filters
+    - `checkout_book` - Create loan transactions
+    - `return_book` - Process returns with fine calculation
+    - `reserve_book` - Queue management for unavailable books
 
 ### 🚧 Coming Next
 
-- **Step 14**: Tools (`search_catalog`, `checkout_book`, `return_book`)
-- **Step 16**: Subscriptions (real-time availability updates)
-- **Step 18**: Prompts (AI-powered book recommendations)
+- **Phase 4**: Advanced MCP Features
+  - **Step 16**: Subscriptions (real-time availability updates)
+  - **Step 18**: Prompts (AI-powered book recommendations)
+  - **Step 20**: Progress notifications for long operations
 
 ## 🏗️ Architecture
 
@@ -91,19 +102,23 @@ echo '{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "
 
 1. **Resources** ✅
    - Browse library catalog with pagination and filtering
-   - View book details by ISBN
-   - (More resources coming: authors, patrons, circulation)
+   - View book details by ISBN  
+   - Dynamic URI templates for author/genre filtering
+   - Patron history and circulation statistics
+   - Personalized book recommendations
+   - Popular books and genre distribution stats
 
-2. **Tools** (Coming Soon)
-   - Search for books
-   - Check out/return books
-   - Manage reservations
+2. **Tools** ✅
+   - `search_catalog` - Full-text search with genre/author filters
+   - `checkout_book` - Create loans with validation
+   - `return_book` - Process returns and calculate fines
+   - `reserve_book` - Manage reservation queues
 
-3. **Prompts** (Coming Soon)
+3. **Prompts** (Phase 4 - Coming Soon)
    - Get personalized recommendations
    - Generate reading plans
 
-4. **Subscriptions** (Coming Soon)
+4. **Subscriptions** (Phase 4 - Coming Soon)
    - Real-time availability updates
    - Reservation notifications
 

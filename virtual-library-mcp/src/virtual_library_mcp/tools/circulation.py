@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 # HELPER FUNCTIONS
 # =============================================================================
 
+
 def _format_error_response(error_type: str, details: str) -> dict[str, Any]:
     """Format error responses consistently across all tools.
 
@@ -53,13 +54,7 @@ def _format_error_response(error_type: str, details: str) -> dict[str, Any]:
     Returns:
         Formatted error response dict
     """
-    return {
-        "isError": True,
-        "content": [{
-            "type": "text",
-            "text": f"{error_type}: {details}"
-        }]
-    }
+    return {"isError": True, "content": [{"type": "text", "text": f"{error_type}: {details}"}]}
 
 
 def _log_operation(operation: str, **kwargs) -> None:
@@ -70,15 +65,14 @@ def _log_operation(operation: str, **kwargs) -> None:
         **kwargs: Operation details to log
     """
     logger.info(
-        "Operation: %s | Details: %s",
-        operation,
-        " | ".join(f"{k}={v}" for k, v in kwargs.items())
+        "Operation: %s | Details: %s", operation, " | ".join(f"{k}={v}" for k, v in kwargs.items())
     )
 
 
 # =============================================================================
 # CHECKOUT TOOL IMPLEMENTATION
 # =============================================================================
+
 
 class CheckoutBookInput(BaseModel):
     """
@@ -173,7 +167,7 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             patron_id=params.patron_id,
             book_isbn=params.book_isbn,
             due_date=params.due_date,
-            has_notes=bool(params.notes)
+            has_notes=bool(params.notes),
         )
 
         # STEP 2: Execute checkout with repository
@@ -204,7 +198,7 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     patron_id=params.patron_id,
                     book_isbn=params.book_isbn,
                     error_type="not_found",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Not found", str(e))
 
@@ -217,7 +211,7 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     patron_id=params.patron_id,
                     book_isbn=params.book_isbn,
                     error_type="business_rule",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Operation failed", str(e))
 
@@ -229,7 +223,7 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     patron_id=params.patron_id,
                     book_isbn=params.book_isbn,
                     error_type="database_error",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Database error", f"Checkout failed: {e!s}")
 
@@ -254,15 +248,12 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             patron_id=checkout.patron_id,
             book_isbn=checkout.book_isbn,
             due_date=checkout.due_date.isoformat(),
-            loan_period_days=checkout.loan_period_days
+            loan_period_days=checkout.loan_period_days,
         )
 
         # Return MCP-compliant response
         return {
-            "content": [{
-                "type": "text",
-                "text": message
-            }],
+            "content": [{"type": "text", "text": message}],
             # Include structured data for client processing
             # WHY: LLMs can use this data for follow-up actions
             "data": {
@@ -276,7 +267,7 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     "renewal_count": checkout.renewal_count,
                     "loan_period_days": checkout.loan_period_days,
                 }
-            }
+            },
         }
 
     except Exception as e:
@@ -289,6 +280,7 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
 # =============================================================================
 # RETURN TOOL IMPLEMENTATION
 # =============================================================================
+
 
 class ReturnBookInput(BaseModel):
     """
@@ -319,7 +311,11 @@ class ReturnBookInput(BaseModel):
         default=None,
         description="Optional notes about the return (e.g., damage details)",
         max_length=500,
-        examples=["Minor water damage on cover", "Missing dust jacket", "Highlighted text on pages 45-67"],
+        examples=[
+            "Minor water damage on cover",
+            "Missing dust jacket",
+            "Highlighted text on pages 45-67",
+        ],
     )
 
     rating: int | None = Field(
@@ -367,7 +363,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             condition=params.condition,
             has_notes=bool(params.notes),
             has_rating=bool(params.rating),
-            has_review=bool(params.review)
+            has_review=bool(params.review),
         )
 
         # Execute return
@@ -392,7 +388,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     logger.info(
                         "Book review received - Rating: %s, Review: %s",
                         params.rating,
-                        params.review[:100] if params.review else None
+                        params.review[:100] if params.review else None,
                     )
 
             except NotFoundError as e:
@@ -401,7 +397,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     "return_book_failed",
                     checkout_id=params.checkout_id,
                     error_type="not_found",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Not found", str(e))
 
@@ -411,7 +407,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     "return_book_failed",
                     checkout_id=params.checkout_id,
                     error_type="business_rule",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Operation failed", str(e))
 
@@ -421,7 +417,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     "return_book_failed",
                     checkout_id=params.checkout_id,
                     error_type="database_error",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Database error", f"Return failed: {e!s}")
 
@@ -447,14 +443,11 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             book_isbn=return_record.book_isbn,
             condition=return_record.condition,
             late_days=return_record.late_days,
-            fine_assessed=return_record.fine_assessed
+            fine_assessed=return_record.fine_assessed,
         )
 
         return {
-            "content": [{
-                "type": "text",
-                "text": message
-            }],
+            "content": [{"type": "text", "text": message}],
             "data": {
                 "return": {
                     "id": return_record.id,
@@ -466,7 +459,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     "fine_paid": return_record.fine_paid,
                     "fine_outstanding": return_record.fine_outstanding,
                 }
-            }
+            },
         }
 
     except Exception as e:
@@ -477,6 +470,7 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
 # =============================================================================
 # RESERVATION TOOL IMPLEMENTATION
 # =============================================================================
+
 
 class ReserveBookInput(BaseModel):
     """
@@ -556,7 +550,7 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             patron_id=params.patron_id,
             book_isbn=params.book_isbn,
             expiration_date=params.expiration_date,
-            has_notes=bool(params.notes)
+            has_notes=bool(params.notes),
         )
 
         # Execute reservation
@@ -585,7 +579,7 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     patron_id=params.patron_id,
                     book_isbn=params.book_isbn,
                     error_type="not_found",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Not found", str(e))
 
@@ -596,7 +590,7 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     patron_id=params.patron_id,
                     book_isbn=params.book_isbn,
                     error_type="business_rule",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Operation failed", str(e))
 
@@ -607,7 +601,7 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     patron_id=params.patron_id,
                     book_isbn=params.book_isbn,
                     error_type="database_error",
-                    error_details=str(e)
+                    error_details=str(e),
                 )
                 return _format_error_response("Database error", f"Reservation failed: {e!s}")
 
@@ -631,14 +625,11 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             book_isbn=reservation.book_isbn,
             queue_position=reservation.queue_position,
             estimated_wait_days=queue_info.estimated_wait_days,
-            expiration_date=reservation.expiration_date.isoformat()
+            expiration_date=reservation.expiration_date.isoformat(),
         )
 
         return {
-            "content": [{
-                "type": "text",
-                "text": message
-            }],
+            "content": [{"type": "text", "text": message}],
             "data": {
                 "reservation": {
                     "id": reservation.id,
@@ -651,7 +642,7 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     "estimated_wait_days": queue_info.estimated_wait_days,
                     "total_in_queue": queue_info.total_reservations,
                 }
-            }
+            },
         }
 
     except Exception as e:

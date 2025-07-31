@@ -90,10 +90,12 @@ class TestCheckoutBookTool:
         patron, book = setup_test_data
 
         # Execute checkout
-        result = await checkout_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         # Verify success response
         assert "isError" not in result or not result["isError"]
@@ -121,10 +123,11 @@ class TestCheckoutBookTool:
         assert updated_patron.total_checkouts == 1
 
         # Check checkout record created
-        checkout = mock_get_session.query(CheckoutDB).filter_by(
-            patron_id=patron.id,
-            book_isbn=book.isbn
-        ).first()
+        checkout = (
+            mock_get_session.query(CheckoutDB)
+            .filter_by(patron_id=patron.id, book_isbn=book.isbn)
+            .first()
+        )
         assert checkout is not None
         assert checkout.status == CirculationStatusEnum.ACTIVE
 
@@ -133,30 +136,35 @@ class TestCheckoutBookTool:
         patron, book = setup_test_data
         custom_due_date = date.today() + timedelta(days=21)
 
-        result = await checkout_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-            "due_date": custom_due_date.isoformat(),
-            "notes": "Extended loan for research",
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+                "due_date": custom_due_date.isoformat(),
+                "notes": "Extended loan for research",
+            }
+        )
 
         assert "isError" not in result or not result["isError"]
         assert result["data"]["checkout"]["due_date"] == custom_due_date.isoformat()
         assert result["data"]["checkout"]["loan_period_days"] == 21
 
         # Verify notes saved
-        checkout = mock_get_session.query(CheckoutDB).filter_by(
-            patron_id=patron.id,
-            book_isbn=book.isbn
-        ).first()
+        checkout = (
+            mock_get_session.query(CheckoutDB)
+            .filter_by(patron_id=patron.id, book_isbn=book.isbn)
+            .first()
+        )
         assert checkout.notes == "Extended loan for research"
 
     async def test_checkout_invalid_patron_id(self, mock_get_session):
         """Test checkout with invalid patron ID format."""
-        result = await checkout_book_handler({
-            "patron_id": "invalid-format",
-            "book_isbn": "9780134685991",
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": "invalid-format",
+                "book_isbn": "9780134685991",
+            }
+        )
 
         assert result["isError"] is True
         assert "Invalid parameters" in result["content"][0]["text"]
@@ -166,10 +174,12 @@ class TestCheckoutBookTool:
         """Test checkout with non-existent patron."""
         _, book = setup_test_data
 
-        result = await checkout_book_handler({
-            "patron_id": "patron_nonexistent",
-            "book_isbn": book.isbn,
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": "patron_nonexistent",
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert result["isError"] is True
         assert "Patron patron_nonexistent not found" in result["content"][0]["text"]
@@ -178,10 +188,12 @@ class TestCheckoutBookTool:
         """Test checkout with non-existent book."""
         patron, _ = setup_test_data
 
-        result = await checkout_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": "9999999999999",
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": "9999999999999",
+            }
+        )
 
         assert result["isError"] is True
         assert "Book 9999999999999 not found" in result["content"][0]["text"]
@@ -196,10 +208,12 @@ class TestCheckoutBookTool:
         book_db.available_copies = 0
         mock_get_session.commit()
 
-        result = await checkout_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert result["isError"] is True
         assert "Book unavailable for checkout" in result["content"][0]["text"]
@@ -215,10 +229,12 @@ class TestCheckoutBookTool:
         patron_db.current_checkouts = patron_db.borrowing_limit
         mock_get_session.commit()
 
-        result = await checkout_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert result["isError"] is True
         assert "borrowing limit" in result["content"][0]["text"]
@@ -233,10 +249,12 @@ class TestCheckoutBookTool:
         patron_db.status = "suspended"
         mock_get_session.commit()
 
-        result = await checkout_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert result["isError"] is True
         assert "membership is not active" in result["content"][0]["text"]
@@ -246,11 +264,13 @@ class TestCheckoutBookTool:
         patron, book = setup_test_data
         past_date = date.today() - timedelta(days=1)
 
-        result = await checkout_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-            "due_date": past_date.isoformat(),
-        })
+        result = await checkout_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+                "due_date": past_date.isoformat(),
+            }
+        )
 
         assert result["isError"] is True
         assert "Due date cannot be in the past" in result["content"][0]["text"]
@@ -311,9 +331,11 @@ class TestReturnBookTool:
         """Test successful book return."""
         checkout, patron, book = setup_checkout
 
-        result = await return_book_handler({
-            "checkout_id": checkout.id,
-        })
+        result = await return_book_handler(
+            {
+                "checkout_id": checkout.id,
+            }
+        )
 
         # Verify success response
         assert "isError" not in result or not result["isError"]
@@ -350,9 +372,11 @@ class TestReturnBookTool:
         checkout_db.due_date = date.today() - timedelta(days=5)
         mock_get_session.commit()
 
-        result = await return_book_handler({
-            "checkout_id": checkout.id,
-        })
+        result = await return_book_handler(
+            {
+                "checkout_id": checkout.id,
+            }
+        )
 
         assert "isError" not in result or not result["isError"]
         assert "5 days late" in result["content"][0]["text"]
@@ -366,30 +390,32 @@ class TestReturnBookTool:
         """Test return with book condition and notes."""
         checkout, _, _ = setup_checkout
 
-        result = await return_book_handler({
-            "checkout_id": checkout.id,
-            "condition": "damaged",
-            "notes": "Water damage on back cover",
-            "rating": 4,
-            "review": "Great story but the ending was predictable",
-        })
+        result = await return_book_handler(
+            {
+                "checkout_id": checkout.id,
+                "condition": "damaged",
+                "notes": "Water damage on back cover",
+                "rating": 4,
+                "review": "Great story but the ending was predictable",
+            }
+        )
 
         assert "isError" not in result or not result["isError"]
         assert "Book condition noted as: damaged" in result["content"][0]["text"]
 
         # Verify condition saved
         # Using mocked session directly
-        return_record = mock_get_session.query(ReturnDB).filter_by(
-            checkout_id=checkout.id
-        ).first()
+        return_record = mock_get_session.query(ReturnDB).filter_by(checkout_id=checkout.id).first()
         assert return_record.condition == "damaged"
         assert return_record.notes == "Water damage on back cover"
 
     async def test_return_checkout_not_found(self, mock_get_session):
         """Test return with non-existent checkout."""
-        result = await return_book_handler({
-            "checkout_id": "checkout_99999999999999",
-        })
+        result = await return_book_handler(
+            {
+                "checkout_id": "checkout_99999999999999",
+            }
+        )
 
         assert result["isError"] is True
         assert "Checkout checkout_99999999999999 not found" in result["content"][0]["text"]
@@ -404,9 +430,11 @@ class TestReturnBookTool:
         checkout_db.status = CirculationStatusEnum.COMPLETED
         mock_get_session.commit()
 
-        result = await return_book_handler({
-            "checkout_id": checkout.id,
-        })
+        result = await return_book_handler(
+            {
+                "checkout_id": checkout.id,
+            }
+        )
 
         assert result["isError"] is True
         assert "checkout is not active" in result["content"][0]["text"]
@@ -415,10 +443,12 @@ class TestReturnBookTool:
         """Test return with invalid condition value."""
         checkout, _, _ = setup_checkout
 
-        result = await return_book_handler({
-            "checkout_id": checkout.id,
-            "condition": "destroyed",  # Invalid value
-        })
+        result = await return_book_handler(
+            {
+                "checkout_id": checkout.id,
+                "condition": "destroyed",  # Invalid value
+            }
+        )
 
         assert result["isError"] is True
         assert "Invalid parameters" in result["content"][0]["text"]
@@ -466,10 +496,12 @@ class TestReserveBookTool:
         """Test successful book reservation."""
         patron, book = setup_unavailable_book
 
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         # Verify success response
         assert "isError" not in result or not result["isError"]
@@ -484,10 +516,11 @@ class TestReserveBookTool:
 
         # Verify database state
         # Using mocked session directly
-        reservation = mock_get_session.query(ReservationDB).filter_by(
-            patron_id=patron.id,
-            book_isbn=book.isbn
-        ).first()
+        reservation = (
+            mock_get_session.query(ReservationDB)
+            .filter_by(patron_id=patron.id, book_isbn=book.isbn)
+            .first()
+        )
         assert reservation is not None
         assert reservation.status == ReservationStatusEnum.PENDING
         assert reservation.queue_position == 1
@@ -510,10 +543,12 @@ class TestReserveBookTool:
         mock_get_session.add(existing_reservation)
         mock_get_session.commit()
 
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert "isError" not in result or not result["isError"]
         assert "Queue position: 2" in result["content"][0]["text"]
@@ -528,32 +563,37 @@ class TestReserveBookTool:
         patron, book = setup_unavailable_book
         expiration_date = date.today() + timedelta(days=60)
 
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-            "expiration_date": expiration_date.isoformat(),
-            "notes": "Need for summer reading list",
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+                "expiration_date": expiration_date.isoformat(),
+                "notes": "Need for summer reading list",
+            }
+        )
 
         assert "isError" not in result or not result["isError"]
         assert result["data"]["reservation"]["expiration_date"] == expiration_date.isoformat()
 
         # Verify notes saved
         # Using mocked session directly
-        reservation = mock_get_session.query(ReservationDB).filter_by(
-            patron_id=patron.id,
-            book_isbn=book.isbn
-        ).first()
+        reservation = (
+            mock_get_session.query(ReservationDB)
+            .filter_by(patron_id=patron.id, book_isbn=book.isbn)
+            .first()
+        )
         assert reservation.notes == "Need for summer reading list"
 
     async def test_reserve_patron_not_found(self, setup_unavailable_book, mock_get_session):
         """Test reservation with non-existent patron."""
         _, book = setup_unavailable_book
 
-        result = await reserve_book_handler({
-            "patron_id": "patron_nonexistent",
-            "book_isbn": book.isbn,
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": "patron_nonexistent",
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert result["isError"] is True
         assert "Patron patron_nonexistent not found" in result["content"][0]["text"]
@@ -562,10 +602,12 @@ class TestReserveBookTool:
         """Test reservation with non-existent book."""
         patron, _ = setup_unavailable_book
 
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": "9999999999999",
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": "9999999999999",
+            }
+        )
 
         assert result["isError"] is True
         assert "Book 9999999999999 not found" in result["content"][0]["text"]
@@ -580,10 +622,12 @@ class TestReserveBookTool:
         book_db.available_copies = 1
         mock_get_session.commit()
 
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert result["isError"] is True
         assert "Book has available copies" in result["content"][0]["text"]
@@ -593,16 +637,20 @@ class TestReserveBookTool:
         patron, book = setup_unavailable_book
 
         # Create first reservation
-        await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         # Try to reserve again
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+            }
+        )
 
         assert result["isError"] is True
         assert "already has an active reservation" in result["content"][0]["text"]
@@ -612,11 +660,13 @@ class TestReserveBookTool:
         patron, book = setup_unavailable_book
         past_date = date.today() - timedelta(days=1)
 
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-            "expiration_date": past_date.isoformat(),
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+                "expiration_date": past_date.isoformat(),
+            }
+        )
 
         assert result["isError"] is True
         assert "Expiration date must be in the future" in result["content"][0]["text"]
@@ -626,11 +676,13 @@ class TestReserveBookTool:
         patron, book = setup_unavailable_book
         far_date = date.today() + timedelta(days=100)
 
-        result = await reserve_book_handler({
-            "patron_id": patron.id,
-            "book_isbn": book.isbn,
-            "expiration_date": far_date.isoformat(),
-        })
+        result = await reserve_book_handler(
+            {
+                "patron_id": patron.id,
+                "book_isbn": book.isbn,
+                "expiration_date": far_date.isoformat(),
+            }
+        )
 
         assert result["isError"] is True
         assert "cannot be more than 90 days" in result["content"][0]["text"]
@@ -643,6 +695,7 @@ def mock_get_session(test_db_session, monkeypatch):
     This ensures that the circulation handlers use the same database session
     as the test, allowing them to see the test data we create.
     """
+
     @contextmanager
     def _mock_get_session():
         """Return the test session instead of creating a new one."""

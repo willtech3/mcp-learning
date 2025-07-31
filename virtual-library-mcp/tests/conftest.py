@@ -17,6 +17,7 @@ MCP-specific testing considerations:
 import asyncio
 import os
 from collections.abc import AsyncGenerator, Generator
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from virtual_library_mcp.config import ServerConfig, reset_config
+from virtual_library_mcp.database.author_repository import (
+    AuthorCreateSchema,
+    AuthorRepository,
+)
+from virtual_library_mcp.database.book_repository import BookCreateSchema, BookRepository
+from virtual_library_mcp.database.patron_repository import (
+    PatronCreateSchema,
+    PatronRepository,
+)
 from virtual_library_mcp.database.schema import Base
 
 # === Pytest Configuration ===
@@ -337,6 +347,81 @@ def sample_patron_data() -> dict:
         "membership_type": "regular",
         "active": True,
     }
+
+
+@pytest.fixture
+def sample_patron(test_db_session):
+    """Create a sample patron in the test database."""
+    patron_repo = PatronRepository(test_db_session)
+    patron_data = PatronCreateSchema(name="Test Patron", email="test@example.com", phone="555-0123")
+    patron = patron_repo.create(patron_data)
+    test_db_session.commit()
+    return patron
+
+
+@pytest.fixture
+def sample_book(test_db_session):
+    """Create a sample book with author in the test database."""
+    # Create author first
+    author_repo = AuthorRepository(test_db_session)
+    author_data = AuthorCreateSchema(
+        name="Test Author",
+        birth_date=date(1970, 1, 1),
+        nationality="American",
+        biography="Test author bio",
+    )
+    author = author_repo.create(author_data)
+
+    # Create book
+    book_repo = BookRepository(test_db_session)
+    book_data = BookCreateSchema(
+        isbn="9781234567890",
+        title="Test Book",
+        author_id=author.id,
+        genre="Fiction",
+        publication_year=2023,
+        total_copies=3,
+    )
+    book = book_repo.create(book_data)
+    test_db_session.commit()
+    return book
+
+
+@pytest.fixture
+def sample_books(test_db_session):
+    """Create multiple sample books for testing."""
+    author_repo = AuthorRepository(test_db_session)
+    book_repo = BookRepository(test_db_session)
+
+    # Create several authors
+    authors = []
+    for i in range(3):
+        author_data = AuthorCreateSchema(
+            name=f"Author {i}",
+            birth_date=date(1970 + i, 1, 1),
+            nationality="American",
+            biography=f"Biography {i}",
+        )
+        author = author_repo.create(author_data)
+        authors.append(author)
+
+    # Create books
+    books = []
+    genres = ["Fiction", "Science Fiction", "Mystery"]
+    for i in range(10):
+        book_data = BookCreateSchema(
+            isbn=f"978123456789{i}",
+            title=f"Book {i}",
+            author_id=authors[i % 3].id,
+            genre=genres[i % 3],
+            publication_year=2020 + (i % 4),
+            total_copies=3,
+        )
+        book = book_repo.create(book_data)
+        books.append(book)
+
+    test_db_session.commit()
+    return books
 
 
 # === Utility Functions ===

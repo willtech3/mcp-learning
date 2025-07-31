@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 # INPUT VALIDATION SCHEMA
 # =============================================================================
 
+
 class SearchCatalogInput(BaseModel):
     """
     Input schema for the search_catalog tool.
@@ -142,6 +143,7 @@ class SearchCatalogInput(BaseModel):
 # TOOL RESPONSE FORMATTING
 # =============================================================================
 
+
 def format_book_for_tool_response(book: Book) -> dict[str, Any]:
     """
     Format a book model for tool response.
@@ -168,6 +170,7 @@ def format_book_for_tool_response(book: Book) -> dict[str, Any]:
 # =============================================================================
 # TOOL HANDLER IMPLEMENTATION
 # =============================================================================
+
 
 async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
     """
@@ -205,10 +208,7 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             logger.warning("Invalid search parameters: %s", e)
             return {
                 "isError": True,
-                "content": [{
-                    "type": "text",
-                    "text": f"Invalid search parameters: {e}"
-                }]
+                "content": [{"type": "text", "text": f"Invalid search parameters: {e}"}],
             }
 
         # STEP 2: Check if at least one search criterion is provided
@@ -216,10 +216,12 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         if not any([params.query, params.genre, params.author]):
             return {
                 "isError": True,
-                "content": [{
-                    "type": "text",
-                    "text": "Please provide at least one search criterion (query, genre, or author)"
-                }]
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Please provide at least one search criterion (query, genre, or author)",
+                    }
+                ],
             }
 
         # STEP 3: Execute search with database session
@@ -256,10 +258,7 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                 logger.exception("Search execution failed")
                 return {
                     "isError": True,
-                    "content": [{
-                        "type": "text",
-                        "text": f"Search failed: {e!s}"
-                    }]
+                    "content": [{"type": "text", "text": f"Search failed: {e!s}"}],
                 }
 
         # STEP 4: Format successful response
@@ -278,10 +277,7 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         # WHY: MCP tools must return consistent response format
         # WHAT: content array with text and optional structured data
         return {
-            "content": [{
-                "type": "text",
-                "text": message
-            }],
+            "content": [{"type": "text", "text": message}],
             # Include structured data for client processing
             "data": {
                 "books": books_data,
@@ -292,8 +288,8 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     "total_pages": result.total_pages,
                     "has_next": result.has_next,
                     "has_previous": result.has_previous,
-                }
-            }
+                },
+            },
         }
 
     except Exception as e:
@@ -302,10 +298,7 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         logger.exception("Unexpected error in search_catalog tool")
         return {
             "isError": True,
-            "content": [{
-                "type": "text",
-                "text": f"An unexpected error occurred: {e!s}"
-            }]
+            "content": [{"type": "text", "text": f"An unexpected error occurred: {e!s}"}],
         }
 
 
@@ -361,9 +354,11 @@ search_catalog = {
 #    Tool handlers are async to work with the MCP server's event loop.
 #    This allows concurrent tool executions and non-blocking I/O.
 #
-# Next Steps:
-# - Implement more tools (checkout, return, reserve)
+# Tool Implementation Complete! ✅
+# All circulation tools have been implemented:
+# - checkout_book, return_book, reserve_book ✓
+#
+# Future Enhancements:
 # - Add tool-specific permissions/authorization
 # - Implement long-running tools with progress notifications
 # - Add tool result caching for expensive operations
-
