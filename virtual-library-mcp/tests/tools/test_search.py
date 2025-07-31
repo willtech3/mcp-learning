@@ -22,6 +22,7 @@ from virtual_library_mcp.tools.search import SearchCatalogInput, search_catalog_
 # INPUT VALIDATION TESTS
 # =============================================================================
 
+
 class TestSearchCatalogInput:
     """Test input validation for the search tool."""
 
@@ -47,7 +48,7 @@ class TestSearchCatalogInput:
             page=2,
             page_size=20,
             sort_by="publication_year",
-            sort_desc=True
+            sort_desc=True,
         )
         assert params.query == "python"
         assert params.genre == "Technology"  # Should be title-cased
@@ -61,9 +62,7 @@ class TestSearchCatalogInput:
     def test_whitespace_stripping(self):
         """Test that whitespace is properly stripped from string inputs."""
         params = SearchCatalogInput(
-            query="  gatsby  ",
-            author="  Fitzgerald  ",
-            genre="  fiction  "
+            query="  gatsby  ", author="  Fitzgerald  ", genre="  fiction  "
         )
         assert params.query == "gatsby"
         assert params.author == "Fitzgerald"
@@ -74,7 +73,7 @@ class TestSearchCatalogInput:
         params = SearchCatalogInput(
             query="   ",  # Just whitespace
             author="   ",  # Need whitespace to avoid min_length validation
-            genre="  "
+            genre="  ",
         )
         assert params.query is None
         assert params.author is None
@@ -138,6 +137,7 @@ class TestSearchCatalogInput:
 # TOOL HANDLER TESTS
 # =============================================================================
 
+
 @pytest.mark.asyncio
 class TestSearchCatalogHandler:
     """Test the search_catalog tool handler."""
@@ -150,18 +150,12 @@ class TestSearchCatalogHandler:
         assert "at least one search criterion" in result["content"][0]["text"]
 
         # Invalid page number
-        result = await search_catalog_handler({
-            "query": "test",
-            "page": -1
-        })
+        result = await search_catalog_handler({"query": "test", "page": -1})
         assert result["isError"] is True
         assert "Invalid search parameters" in result["content"][0]["text"]
 
         # Invalid sort_by
-        result = await search_catalog_handler({
-            "query": "test",
-            "sort_by": "invalid_field"
-        })
+        result = await search_catalog_handler({"query": "test", "sort_by": "invalid_field"})
         assert result["isError"] is True
         assert "Invalid search parameters" in result["content"][0]["text"]
 
@@ -172,27 +166,26 @@ class TestSearchCatalogHandler:
         book_repo = BookRepository(test_session)
 
         # Create test author
-        author = author_repo.create(AuthorCreateSchema(
-            name="F. Scott Fitzgerald",
-            biography="American novelist"
-        ))
+        author = author_repo.create(
+            AuthorCreateSchema(name="F. Scott Fitzgerald", biography="American novelist")
+        )
 
         # Create test books
-        book_repo.create(BookCreateSchema(
-            isbn="9780333791035",
-            title="The Great Gatsby",
-            author_id=author.id,
-            genre="Fiction",
-            publication_year=1925,
-            available_copies=2,
-            total_copies=3,
-            description="A classic American novel"
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="9780333791035",
+                title="The Great Gatsby",
+                author_id=author.id,
+                genre="Fiction",
+                publication_year=1925,
+                available_copies=2,
+                total_copies=3,
+                description="A classic American novel",
+            )
+        )
 
         # Search for the book
-        result = await search_catalog_handler({
-            "query": "gatsby"
-        })
+        result = await search_catalog_handler({"query": "gatsby"})
 
         assert result.get("isError") is not True
         assert "Found 1 book(s)" in result["content"][0]["text"]
@@ -205,34 +198,37 @@ class TestSearchCatalogHandler:
         author_repo = AuthorRepository(test_session)
         book_repo = BookRepository(test_session)
 
-        author = author_repo.create(AuthorCreateSchema(
-            name="Test Author",
-            biography="Test bio"
-        ))
+        author = author_repo.create(AuthorCreateSchema(name="Test Author", biography="Test bio"))
 
         # Create books in different genres
-        book_repo.create(BookCreateSchema(
-            isbn="1111111111111",
-            title="Fiction Book",
-            author_id=author.id,
-            genre="Fiction",
-            publication_year=2020,
-            total_copies=1
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="1111111111111",
+                title="Fiction Book",
+                author_id=author.id,
+                genre="Fiction",
+                publication_year=2020,
+                total_copies=1,
+            )
+        )
 
-        book_repo.create(BookCreateSchema(
-            isbn="2222222222222",
-            title="SciFi Book",
-            author_id=author.id,
-            genre="Science Fiction",
-            publication_year=2021,
-            total_copies=1
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="2222222222222",
+                title="SciFi Book",
+                author_id=author.id,
+                genre="Science Fiction",
+                publication_year=2021,
+                total_copies=1,
+            )
+        )
 
         # Search by genre
-        result = await search_catalog_handler({
-            "genre": "fiction"  # Should be normalized to "Fiction"
-        })
+        result = await search_catalog_handler(
+            {
+                "genre": "fiction"  # Should be normalized to "Fiction"
+            }
+        )
 
         assert result.get("isError") is not True
         books = result["data"]["books"]
@@ -245,39 +241,39 @@ class TestSearchCatalogHandler:
         author_repo = AuthorRepository(test_session)
         book_repo = BookRepository(test_session)
 
-        fitzgerald = author_repo.create(AuthorCreateSchema(
-            name="F. Scott Fitzgerald",
-            biography="American novelist"
-        ))
+        fitzgerald = author_repo.create(
+            AuthorCreateSchema(name="F. Scott Fitzgerald", biography="American novelist")
+        )
 
-        hemingway = author_repo.create(AuthorCreateSchema(
-            name="Ernest Hemingway",
-            biography="American novelist"
-        ))
+        hemingway = author_repo.create(
+            AuthorCreateSchema(name="Ernest Hemingway", biography="American novelist")
+        )
 
         # Create books by different authors
-        book_repo.create(BookCreateSchema(
-            isbn="1111111111111",
-            title="The Great Gatsby",
-            author_id=fitzgerald.id,
-            genre="Fiction",
-            publication_year=1925,
-            total_copies=1
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="1111111111111",
+                title="The Great Gatsby",
+                author_id=fitzgerald.id,
+                genre="Fiction",
+                publication_year=1925,
+                total_copies=1,
+            )
+        )
 
-        book_repo.create(BookCreateSchema(
-            isbn="2222222222222",
-            title="The Sun Also Rises",
-            author_id=hemingway.id,
-            genre="Fiction",
-            publication_year=1926,
-            total_copies=1
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="2222222222222",
+                title="The Sun Also Rises",
+                author_id=hemingway.id,
+                genre="Fiction",
+                publication_year=1926,
+                total_copies=1,
+            )
+        )
 
         # Search by author name
-        result = await search_catalog_handler({
-            "author": "fitzgerald"
-        })
+        result = await search_catalog_handler({"author": "fitzgerald"})
 
         assert result.get("isError") is not True
         books = result["data"]["books"]
@@ -290,37 +286,35 @@ class TestSearchCatalogHandler:
         author_repo = AuthorRepository(test_session)
         book_repo = BookRepository(test_session)
 
-        author = author_repo.create(AuthorCreateSchema(
-            name="Test Author",
-            biography="Test bio"
-        ))
+        author = author_repo.create(AuthorCreateSchema(name="Test Author", biography="Test bio"))
 
         # Create books with different availability
-        book_repo.create(BookCreateSchema(
-            isbn="1111111111111",
-            title="Available Book",
-            author_id=author.id,
-            genre="Fiction",
-            publication_year=2020,
-            available_copies=2,
-            total_copies=2
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="1111111111111",
+                title="Available Book",
+                author_id=author.id,
+                genre="Fiction",
+                publication_year=2020,
+                available_copies=2,
+                total_copies=2,
+            )
+        )
 
-        book_repo.create(BookCreateSchema(
-            isbn="2222222222222",
-            title="Unavailable Book",
-            author_id=author.id,
-            genre="Fiction",
-            publication_year=2021,
-            available_copies=0,
-            total_copies=1
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="2222222222222",
+                title="Unavailable Book",
+                author_id=author.id,
+                genre="Fiction",
+                publication_year=2021,
+                available_copies=0,
+                total_copies=1,
+            )
+        )
 
         # Search with availability filter
-        result = await search_catalog_handler({
-            "genre": "Fiction",
-            "available_only": True
-        })
+        result = await search_catalog_handler({"genre": "Fiction", "available_only": True})
 
         assert result.get("isError") is not True
         books = result["data"]["books"]
@@ -334,28 +328,23 @@ class TestSearchCatalogHandler:
         author_repo = AuthorRepository(test_session)
         book_repo = BookRepository(test_session)
 
-        author = author_repo.create(AuthorCreateSchema(
-            name="Test Author",
-            biography="Test bio"
-        ))
+        author = author_repo.create(AuthorCreateSchema(name="Test Author", biography="Test bio"))
 
         # Create multiple books
         for i in range(15):
-            book_repo.create(BookCreateSchema(
-                isbn=f"{i:013d}",
-                title=f"Book {i:02d}",
-                author_id=author.id,
-                genre="Fiction",
-                publication_year=2020,  # Use a fixed valid year
-                total_copies=1
-            ))
+            book_repo.create(
+                BookCreateSchema(
+                    isbn=f"{i:013d}",
+                    title=f"Book {i:02d}",
+                    author_id=author.id,
+                    genre="Fiction",
+                    publication_year=2020,  # Use a fixed valid year
+                    total_copies=1,
+                )
+            )
 
         # Get first page
-        result = await search_catalog_handler({
-            "genre": "Fiction",
-            "page": 1,
-            "page_size": 10
-        })
+        result = await search_catalog_handler({"genre": "Fiction", "page": 1, "page_size": 10})
 
         assert result.get("isError") is not True
         assert len(result["data"]["books"]) == 10
@@ -366,11 +355,7 @@ class TestSearchCatalogHandler:
         assert result["data"]["pagination"]["has_previous"] is False
 
         # Get second page
-        result = await search_catalog_handler({
-            "genre": "Fiction",
-            "page": 2,
-            "page_size": 10
-        })
+        result = await search_catalog_handler({"genre": "Fiction", "page": 2, "page_size": 10})
 
         assert result.get("isError") is not True
         assert len(result["data"]["books"]) == 5
@@ -384,10 +369,7 @@ class TestSearchCatalogHandler:
         author_repo = AuthorRepository(test_session)
         book_repo = BookRepository(test_session)
 
-        author = author_repo.create(AuthorCreateSchema(
-            name="Test Author",
-            biography="Test bio"
-        ))
+        author = author_repo.create(AuthorCreateSchema(name="Test Author", biography="Test bio"))
 
         # Create books with different attributes
         books_data = [
@@ -397,22 +379,22 @@ class TestSearchCatalogHandler:
         ]
 
         for isbn, title, year, available in books_data:
-            book_repo.create(BookCreateSchema(
-                isbn=isbn,
-                title=title,
-                author_id=author.id,
-                genre="Fiction",
-                publication_year=year,
-                available_copies=available,
-                total_copies=3
-            ))
+            book_repo.create(
+                BookCreateSchema(
+                    isbn=isbn,
+                    title=title,
+                    author_id=author.id,
+                    genre="Fiction",
+                    publication_year=year,
+                    available_copies=available,
+                    total_copies=3,
+                )
+            )
 
         # Sort by title ascending (default)
-        result = await search_catalog_handler({
-            "genre": "Fiction",
-            "sort_by": "title",
-            "sort_desc": False
-        })
+        result = await search_catalog_handler(
+            {"genre": "Fiction", "sort_by": "title", "sort_desc": False}
+        )
 
         assert result.get("isError") is not True
         books = result["data"]["books"]
@@ -421,11 +403,9 @@ class TestSearchCatalogHandler:
         assert books[2]["title"] == "Zebra Book"
 
         # Sort by publication year descending
-        result = await search_catalog_handler({
-            "genre": "Fiction",
-            "sort_by": "publication_year",
-            "sort_desc": True
-        })
+        result = await search_catalog_handler(
+            {"genre": "Fiction", "sort_by": "publication_year", "sort_desc": True}
+        )
 
         books = result["data"]["books"]
         assert books[0]["publication_year"] == 2022
@@ -433,11 +413,9 @@ class TestSearchCatalogHandler:
         assert books[2]["publication_year"] == 2020
 
         # Sort by availability
-        result = await search_catalog_handler({
-            "genre": "Fiction",
-            "sort_by": "availability",
-            "sort_desc": True
-        })
+        result = await search_catalog_handler(
+            {"genre": "Fiction", "sort_by": "availability", "sort_desc": True}
+        )
 
         books = result["data"]["books"]
         assert books[0]["available_copies"] == 3
@@ -446,9 +424,7 @@ class TestSearchCatalogHandler:
 
     async def test_handler_no_results(self, test_session, mock_get_session):
         """Test handler when no books match the search."""
-        result = await search_catalog_handler({
-            "query": "nonexistent_book_xyz"
-        })
+        result = await search_catalog_handler({"query": "nonexistent_book_xyz"})
 
         assert result.get("isError") is not True
         assert "No books found" in result["content"][0]["text"]
@@ -457,15 +433,14 @@ class TestSearchCatalogHandler:
 
     async def test_handler_error_handling(self, test_session, monkeypatch):
         """Test handler error handling for database errors."""
+
         # Mock the search method to raise an exception
         def mock_search(*args, **kwargs):
             raise RuntimeError("Database connection error")
 
         monkeypatch.setattr(BookRepository, "search", mock_search)
 
-        result = await search_catalog_handler({
-            "query": "test"
-        })
+        result = await search_catalog_handler({"query": "test"})
 
         assert result["isError"] is True
         assert "Search failed" in result["content"][0]["text"]
@@ -477,41 +452,46 @@ class TestSearchCatalogHandler:
         author_repo = AuthorRepository(test_session)
         book_repo = BookRepository(test_session)
 
-        fitzgerald = author_repo.create(AuthorCreateSchema(
-            name="F. Scott Fitzgerald",
-            biography="American novelist"
-        ))
+        fitzgerald = author_repo.create(
+            AuthorCreateSchema(name="F. Scott Fitzgerald", biography="American novelist")
+        )
 
         # Create multiple books
-        book_repo.create(BookCreateSchema(
-            isbn="1111111111111",
-            title="The Great Gatsby",
-            author_id=fitzgerald.id,
-            genre="Fiction",
-            publication_year=1925,
-            available_copies=2,
-            total_copies=2,
-            description="A story about the American Dream"
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="1111111111111",
+                title="The Great Gatsby",
+                author_id=fitzgerald.id,
+                genre="Fiction",
+                publication_year=1925,
+                available_copies=2,
+                total_copies=2,
+                description="A story about the American Dream",
+            )
+        )
 
-        book_repo.create(BookCreateSchema(
-            isbn="2222222222222",
-            title="Tender Is the Night",
-            author_id=fitzgerald.id,
-            genre="Fiction",
-            publication_year=1934,
-            available_copies=0,
-            total_copies=1,
-            description="A novel about a psychiatrist"
-        ))
+        book_repo.create(
+            BookCreateSchema(
+                isbn="2222222222222",
+                title="Tender Is the Night",
+                author_id=fitzgerald.id,
+                genre="Fiction",
+                publication_year=1934,
+                available_copies=0,
+                total_copies=1,
+                description="A novel about a psychiatrist",
+            )
+        )
 
         # Search with multiple filters
-        result = await search_catalog_handler({
-            "query": "american",  # Should match Gatsby's description
-            "author": "fitzgerald",
-            "genre": "Fiction",
-            "available_only": True
-        })
+        result = await search_catalog_handler(
+            {
+                "query": "american",  # Should match Gatsby's description
+                "author": "fitzgerald",
+                "genre": "Fiction",
+                "available_only": True,
+            }
+        )
 
         assert result.get("isError") is not True
         books = result["data"]["books"]
@@ -523,6 +503,7 @@ class TestSearchCatalogHandler:
 # =============================================================================
 # FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def test_session(test_db_session):
@@ -544,6 +525,7 @@ def mock_get_session(test_session, monkeypatch):
     This ensures that the search handler uses the same database session
     as the test, allowing it to see the test data we create.
     """
+
     @contextmanager
     def _mock_get_session():
         """Return the test session instead of creating a new one."""
@@ -553,4 +535,3 @@ def mock_get_session(test_session, monkeypatch):
     monkeypatch.setattr("virtual_library_mcp.tools.search.get_session", _mock_get_session)
 
     return test_session
-

@@ -26,6 +26,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from virtual_library_mcp.config import get_config
+from virtual_library_mcp.prompts import all_prompts
 from virtual_library_mcp.resources import all_resources
 from virtual_library_mcp.tools import all_tools
 
@@ -139,6 +140,27 @@ for tool in all_tools:
         raise
 
 logger.info("Registered %d tools", len(all_tools))
+
+# =============================================================================
+# PROMPT REGISTRATION
+# =============================================================================
+
+# Register all prompts with the MCP server
+# WHY: Prompts provide reusable interaction templates for LLMs
+# HOW: FastMCP uses the prompt decorator to register prompt functions
+# WHAT: Each prompt has a name, description (from docstring), and handler
+
+for prompt in all_prompts:
+    logger.debug("Registering prompt: %s", prompt.__name__)
+    try:
+        # FastMCP's prompt decorator extracts metadata from the function
+        # The docstring becomes the description, parameters define arguments
+        mcp.prompt()(prompt)
+    except Exception:
+        logger.exception("Failed to register prompt %s", prompt.__name__)
+        raise
+
+logger.info("Registered %d prompts", len(all_prompts))
 
 # =============================================================================
 # LIFECYCLE MANAGEMENT
@@ -383,8 +405,13 @@ if __name__ == "__main__":
 #    - Real-time subscriptions
 #    - Progress notifications
 #
-# Next Steps:
-# - Implement resources (Step 12): Add /books/list, /books/{isbn} ✓
-# - Implement tools (Step 14): Add search_catalog ✓, checkout_book
+# Phase 3 Complete! ✅
+# All core MCP features have been implemented:
+# - Resources: Basic and advanced with URI templates ✓
+# - Tools: search_catalog, checkout_book, return_book, reserve_book ✓
+# - Prompts: recommend_books, generate_reading_plan, generate_book_review ✓
+#
+# Next Steps (Phase 4):
 # - Add subscriptions (Step 16): Real-time updates
-# - Implement prompts (Step 18): AI-assisted recommendations
+# - Add progress notifications: Long-running operation updates
+# - Implement sampling: Server-initiated LLM completions
