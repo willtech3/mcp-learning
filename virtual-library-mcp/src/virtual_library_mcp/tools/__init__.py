@@ -19,6 +19,7 @@ The tools module follows MCP best practices:
 - Atomic operations with rollback on failure
 """
 
+from .circulation import checkout_book, reserve_book, return_book
 from .search import search_catalog
 
 # Export all tools for server registration
@@ -27,7 +28,10 @@ from .search import search_catalog
 # WHAT: This list is used during server initialization
 all_tools = [
     search_catalog,
+    checkout_book,
+    return_book,
+    reserve_book,
 ]
 
-__all__ = ["all_tools", "search_catalog"]
+__all__ = ["all_tools", "checkout_book", "reserve_book", "return_book", "search_catalog"]
 
