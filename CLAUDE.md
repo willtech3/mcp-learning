@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. **Always use defined `just` commands** - Never bypass the justfile commands. Use `just <command>` for all operations.
 2. **Never use `git add .`** - Always add files specifically by name to avoid accidentally committing unwanted files.
 3. **Never commit secrets** - Double-check that no API keys, tokens, passwords, or sensitive data are included in any commits.
-4. **Use MCP Protocol Mentor for MCP implementations** - When implementing MCP features, use the mcp-protocol-mentor agent defined in `.claude/agents/mcp-protocol-mentor.md` (non-negotiable). For proactive TTS explanations during implementation, use the mcp-protocol-mentor-tts agent defined in `.claude/agents/mcp-protocol-mentor-tts.md`. This ensures proper understanding and implementation of MCP concepts.
-5. **Read protocol specs before implementing** - Always use Context7 to read the latest MCP protocol specification from `/modelcontextprotocol/specification` before implementing any MCP features. This ensures compliance with the current protocol version.
+4. **Read protocol specs before implementing** - Always use Context7 to read the latest MCP protocol specification from `/modelcontextprotocol/specification` before implementing any MCP features. This ensures compliance with the current protocol version.
+5. **Read the latest FastMCP documentation before implementing** - Always use Context7 to read the latest documentation on the FastMCP library for the version defined in pyproject.toml before implementing any MCP features. This ensures correct library usage. 
 6. **Always use feature branches and PRs** - All implementation changes MUST be committed to a feature branch and pushed to a PR for review. Only when a PR is merged can we resolve an issue as complete. Never commit directly to main.
 7. **All tests must pass and code must be lint-free** - Before committing to a feature branch and creating a PR, ALL tests MUST pass (`just test`) and ALL linting errors MUST be resolved (`just lint`). No exceptions. This ensures code quality and prevents broken code from entering the codebase.
 8. **Virtual environment MUST be active** - The virtual environment MUST ALWAYS be active when working in the virtual-library-mcp directory (non-negotiable). Use `just activate` to get the activation command. This ensures correct Python version (3.12+) and dependencies are used.
@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is an MCP (Model Context Protocol) learning repository focused on building educational MCP servers. The repository contains comprehensive MCP documentation and implementation plans.
+This is an MCP (Model Context Protocol) learning repository focused on building educational MCP servers. The repository contains protocol documentation as well as implementation specific documentation in the virtual-library-mcp subdirectories.
 
 ## Current Project: Virtual Library MCP Server
 
@@ -58,6 +58,7 @@ The `docs/mcp/` directory contains comprehensive MCP documentation:
 - `05-server-development.md`: Comprehensive server development guide
 - `06-client-development.md`: Client implementation guide
 - `07-sdk-reference.md`: SDK documentation for all languages
+- `08-security.md`: MCP Security documentation
 - `09-examples.md`: Example implementations
 
 ## Key MCP Concepts to Implement
@@ -71,6 +72,7 @@ The `docs/mcp/` directory contains comprehensive MCP documentation:
 5. **Progress Notifications**: Updates for long-running operations
 6. **Error Handling**: Proper JSON-RPC error responses
 7. **Sampling**: Server-initiated LLM completions (e.g., `sampling/createMessage` for AI-generated content)
+8. **Elicitation**: Server-initiated request for more specific information from the client (if available and if any major clients support it).
 
 ## Testing Approach
 
