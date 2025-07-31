@@ -1,14 +1,9 @@
 """Review Generator Prompt - AI-Assisted Book Reviews
 
-This module generates thoughtful book reviews based on library catalog data
-and optional patron feedback, demonstrating AI content generation.
+Creates professional book reviews with different styles and audiences.
+Client receives review template ready for LLM content generation.
 
-MCP PROMPT USE CASE:
-This showcases how prompts can:
-- Generate content based on structured data
-- Incorporate multiple perspectives
-- Maintain consistent quality and format
-- Save time for library staff and patrons
+Usage: prompt.get("generate_book_review", {"isbn": "...", "review_type": "critical"})
 """
 
 from typing import Literal
@@ -24,22 +19,10 @@ async def generate_book_review(
     include_quotes: bool = False,
     _session=None,  # For testing
 ) -> str:
-    """Generate a book review based on catalog data and circulation patterns.
+    """Generate professional book review based on catalog data.
 
-    This prompt demonstrates:
-    - Content generation from structured data
-    - Different review styles for different purposes
-    - Audience-aware writing
-    - Integration of circulation data for popularity insights
-
-    Args:
-        isbn: ISBN of the book to review
-        review_type: Style of review to generate
-        target_audience: Specific audience to tailor the review for
-        include_quotes: Whether to include notable quotes (simulated)
-
-    Returns:
-        Formatted prompt for generating a book review
+    Fetches book details and circulation metrics, formats prompt
+    for LLM to create reviews in specified style for target audience.
     """
 
     # Get database session

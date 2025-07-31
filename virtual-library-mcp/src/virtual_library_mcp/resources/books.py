@@ -1,28 +1,11 @@
-"""Book Resources for Virtual Library MCP Server
+"""Book Resources - Library Catalog Access
 
-This module implements MCP resources for browsing the library's book catalog.
-Resources provide read-only access to data through well-defined URIs, following
-the MCP protocol's resource specification.
+Exposes book catalog data via read-only resources.
+Clients use these to browse books, view details, and check availability.
 
-MCP RESOURCE ANATOMY:
-Each resource consists of:
-1. **URI**: Unique identifier (e.g., "library://books/list")
-2. **Name**: Human-readable name for display
-3. **Description**: Explains what the resource provides
-4. **MIME Type**: Content type (usually "application/json" for structured data)
-5. **Handler**: Async function that returns the resource content
-
-PROTOCOL FLOW:
-1. Client requests resources/list to discover available resources
-2. Server returns metadata about each resource
-3. Client requests resources/read with specific URI
-4. Server returns the actual content
-
-This implementation demonstrates:
-- Paginated list resources with cursor support
-- Detail resources with URI parameters
-- Error handling for missing resources
-- Integration with the repository layer
+Resources:
+- library://books/list - Paginated book catalog with search/filter
+- library://books/{isbn} - Individual book details by ISBN
 """
 
 import logging
@@ -38,22 +21,9 @@ from ..models.book import Book
 
 logger = logging.getLogger(__name__)
 
-# =============================================================================
-# RESOURCE SCHEMAS
-# =============================================================================
-# MCP uses JSON-RPC, so all data must be JSON-serializable.
-# Pydantic models ensure type safety and automatic JSON conversion.
-
 
 class BookListParams(BaseModel):
-    """Parameters for the book list resource.
-
-    WHY: MCP resources can accept parameters to filter or paginate results.
-    This follows the protocol's design for flexible, queryable resources.
-
-    HOW: Parameters are passed in the resource URI or request body.
-    The protocol handles parameter parsing and validation.
-    """
+    """Parameters for book list filtering and pagination."""
 
     page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
     limit: int = Field(default=20, ge=1, le=100, description="Items per page")
@@ -67,14 +37,7 @@ class BookListParams(BaseModel):
 
 
 class BookListResponse(BaseModel):
-    """Response schema for book list resource.
-
-    WHAT: This schema defines the structure of data returned by the list resource.
-    It includes both the data (books) and metadata (pagination info).
-
-    WHERE: This sits between the repository layer and the MCP protocol layer,
-    ensuring consistent response format.
-    """
+    """Response schema with books and pagination metadata."""
 
     books: list[Book] = Field(..., description="List of books in this page")
     total: int = Field(..., description="Total number of books matching filters")
@@ -85,26 +48,11 @@ class BookListResponse(BaseModel):
     has_previous: bool = Field(..., description="Whether there's a previous page")
 
 
-# =============================================================================
-# RESOURCE HANDLERS
-# =============================================================================
-# Each handler function implements the logic for a specific resource.
-# FastMCP calls these handlers when clients request the resource.
-
-
 async def list_books_handler() -> dict[str, Any]:
-    """Handle requests for the book list resource.
+    """Returns paginated book catalog.
 
-    MCP PROTOCOL DETAILS:
-    - This handler is called when a client requests "library://books/list"
-    - The protocol automatically handles JSON serialization of the response
-    - Errors are converted to proper JSON-RPC error responses
-
-    Returns:
-        Dictionary containing the book list and pagination metadata
-
-    Raises:
-        ResourceError: If there's a problem accessing the data
+    Client requests library://books/list to browse available books.
+    Supports filtering by genre, search query, and availability.
     """
     try:
         # Use default parameters since this is now a static resource
@@ -117,20 +65,13 @@ async def list_books_handler() -> dict[str, Any]:
             params.sort_by,
         )
 
-        # Get database session
-        # WHY: Each request gets its own session for isolation
-        # HOW: The session is properly closed after the request
         with session_scope() as session:
             repo = BookRepository(session)
 
-            # Build search parameters from request
             search_params = BookSearchParams(
                 query=params.query, genre=params.genre, available_only=params.available_only
             )
 
-            # Fetch paginated results
-            # WHAT: The repository handles the complex SQL queries
-            # WHERE: This abstracts database concerns from protocol concerns
             result = repo.search(
                 search_params=search_params,
                 pagination=PaginationParams(page=params.page, page_size=params.limit),
@@ -149,68 +90,38 @@ async def list_books_handler() -> dict[str, Any]:
                 has_previous=result.has_previous,
             )
 
-            # Return as dict for JSON serialization
-            # The protocol handles converting this to proper JSON-RPC format
             return response.model_dump()
 
     except Exception as e:
         logger.exception("Error in books/list resource")
-        # MCP defines standard error codes:
-        # -32002: Resource not found
-        # -32603: Internal error
         raise ResourceError(f"Failed to retrieve book list: {e!s}") from e
 
 
 async def get_book_handler(isbn: str) -> dict[str, Any]:
-    """Handle requests for individual book details.
+    """Returns details for a specific book.
 
-    MCP URI TEMPLATES:
-    Resources can have parameterized URIs using templates.
-    For example: "library://books/{isbn}" where {isbn} is replaced
-    with the actual ISBN when requesting the resource.
-
-    Args:
-        isbn: The book ISBN extracted from the URI template
-
-    Returns:
-        Dictionary containing the book details
-
-    Raises:
-        ResourceError: If the book is not found or other errors occur
+    Client requests library://books/{isbn} to get full book information
+    including title, author, description, and availability.
     """
     try:
-        # ISBN is now directly passed as a parameter from the URI template
         logger.debug("MCP Resource Request - books/%s", isbn)
 
         with session_scope() as session:
             repo = BookRepository(session)
-
-            # Fetch the book by ISBN
-            # WHAT: The repository returns a Pydantic model or raises NotFoundError
             book = repo.get_by_isbn(isbn)
 
             if book is None:
-                # Return standard MCP error for resource not found
                 raise ResourceError(f"Book not found: {isbn}")
 
-            # Return book data as dict
-            # The protocol adds metadata like URI and content type
             return book.model_dump()
 
     except ResourceError:
-        raise  # Re-raise MCP errors as-is
+        raise
     except Exception as e:
         logger.exception("Error in books/{isbn} resource")
         raise ResourceError(f"Failed to retrieve book details: {e!s}") from e
 
 
-# =============================================================================
-# RESOURCE REGISTRATION
-# =============================================================================
-# Resources must be registered with the MCP server to be discoverable.
-# This section defines the metadata and binds handlers to URIs.
-
-# Define the book resources that will be registered with FastMCP
 book_resources: list[dict[str, Any]] = [
     {
         "uri": "library://books/list",
@@ -223,8 +134,6 @@ book_resources: list[dict[str, Any]] = [
         "handler": list_books_handler,
     },
     {
-        # URI template for individual books
-        # The {isbn} placeholder is replaced with actual ISBN values
         "uri_template": "library://books/{isbn}",
         "name": "Book Details",
         "description": "Get detailed information about a specific book by ISBN",
@@ -232,48 +141,3 @@ book_resources: list[dict[str, Any]] = [
         "handler": get_book_handler,
     },
 ]
-
-
-# =============================================================================
-# MCP RESOURCE LEARNINGS
-# =============================================================================
-
-"""
-KEY INSIGHTS FROM IMPLEMENTING MCP RESOURCES:
-
-1. **URI DESIGN MATTERS**:
-   - Use hierarchical URIs that reflect your domain model
-   - "library://books/list" is more intuitive than "library://list-books"
-   - URI templates ("library://books/{isbn}") enable RESTful patterns
-
-2. **PAGINATION IS ESSENTIAL**:
-   - MCP recommends cursor-based pagination for large datasets
-   - We use page-based here for simplicity, but cursor is more robust
-   - Always include metadata (total, has_next) for client navigation
-
-3. **ERROR HANDLING STANDARDS**:
-   - Use standard JSON-RPC error codes when possible
-   - -32002 for "not found" is universally understood
-   - Include helpful error data for debugging
-
-4. **RESPONSE STRUCTURE**:
-   - Wrap lists in objects with metadata
-   - Use consistent field names across resources
-   - Include enough context for clients to understand the data
-
-5. **HANDLER PATTERNS**:
-   - Keep handlers thin - delegate to repositories
-   - Use Pydantic for automatic validation and serialization
-   - Log all requests for debugging protocol issues
-
-6. **SEPARATION OF CONCERNS**:
-   - Resources are read-only by design
-   - Use Tools for any operation that modifies state
-   - This separation makes the API more predictable
-
-NEXT STEPS:
-- Add more resources: authors, patrons, circulation status
-- Implement resource subscriptions for real-time updates
-- Add resource templates for more complex queries
-- Consider cursor-based pagination for better performance
-"""

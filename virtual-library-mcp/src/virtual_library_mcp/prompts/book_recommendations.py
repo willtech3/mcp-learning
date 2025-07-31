@@ -1,14 +1,9 @@
-"""Book Recommendation Prompt - AI-Powered Reading Suggestions
+"""Book Recommendation Prompt - Personalized Reading Suggestions
 
-This module demonstrates how to create MCP prompts that leverage library data
-to provide personalized book recommendations.
+Generates book recommendations based on genre, mood, and patron history.
+Client receives formatted prompt ready for LLM to provide suggestions.
 
-MCP PROMPT PATTERN:
-This prompt follows the MCP pattern where:
-1. Arguments customize the interaction (genre, mood, patron)
-2. The handler queries actual library data for context
-3. Messages guide the LLM to provide useful recommendations
-4. The response integrates real catalog information
+Usage: prompt.get("recommend_books", {"genre": "mystery", "mood": "thrilling"})
 """
 
 from virtual_library_mcp.database.book_repository import BookRepository
@@ -24,62 +19,41 @@ async def recommend_books(
     limit: int = 5,
     _session=None,  # For testing
 ) -> str:
-    """Generate personalized book recommendations based on preferences.
+    """Generate personalized book recommendations.
 
-    This prompt demonstrates:
-    - Dynamic context building from database queries
-    - Optional parameters for flexible interactions
-    - Integration of patron history for personalization
-    - Structured prompts that guide LLM responses
-
-    Args:
-        genre: Preferred genre to filter recommendations
-        mood: Reader's current mood (e.g., "adventurous", "contemplative")
-        patron_id: Optional patron ID for personalized recommendations
-        limit: Maximum number of recommendations to generate
-
-    Returns:
-        List of messages forming the recommendation prompt
+    Fetches available books matching criteria and formats prompt
+    for LLM to suggest readings based on genre, mood, and history.
     """
 
-    # Get database session
     session = _session or next(get_session())
     should_close = _session is None
 
     try:
-        # Build context from library data
         book_repo = BookRepository(session)
 
-        # Get available books based on criteria
         if genre:
-            # Filter by genre if specified
             pagination = PaginationParams(page=1, page_size=20)
             result = book_repo.get_by_genre(genre, pagination=pagination)
             books = result.items
         else:
-            # Get a diverse selection
             pagination = PaginationParams(page=1, page_size=50)
             result = book_repo.get_all(pagination=pagination)
             books = result if isinstance(result, list) else result.items
 
-        # Get patron context if patron_id provided
         patron_context = ""
         if patron_id:
             patron_repo = PatronRepository(session)
             patron = patron_repo.get_by_id(patron_id)
             if patron:
-                # For simplicity, just note that we have a patron
                 patron_context = f"\n\nRecommending for patron: {patron.name} (Member since {patron.membership_date})"
 
-        # Format available books
         book_list = []
-        for book in books[:20]:  # Limit context size
+        for book in books[:20]:
             availability = "Available" if book.available_copies > 0 else "Checked out"
             book_list.append(
                 f"- '{book.title}' ({book.genre}, {book.publication_year}) - {availability}"
             )
 
-        # Build and return the prompt content
         return f"""You are a knowledgeable librarian helping a patron find their next great read.
 
 Based on the following criteria, recommend {limit} books from our library catalog:
@@ -104,6 +78,4 @@ Format your response as a numbered list with title, author, and your recommendat
             session.close()
 
 
-# Export the prompt function for server registration
-# FastMCP will use the function signature and docstring to generate the prompt metadata
 book_recommendation_prompt = recommend_books

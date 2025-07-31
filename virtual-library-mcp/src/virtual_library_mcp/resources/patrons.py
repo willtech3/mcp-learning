@@ -1,21 +1,13 @@
-"""Patron Resources for Virtual Library MCP Server
+"""Patron Resources - Library Member Management
 
-This module implements MCP resources for accessing patron data and history.
-It demonstrates advanced MCP concepts including:
-- URI templates with dynamic parameters
-- Resource relationships (patron -> borrowing history)
-- Aggregated data views
+Exposes patron records, borrowing history, and membership analytics.
+Clients use these to view member details and track borrowing patterns.
 
-MCP ADVANCED RESOURCE CONCEPTS:
-1. **URI Templates**: Resources can use {parameter} placeholders for dynamic routing
-2. **Nested Resources**: Resources can represent relationships (e.g., /patrons/{id}/history)
-3. **Aggregations**: Resources can provide computed views of data
-4. **Filtering**: Resources support query parameters for filtering results
-
-DESIGN DECISIONS:
-- Using patron ID in URIs rather than email for privacy/security
-- History resources show both active and completed transactions
-- Aggregations are read-only computed views of the data
+Resources:
+- library://patrons/list - All library members with filtering
+- library://patrons/{id} - Individual patron details
+- library://patrons/{id}/history - Borrowing history for a patron
+- library://patrons/by-status/{status} - Members filtered by status
 """
 
 import logging
@@ -31,18 +23,7 @@ from ..database.repository import PaginationParams
 from ..database.session import session_scope
 from ..models.patron import PatronStatus
 
-# URI utilities are no longer needed with FastMCP 2.0's automatic parameter extraction
-
 logger = logging.getLogger(__name__)
-
-
-# Helper functions are now imported from uri_utils module
-# This demonstrates the DRY principle - Don't Repeat Yourself
-
-
-# =============================================================================
-# RESOURCE SCHEMAS
-# =============================================================================
 
 
 class PatronHistoryParams(BaseModel):
@@ -301,43 +282,3 @@ patron_resources: list[dict[str, Any]] = [
         "handler": list_patrons_by_status_handler,
     },
 ]
-
-
-# =============================================================================
-# MCP ADVANCED RESOURCES LEARNINGS
-# =============================================================================
-
-"""
-KEY INSIGHTS FROM IMPLEMENTING ADVANCED MCP RESOURCES:
-
-1. **URI TEMPLATE DESIGN**:
-   - Use meaningful hierarchies: /patrons/{id}/history shows clear ownership
-   - Status filters as path segments: /by-status/active is cleaner than ?status=active
-   - Keep templates intuitive and self-documenting
-
-2. **PARAMETER VALIDATION**:
-   - Always validate extracted parameters before using them
-   - Provide clear error messages for invalid parameters
-   - Use Pydantic models for complex parameter sets
-
-3. **RESOURCE RELATIONSHIPS**:
-   - Nested resources show clear data relationships
-   - Use consistent patterns across your API
-   - Consider the natural hierarchy of your domain
-
-4. **PERFORMANCE CONSIDERATIONS**:
-   - Aggregate data at the database level when possible
-   - Limit default result sizes to prevent overwhelming responses
-   - Consider caching for expensive computations
-
-5. **ERROR HANDLING**:
-   - Return appropriate error codes for different scenarios
-   - Include enough context in errors for debugging
-   - Distinguish between client errors and server errors
-
-NEXT STEPS:
-- Add more aggregation resources (popular books, circulation stats)
-- Implement recommendation algorithms
-- Add filtering by multiple criteria
-- Consider adding resource subscriptions for real-time updates
-"""

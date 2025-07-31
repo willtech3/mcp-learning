@@ -1,19 +1,12 @@
-"""Statistics and Aggregation Resources for Virtual Library MCP Server
+"""Statistics Resources - Library Analytics
 
-This module implements MCP resources that provide aggregated views of library data.
-These resources demonstrate how MCP can expose computed metrics and analytics.
+Exposes aggregated library metrics and analytics.
+Clients use these to understand usage patterns and popular content.
 
-MCP AGGREGATION PATTERNS:
-1. **Read-Only Computed Views**: Stats are calculated on-demand from source data
-2. **Time-Based Aggregations**: Support for different time windows (daily, weekly, monthly)
-3. **Ranked Lists**: Popular items, top borrowers, etc.
-4. **Distribution Analysis**: Genre popularity, circulation patterns
-
-DESIGN PHILOSOPHY:
-- Aggregations are always computed fresh (no stale data)
-- Results are limited to reasonable sizes for API responses
-- Time ranges are capped to prevent expensive queries
-- All stats respect privacy (no personally identifiable data in public stats)
+Resources:
+- library://stats/popular/{days}/{limit} - Most borrowed books
+- library://stats/genres/{days} - Checkout distribution by genre
+- library://stats/circulation - Current circulation metrics
 """
 
 import logging
@@ -31,11 +24,6 @@ from ..database.schema import CirculationStatusEnum
 from ..database.session import session_scope
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# RESOURCE SCHEMAS
-# =============================================================================
 
 
 class PopularBookEntry(BaseModel):
@@ -92,20 +80,11 @@ class CirculationStatsResponse(BaseModel):
     avg_loan_duration_days: float = Field(..., description="Average days books are kept")
 
 
-# =============================================================================
-# RESOURCE HANDLERS
-# =============================================================================
-
-
 async def get_popular_books_handler(days: str, limit: str) -> dict[str, Any]:
-    """Handle requests for popular books statistics.
+    """Returns most borrowed books in the specified time period.
 
-    Args:
-        days: Number of days to analyze (from URI template)
-        limit: Number of books to return (from URI template)
-
-    Returns:
-        Dictionary containing popular books ranking
+    Client requests library://stats/popular/{days}/{limit} to discover
+    trending books based on checkout frequency.
     """
     try:
         # Convert string parameters to integers with validation
@@ -187,13 +166,10 @@ async def get_popular_books_handler(days: str, limit: str) -> dict[str, Any]:
 
 
 async def get_genre_distribution_handler(days: str) -> dict[str, Any]:
-    """Handle requests for genre distribution statistics.
+    """Returns checkout distribution across genres.
 
-    Args:
-        days: Number of days to analyze (from URI template)
-
-    Returns:
-        Dictionary containing genre distribution analysis
+    Client requests library://stats/genres/{days} to analyze
+    reading preferences and genre popularity trends.
     """
     try:
         # Convert and validate parameter
@@ -278,17 +254,10 @@ async def get_genre_distribution_handler(days: str) -> dict[str, Any]:
 
 
 async def get_circulation_stats_handler() -> dict[str, Any]:
-    """Handle requests for current circulation statistics.
+    """Returns real-time library circulation metrics.
 
-    MCP REAL-TIME METRICS:
-    This resource provides a snapshot of the library's current state,
-    demonstrating how MCP can expose operational metrics.
-
-    Unlike historical analysis, this focuses on the "right now" view
-    of library operations.
-
-    Returns:
-        Dictionary containing current circulation metrics
+    Client requests library://stats/circulation for current
+    checkout activity, overdue items, and utilization rates.
     """
     try:
         logger.debug("MCP Resource Request - stats/circulation")
@@ -444,11 +413,6 @@ async def get_circulation_stats_handler() -> dict[str, Any]:
         raise ResourceError(f"Failed to calculate circulation stats: {e!s}") from e
 
 
-# =============================================================================
-# RESOURCE REGISTRATION
-# =============================================================================
-
-# Define statistics resources for FastMCP registration
 stats_resources: list[dict[str, Any]] = [
     {
         "uri_template": "library://stats/popular/{days}/{limit}",
@@ -483,44 +447,3 @@ stats_resources: list[dict[str, Any]] = [
         "handler": get_circulation_stats_handler,
     },
 ]
-
-
-# =============================================================================
-# MCP AGGREGATION LEARNINGS
-# =============================================================================
-
-"""
-KEY INSIGHTS FROM IMPLEMENTING AGGREGATION RESOURCES:
-
-1. **PERFORMANCE FIRST**:
-   - Do aggregations at the database level (SQL) not in Python
-   - Limit time ranges to prevent expensive queries
-   - Cache results if computation is expensive (not shown here)
-
-2. **MEANINGFUL METRICS**:
-   - Focus on actionable insights (what can librarians do with this?)
-   - Provide context (time ranges, thresholds, comparisons)
-   - Balance detail with usability
-
-3. **PRIVACY CONSIDERATIONS**:
-   - Aggregate data should not reveal individual patron behavior
-   - Use thresholds (min_checkouts) to ensure statistical significance
-   - Be careful with small datasets that might identify individuals
-
-4. **TIME-BASED ANALYSIS**:
-   - Always specify and limit time ranges
-   - Consider different granularities (daily, weekly, monthly)
-   - Include the analysis period in responses for clarity
-
-5. **RESPONSE DESIGN**:
-   - Include metadata about the analysis (period, thresholds)
-   - Sort results meaningfully (by relevance, not alphabetically)
-   - Provide enough context to interpret the numbers
-
-POTENTIAL ENHANCEMENTS:
-- Add caching for expensive aggregations
-- Support for comparative analysis (this month vs last month)
-- Trend detection (rising/falling popularity)
-- Seasonal adjustments for fair comparisons
-- Export formats (CSV) for further analysis
-"""

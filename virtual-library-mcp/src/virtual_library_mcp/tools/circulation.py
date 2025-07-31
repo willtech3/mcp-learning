@@ -1,24 +1,12 @@
-"""
-Circulation tools implementation for the Virtual Library MCP Server.
+"""Circulation Tools - Library Transaction Management
 
-This module demonstrates MCP tools that modify library state through circulation operations:
-1. checkout_book: Create a loan transaction and update availability
-2. return_book: Process returns with fine calculation
-3. reserve_book: Queue management for unavailable books
+Modifies library state through checkout, return, and reservation operations.
+Clients use these tools to manage book loans and patron interactions.
 
-MCP TOOLS ARCHITECTURE:
-Tools in the Model Context Protocol are the primary mechanism for LLMs to perform
-actions with side effects. Unlike resources (read-only), tools can:
-- Modify system state through create, update, delete operations
-- Execute complex business logic with validation
-- Return structured results or errors
-- Support long-running operations with progress notifications
-
-This implementation follows MCP best practices:
-- Comprehensive input validation using Pydantic schemas
-- Atomic operations with proper transaction handling
-- Clear error messages for LLM interpretation
-- Structured responses for further processing
+Tools:
+- checkout_book: Loan a book to a patron
+- return_book: Process book returns with fines
+- reserve_book: Queue management for unavailable books
 """
 
 import logging
@@ -39,55 +27,20 @@ from ..database.session import get_session
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-
 def _format_error_response(error_type: str, details: str) -> dict[str, Any]:
-    """Format error responses consistently across all tools.
-
-    Args:
-        error_type: Type of error (e.g., "Invalid parameters", "Not found", "Operation failed")
-        details: Specific error details
-
-    Returns:
-        Formatted error response dict
-    """
+    """Format error responses consistently across all tools."""
     return {"isError": True, "content": [{"type": "text", "text": f"{error_type}: {details}"}]}
 
 
 def _log_operation(operation: str, **kwargs) -> None:
-    """Log operation details for audit trail.
-
-    Args:
-        operation: Operation name (e.g., "checkout_book", "return_book")
-        **kwargs: Operation details to log
-    """
+    """Log operation details for audit trail."""
     logger.info(
         "Operation: %s | Details: %s", operation, " | ".join(f"{k}={v}" for k, v in kwargs.items())
     )
 
 
-# =============================================================================
-# CHECKOUT TOOL IMPLEMENTATION
-# =============================================================================
-
-
 class CheckoutBookInput(BaseModel):
-    """
-    Input schema for the checkout_book tool.
-
-    MCP SCHEMA DESIGN:
-    The input schema serves multiple critical purposes in the MCP protocol:
-    1. CLIENT DISCOVERY: Tells LLMs what parameters are available and required
-    2. VALIDATION: Ensures inputs meet business rules before processing
-    3. DOCUMENTATION: Self-documenting interface for tool capabilities
-    4. TYPE SAFETY: Prevents runtime errors from invalid data types
-
-    Each field includes comprehensive validation and examples to guide
-    LLM usage and provide clear error messages when validation fails.
-    """
+    """Input schema for book checkout operations."""
 
     patron_id: str = Field(
         ...,
@@ -126,42 +79,20 @@ class CheckoutBookInput(BaseModel):
 
 
 async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
-    """
-    Handler for the checkout_book tool.
+    """Process book checkout request.
 
-    MCP TOOL LIFECYCLE:
-    This handler demonstrates the complete MCP tool execution pattern:
+    Validates patron eligibility, book availability, and creates loan record.
+    Returns checkout confirmation with due date or error details.
 
-    1. INPUT PHASE: Validate arguments against schema
-    2. AUTHORIZATION: Check permissions (future enhancement)
-    3. BUSINESS LOGIC: Execute core operation with validation
-    4. STATE CHANGE: Modify system state atomically
-    5. RESPONSE: Return structured result or error
-
-    The handler coordinates multiple subsystems:
-    - Database transactions for ACID compliance
-    - Business rule validation (patron limits, availability)
-    - State updates across multiple entities
-    - Error handling with meaningful messages
-
-    Args:
-        arguments: Raw arguments from MCP tools/call request
-
-    Returns:
-        Structured response with checkout details or error information
+    Client calls: tool.call("checkout_book", {"patron_id": "...", "book_isbn": "..."})
     """
     try:
-        # STEP 1: Validate and parse input
-        # WHY: MCP requires strict input validation before processing
-        # HOW: Pydantic validates types, patterns, and business rules
-        # WHAT: This catches malformed requests early with clear errors
         try:
             params = CheckoutBookInput.model_validate(arguments)
         except Exception as e:
             logger.warning("Invalid checkout parameters: %s", e)
             return _format_error_response("Invalid parameters", str(e))
 
-        # Log operation start
         _log_operation(
             "checkout_book_start",
             patron_id=params.patron_id,
@@ -170,15 +101,9 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             has_notes=bool(params.notes),
         )
 
-        # STEP 2: Execute checkout with repository
-        # WHY: Business logic is encapsulated in the repository layer
-        # HOW: Repository handles all database operations transactionally
-        # WHAT: This ensures consistency across patron, book, and checkout records
         with get_session() as session:
             try:
                 repo = CirculationRepository(session)
-
-                # Convert to repository schema
                 checkout_data = CheckoutCreateSchema(
                     patron_id=params.patron_id,
                     book_isbn=params.book_isbn,
@@ -186,12 +111,9 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                     notes=params.notes,
                 )
 
-                # Execute checkout
                 checkout = repo.checkout_book(checkout_data)
 
             except NotFoundError as e:
-                # MCP ERROR PATTERN: Entity not found
-                # Return specific error for missing patron or book
                 logger.info("Checkout failed - entity not found: %s", e)
                 _log_operation(
                     "checkout_book_failed",
@@ -277,21 +199,8 @@ async def checkout_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         return _format_error_response("Unexpected error", str(e))
 
 
-# =============================================================================
-# RETURN TOOL IMPLEMENTATION
-# =============================================================================
-
-
 class ReturnBookInput(BaseModel):
-    """
-    Input schema for the return_book tool.
-
-    MCP DESIGN CONSIDERATION:
-    Return operations require minimal input (just the checkout ID) but
-    support optional parameters for book condition and processing notes.
-    This follows the MCP principle of progressive disclosure - simple
-    cases are simple, complex cases are possible.
-    """
+    """Input schema for book return operations."""
 
     checkout_id: str = Field(
         ...,
@@ -335,18 +244,12 @@ class ReturnBookInput(BaseModel):
 
 
 async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
-    """
-    Handler for the return_book tool.
+    """Process book return request.
 
-    MCP PATTERN - STATEFUL OPERATIONS:
-    This tool demonstrates handling operations that depend on existing state:
-    1. Verify the checkout exists and is active
-    2. Calculate derived values (fines for late returns)
-    3. Update multiple related entities atomically
-    4. Return comprehensive result including calculations
+    Calculates late fines, updates book availability, and records condition.
+    Returns confirmation with fine details if applicable.
 
-    The tool showcases MCP's ability to handle complex business logic
-    while maintaining a simple interface for LLM interaction.
+    Client calls: tool.call("return_book", {"checkout_id": "..."})
     """
     try:
         # Validate input
@@ -467,20 +370,8 @@ async def return_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         return _format_error_response("Unexpected error", str(e))
 
 
-# =============================================================================
-# RESERVATION TOOL IMPLEMENTATION
-# =============================================================================
-
-
 class ReserveBookInput(BaseModel):
-    """
-    Input schema for the reserve_book tool.
-
-    MCP PATTERN - QUEUE MANAGEMENT:
-    Reservations demonstrate MCP tools handling queue-based operations
-    where the result depends on system state and other users' actions.
-    This showcases tools that provide estimates rather than guarantees.
-    """
+    """Input schema for book reservation operations."""
 
     patron_id: str = Field(
         ...,
@@ -522,19 +413,12 @@ class ReserveBookInput(BaseModel):
 
 
 async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
-    """
-    Handler for the reserve_book tool.
+    """Process book reservation request.
 
-    MCP ADVANCED PATTERN - ASYNCHRONOUS OUTCOMES:
-    Reservations demonstrate tools where the immediate action (creating
-    a reservation) has a delayed outcome (book becomes available).
-    This pattern is common in real-world MCP implementations where
-    tools initiate processes rather than complete them instantly.
+    Creates reservation in queue, provides position and estimated wait time.
+    Returns reservation details with queue status.
 
-    Future enhancements could include:
-    - Progress notifications when moving up in queue
-    - Subscription to availability updates
-    - Automatic checkout when book becomes available
+    Client calls: tool.call("reserve_book", {"patron_id": "...", "book_isbn": "..."})
     """
     try:
         # Validate input
@@ -650,15 +534,6 @@ async def reserve_book_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         return _format_error_response("Unexpected error", str(e))
 
 
-# =============================================================================
-# TOOL REGISTRATION
-# =============================================================================
-
-# Tool metadata for MCP server registration
-# WHY: The server needs complete tool definitions for the tools/list response
-# HOW: Each tool includes name, description, schema, and handler
-# WHAT: These definitions enable LLM discovery and correct tool usage
-
 checkout_book = {
     "name": "checkout_book",
     "description": (
@@ -691,55 +566,3 @@ reserve_book = {
     "inputSchema": ReserveBookInput.model_json_schema(),
     "handler": reserve_book_handler,
 }
-
-
-# =============================================================================
-# MCP PROTOCOL LEARNINGS
-# =============================================================================
-
-# Key Takeaways from Circulation Tools Implementation:
-#
-# 1. TOOLS ARE STATE MODIFIERS:
-#    Unlike resources (read-only), tools are the primary mechanism for
-#    LLMs to change system state. They must handle complex validation,
-#    maintain data integrity, and provide clear feedback.
-#
-# 2. SCHEMA-DRIVEN DESIGN:
-#    Input schemas serve triple duty: discovery (what can I do?),
-#    validation (is this allowed?), and documentation (how do I use it?).
-#    Rich schemas with examples guide LLM usage effectively.
-#
-# 3. ERROR HANDLING HIERARCHY:
-#    Tools need multiple error levels:
-#    - Validation errors (malformed input)
-#    - Not found errors (missing entities)
-#    - Business rule violations (patron limits, availability)
-#    - System errors (database failures)
-#    Each provides specific feedback for LLM adaptation.
-#
-# 4. TRANSACTION BOUNDARIES:
-#    Tools often modify multiple entities atomically. The checkout tool
-#    updates books, patrons, and creates records in one transaction.
-#    This ensures consistency even if errors occur.
-#
-# 5. PROGRESSIVE DISCLOSURE:
-#    Simple operations (return by ID) have minimal required parameters,
-#    while supporting optional enhancements (condition, rating, review).
-#    This makes tools approachable while enabling advanced usage.
-#
-# 6. STRUCTURED RESPONSES:
-#    Tools return both human-readable messages and structured data.
-#    This dual format serves both conversational UI and programmatic
-#    processing by the LLM for follow-up actions.
-#
-# 7. QUEUE-BASED OPERATIONS:
-#    The reservation tool demonstrates handling asynchronous outcomes
-#    where the immediate action (reserve) has delayed fulfillment
-#    (book available). This pattern is common in real-world systems.
-#
-# Next Steps:
-# - Add renewal functionality to extend checkouts
-# - Implement batch operations for multiple books
-# - Add progress notifications for long operations
-# - Create administrative tools for library staff
-# - Implement fine payment processing

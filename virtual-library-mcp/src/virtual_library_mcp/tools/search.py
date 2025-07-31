@@ -1,19 +1,9 @@
-"""
-Search tool implementation for the Virtual Library MCP Server.
+"""Search Tool - Library Catalog Search
 
-This tool demonstrates comprehensive MCP tool implementation with:
-1. JSON Schema input validation
-2. Full-text and field-specific search
-3. Pagination support
-4. Proper error handling
-5. Structured response formatting
+Provides full-text and filtered search across the book catalog.
+Clients use this tool to find books with pagination and sorting.
 
-MCP TOOL STRUCTURE:
-Each tool consists of:
-- Metadata: name, description, input schema
-- Handler: async function that processes requests
-- Validation: Automatic via JSON Schema
-- Error handling: Both protocol and execution errors
+Usage: tool.call("search_catalog", {"query": "python", "page_size": 20})
 """
 
 import logging
@@ -29,26 +19,8 @@ from ..models.book import Book
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# INPUT VALIDATION SCHEMA
-# =============================================================================
-
-
 class SearchCatalogInput(BaseModel):
-    """
-    Input schema for the search_catalog tool.
-
-    MCP INPUT VALIDATION:
-    The Model Context Protocol uses JSON Schema for input validation.
-    This Pydantic model generates the JSON Schema automatically and
-    provides runtime validation when the tool is invoked.
-
-    The schema serves multiple purposes:
-    1. Tells clients what parameters are available
-    2. Validates inputs before processing
-    3. Provides clear error messages for invalid inputs
-    4. Documents the tool's interface
-    """
+    """Input schema for the search_catalog tool."""
 
     query: str | None = Field(
         default=None,
@@ -77,13 +49,11 @@ class SearchCatalogInput(BaseModel):
         description="Only return books with available copies",
     )
 
-    # Pagination parameters
-    # MCP BEST PRACTICE: Always support pagination for list operations
     page: int = Field(
         default=1,
         description="Page number (1-indexed)",
         ge=1,
-        le=1000,  # Prevent excessive pagination
+        le=1000,
     )
 
     page_size: int = Field(
@@ -139,20 +109,8 @@ class SearchCatalogInput(BaseModel):
         return PaginationParams(page=self.page, page_size=self.page_size)
 
 
-# =============================================================================
-# TOOL RESPONSE FORMATTING
-# =============================================================================
-
-
 def format_book_for_tool_response(book: Book) -> dict[str, Any]:
-    """
-    Format a book model for tool response.
-
-    MCP RESPONSE FORMAT:
-    Tool responses should be structured and consistent.
-    This function ensures all book data is properly
-    formatted for JSON serialization in the MCP response.
-    """
+    """Format a book model for tool response."""
     return {
         "isbn": book.isbn,
         "title": book.title,
@@ -167,52 +125,26 @@ def format_book_for_tool_response(book: Book) -> dict[str, Any]:
     }
 
 
-# =============================================================================
-# TOOL HANDLER IMPLEMENTATION
-# =============================================================================
-
-
 async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
-    """
-    Handler for the search_catalog tool.
+    """Process catalog search request.
 
-    MCP TOOL EXECUTION:
-    This handler demonstrates the complete lifecycle of a tool execution:
-    1. Input validation via Pydantic schema
-    2. Repository interaction with proper session management
-    3. Error handling at multiple levels
-    4. Structured response formatting
+    Validates input, searches books by query/genre/author,
+    returns paginated results with availability status.
 
-    The handler is async to support the MCP server's event loop
-    and allow for concurrent tool executions.
-
-    Args:
-        arguments: Raw arguments from the MCP tools/call request
-
-    Returns:
-        Structured response with search results or error information
-
-    Raises:
-        No exceptions - all errors are caught and returned as error responses
+    Client calls: tool.call("search_catalog", {"query": "...", "page": 1})
     """
     try:
-        # STEP 1: Validate input arguments
-        # WHY: The MCP protocol requires input validation before processing
-        # HOW: Pydantic automatically validates against the schema
-        # WHAT: This catches type errors, missing required fields, invalid ranges
+        # Validate input
         try:
             params = SearchCatalogInput.model_validate(arguments)
         except Exception as e:
-            # MCP ERROR HANDLING: Invalid parameters
-            # Return error with details about what validation failed
             logger.warning("Invalid search parameters: %s", e)
             return {
                 "isError": True,
                 "content": [{"type": "text", "text": f"Invalid search parameters: {e}"}],
             }
 
-        # STEP 2: Check if at least one search criterion is provided
-        # WHY: Empty searches could return the entire catalog, causing performance issues
+        # Require at least one search criterion
         if not any([params.query, params.genre, params.author]):
             return {
                 "isError": True,
@@ -224,16 +156,13 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                 ],
             }
 
-        # STEP 3: Execute search with database session
-        # WHY: Each tool execution needs its own database session for isolation
-        # HOW: Context manager ensures proper cleanup even on error
+        # Execute search
         with get_session() as session:
             try:
                 repo = BookRepository(session)
 
-                # Convert sort_by string to enum
-                # Handle special case of "relevance" which maps to title for now
-                sort_by = BookSortOptions.TITLE  # Default
+                # Map sort parameter to enum
+                sort_by = BookSortOptions.TITLE
                 if params.sort_by == "title":
                     sort_by = BookSortOptions.TITLE
                 elif params.sort_by == "author":
@@ -253,16 +182,13 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
                 )
 
             except Exception as e:
-                # MCP ERROR HANDLING: Database or search error
-                # This catches repository exceptions, database errors, etc.
                 logger.exception("Search execution failed")
                 return {
                     "isError": True,
                     "content": [{"type": "text", "text": f"Search failed: {e!s}"}],
                 }
 
-        # STEP 4: Format successful response
-        # MCP RESPONSE FORMAT: Tools return content arrays with typed items
+        # Format response
         books_data = [format_book_for_tool_response(book) for book in result.items]
 
         # Build response message
@@ -273,12 +199,8 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
             if result.total > len(books_data):
                 message += f" (showing page {result.page} of {result.total_pages})"
 
-        # Return structured response
-        # WHY: MCP tools must return consistent response format
-        # WHAT: content array with text and optional structured data
         return {
             "content": [{"type": "text", "text": message}],
-            # Include structured data for client processing
             "data": {
                 "books": books_data,
                 "pagination": {
@@ -293,23 +215,12 @@ async def search_catalog_handler(arguments: dict[str, Any]) -> dict[str, Any]:
         }
 
     except Exception as e:
-        # MCP ERROR HANDLING: Catch-all for unexpected errors
-        # This ensures the tool never crashes the server
         logger.exception("Unexpected error in search_catalog tool")
         return {
             "isError": True,
             "content": [{"type": "text", "text": f"An unexpected error occurred: {e!s}"}],
         }
 
-
-# =============================================================================
-# TOOL REGISTRATION
-# =============================================================================
-
-# Tool metadata for MCP server registration
-# WHY: The server needs this metadata to expose the tool to clients
-# HOW: FastMCP uses this to handle tools/list requests and routing
-# WHAT: Complete tool definition with schema and handler
 
 search_catalog = {
     "name": "search_catalog",
@@ -321,44 +232,3 @@ search_catalog = {
     "inputSchema": SearchCatalogInput.model_json_schema(),
     "handler": search_catalog_handler,
 }
-
-
-# =============================================================================
-# MCP PROTOCOL LEARNINGS
-# =============================================================================
-
-# Key Takeaways from Tool Implementation:
-#
-# 1. INPUT VALIDATION IS CRITICAL:
-#    MCP tools must validate all inputs before processing. Using Pydantic
-#    provides automatic JSON Schema generation and runtime validation,
-#    ensuring protocol compliance and preventing errors.
-#
-# 2. ERROR HANDLING LAYERS:
-#    Tools need multiple levels of error handling:
-#    - Validation errors (invalid input)
-#    - Business logic errors (no search criteria)
-#    - Execution errors (database failures)
-#    - Unexpected errors (catch-all)
-#
-# 3. STRUCTURED RESPONSES:
-#    Tools return content arrays with typed items. The isError flag
-#    indicates execution failures (not protocol errors). Additional
-#    structured data can be included for client processing.
-#
-# 4. PAGINATION BEST PRACTICES:
-#    List operations should always support pagination to handle large
-#    result sets efficiently. Page size limits prevent resource exhaustion.
-#
-# 5. ASYNC EXECUTION:
-#    Tool handlers are async to work with the MCP server's event loop.
-#    This allows concurrent tool executions and non-blocking I/O.
-#
-# Tool Implementation Complete! ✅
-# All circulation tools have been implemented:
-# - checkout_book, return_book, reserve_book ✓
-#
-# Future Enhancements:
-# - Add tool-specific permissions/authorization
-# - Implement long-running tools with progress notifications
-# - Add tool result caching for expensive operations

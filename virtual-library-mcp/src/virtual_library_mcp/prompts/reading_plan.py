@@ -1,13 +1,9 @@
-"""Reading Plan Generator Prompt - Structured Learning Paths
+"""Reading Plan Generator Prompt - Learning Path Creation
 
-This module creates personalized reading plans that guide patrons through
-a curated sequence of books to achieve their learning goals.
+Creates structured reading plans based on goals and time constraints.
+Client receives formatted prompt for LLM to design learning journey.
 
-MCP PROMPT BENEFITS:
-- Reusable templates for common library services
-- Integration with real catalog data
-- Consistent, high-quality AI responses
-- Parameterized for different use cases
+Usage: prompt.get("generate_reading_plan", {"goal": "learn AI", "duration": "quarter"})
 """
 
 from typing import Literal
@@ -24,22 +20,10 @@ async def generate_reading_plan(
     time_commitment: Literal["light", "moderate", "intensive"] = "moderate",
     _session=None,  # For testing
 ) -> str:
-    """Create a structured reading plan to achieve specific learning goals.
+    """Generate structured reading plan for learning goals.
 
-    This prompt demonstrates:
-    - Structured learning path generation
-    - Consideration of time constraints and experience
-    - Progressive difficulty scaling
-    - Integration with available library resources
-
-    Args:
-        goal: Learning objective (e.g., "Learn Python programming", "Understand climate science")
-        duration: Time frame for the reading plan
-        experience_level: Current knowledge level in the subject
-        time_commitment: Reading time availability
-
-    Returns:
-        Formatted prompt for generating a reading plan
+    Searches catalog for relevant books and formats prompt
+    for LLM to create progressive learning path.
     """
 
     # Get database session

@@ -1,16 +1,11 @@
-"""Advanced Book Resources for Virtual Library MCP Server
+"""Advanced Book Resources - URI Template Filtering
 
-This module extends the basic book resources with advanced filtering capabilities
-using URI templates. It demonstrates:
-- Dynamic URI parameters for filtering
-- Multiple filtering dimensions (author, genre)
-- Efficient query building based on URI structure
+Exposes filtered book views using URI templates for intuitive access.
+Clients filter books by author or genre using parameterized URIs.
 
-MCP URI TEMPLATE CONCEPTS:
-1. **Path Parameters**: /books/by-author/{author_id} captures dynamic values
-2. **Resource Hierarchies**: Shows relationships (books belong to authors/genres)
-3. **RESTful Design**: Intuitive URIs that describe the data structure
-4. **Filtering vs Searching**: Path-based filtering for discrete values
+Resources:
+- library://books/by-author/{author_id} - Books by specific author
+- library://books/by-genre/{genre} - Books in specific genre
 """
 
 import logging
@@ -26,21 +21,8 @@ from ..database.session import session_scope
 logger = logging.getLogger(__name__)
 
 
-# Helper functions are now imported from uri_utils module
-# This demonstrates the DRY principle - Don't Repeat Yourself
-
-
-# =============================================================================
-# RESOURCE SCHEMAS
-# =============================================================================
-
-
 class FilteredBooksParams(BaseModel):
-    """Parameters for filtered book lists.
-
-    WHY: Even filtered resources benefit from pagination and sorting options.
-    This provides consistency across all list-based resources.
-    """
+    """Common parameters for filtered book lists."""
 
     page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
     limit: int = Field(default=20, ge=1, le=100, description="Items per page")
@@ -67,27 +49,11 @@ class FilteredBooksResponse(BaseModel):
     has_previous: bool = Field(..., description="Whether there's a previous page")
 
 
-# =============================================================================
-# RESOURCE HANDLERS
-# =============================================================================
-
-
 async def get_books_by_author_handler(author_id: str) -> dict[str, Any]:
-    """Handle requests for books by a specific author.
+    """Returns books written by the specified author.
 
-    MCP FILTERED RESOURCES:
-    This demonstrates how URI templates can create intuitive filtering
-    patterns. Instead of query parameters (?author=X), we use path
-    segments (/by-author/X) for cleaner, more RESTful URIs.
-
-    The author ID is part of the resource identity, making it cacheable
-    and bookmarkable.
-
-    Args:
-        author_id: The author name/ID from the URI template
-
-    Returns:
-        Dictionary containing books by the specified author
+    Client requests library://books/by-author/{author_name} to browse
+    all books by that author with pagination and sorting options.
     """
     try:
         # Use default parameters for pagination
@@ -164,18 +130,10 @@ async def get_books_by_author_handler(author_id: str) -> dict[str, Any]:
 
 
 async def get_books_by_genre_handler(genre: str) -> dict[str, Any]:
-    """Handle requests for books in a specific genre.
+    """Returns books in the specified genre.
 
-    MCP GENRE FILTERING:
-    Similar to author filtering, but demonstrates how the same pattern
-    can be applied to different attributes. This consistency makes
-    the API predictable and easy to use.
-
-    Args:
-        genre: The genre name from the URI template
-
-    Returns:
-        Dictionary containing books in the specified genre
+    Client requests library://books/by-genre/{genre} to browse
+    all books in that genre category with pagination support.
     """
     try:
         # Use default parameters for pagination
@@ -255,11 +213,6 @@ async def get_books_by_genre_handler(genre: str) -> dict[str, Any]:
         raise ResourceError(f"Failed to retrieve books by genre: {e!s}") from e
 
 
-# =============================================================================
-# RESOURCE REGISTRATION
-# =============================================================================
-
-# Define advanced book resources for FastMCP registration
 advanced_book_resources: list[dict[str, Any]] = [
     {
         "uri_template": "library://books/by-author/{author_id}",
@@ -284,49 +237,3 @@ advanced_book_resources: list[dict[str, Any]] = [
         "handler": get_books_by_genre_handler,
     },
 ]
-
-
-# =============================================================================
-# MCP URI TEMPLATE LEARNINGS
-# =============================================================================
-
-"""
-KEY INSIGHTS FROM IMPLEMENTING URI TEMPLATE RESOURCES:
-
-1. **URI DESIGN PRINCIPLES**:
-   - Use meaningful path segments (/by-author/ not /a/)
-   - Be consistent across similar resources
-   - URL-encode special characters properly
-   - Keep URIs hackable and predictable
-
-2. **PARAMETER EXTRACTION**:
-   - Always validate extracted parameters
-   - Handle URL encoding/decoding properly
-   - Provide clear error messages for malformed URIs
-   - Consider case sensitivity
-
-3. **FILTERING PATTERNS**:
-   - Path parameters for primary filters (author, genre)
-   - Query parameters for secondary filters (availability)
-   - Consistent parameter names across resources
-   - Clear documentation of encoding requirements
-
-4. **ERROR HANDLING**:
-   - Validate URI structure before processing
-   - Distinguish between "not found" and "bad request"
-   - Include the invalid URI in error messages
-   - Handle edge cases (empty strings, special chars)
-
-5. **PERFORMANCE CONSIDERATIONS**:
-   - URI templates enable better caching
-   - Database indexes on filter fields
-   - Limit result sizes by default
-   - Consider pre-computing common filters
-
-BEST PRACTICES:
-- Test with various author names (spaces, apostrophes, accents)
-- Document URL encoding requirements clearly
-- Provide examples in descriptions
-- Consider internationalization (non-ASCII characters)
-- Keep URI templates simple and intuitive
-"""

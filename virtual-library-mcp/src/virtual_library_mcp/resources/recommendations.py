@@ -1,21 +1,12 @@
-"""Recommendation Resources for Virtual Library MCP Server
+"""Recommendation Resources - Personalized Book Suggestions
 
-This module implements personalized book recommendations using patron history
-and preferences. It demonstrates advanced MCP concepts including:
-- Dynamic resource generation based on patron data
-- Multi-factor recommendation algorithms
-- Privacy-aware analytics
+Provides AI-driven book recommendations based on patron history and trends.
+Clients use these for personalized suggestions and discovery features.
 
-MCP RECOMMENDATION PATTERNS:
-1. **Personalized Resources**: Content varies based on the patron
-2. **Collaborative Filtering**: Recommendations based on similar patrons
-3. **Content-Based Filtering**: Recommendations based on book attributes
-4. **Hybrid Approaches**: Combining multiple recommendation strategies
-
-PRIVACY CONSIDERATIONS:
-- Recommendations are only accessible by the patron themselves
-- Aggregate data doesn't reveal individual reading habits
-- Patron preferences are respected (opt-in/opt-out)
+Resources:
+- library://recommendations/for-patron/{patron_id} - Personal recommendations
+- library://recommendations/trending - Popular books trending now
+- library://recommendations/new-releases - Recently added books
 """
 
 import logging
@@ -36,17 +27,8 @@ from ..database.session import session_scope
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# RESOURCE SCHEMAS
-# =============================================================================
-
-
 class RecommendationParams(BaseModel):
-    """Parameters for recommendation generation.
-
-    WHY: Different recommendation strategies require different parameters.
-    This allows clients to customize the recommendation algorithm.
-    """
+    """Parameters for recommendation generation."""
 
     limit: int = Field(default=10, ge=1, le=20, description="Number of recommendations")
     strategy: str = Field(
@@ -503,49 +485,3 @@ recommendation_resources: list[dict[str, Any]] = [
         "handler": get_patron_recommendations_handler,
     },
 ]
-
-
-# =============================================================================
-# MCP RECOMMENDATION LEARNINGS
-# =============================================================================
-
-"""
-KEY INSIGHTS FROM IMPLEMENTING RECOMMENDATION RESOURCES:
-
-1. **PERSONALIZATION STRATEGIES**:
-   - Multiple algorithms provide different perspectives
-   - Hybrid approaches often work best
-   - Consider both explicit (genres) and implicit (behavior) signals
-   - Balance between exploration and exploitation
-
-2. **PRIVACY CONSIDERATIONS**:
-   - Recommendations reveal reading habits
-   - Authentication is critical for personal data
-   - Consider allowing opt-out of tracking
-   - Be transparent about data usage
-
-3. **PERFORMANCE OPTIMIZATION**:
-   - Pre-compute common aggregations
-   - Use database-level operations
-   - Limit recommendation pool size early
-   - Consider caching for expensive calculations
-
-4. **QUALITY FACTORS**:
-   - Diversity: Don't recommend only one genre
-   - Freshness: Include new arrivals
-   - Availability: Prioritize available books
-   - Explanation: Tell users why books were recommended
-
-5. **ALGORITHM IMPROVEMENTS**:
-   - Time decay: Recent behavior matters more
-   - Negative feedback: Track books patron didn't like
-   - Context awareness: Seasonal recommendations
-   - Social proof: What friends are reading
-
-FUTURE ENHANCEMENTS:
-- Machine learning models for better predictions
-- Real-time recommendation updates
-- A/B testing different algorithms
-- Integration with external book databases
-- Reading list management
-"""
