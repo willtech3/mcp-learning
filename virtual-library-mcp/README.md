@@ -54,18 +54,22 @@ just dev
 
 ```text
 virtual-library-mcp/
-├── src/virtual_library_mcp/
-│   ├── server.py           # MCP server entry point (NEW!)
+├── src/                    # Source code directory
+│   ├── server.py           # MCP server entry point
 │   ├── config.py           # Configuration management
 │   ├── models/             # Pydantic data models
 │   │   ├── author.py       # Author model with validation
 │   │   ├── book.py         # Book model with ISBN validation
 │   │   ├── patron.py       # Library patron model
 │   │   └── circulation.py  # Checkout/return/reservation models
-│   └── database/           # Data access layer
-│       ├── schema.py       # SQLAlchemy models
-│       ├── session.py      # Database session management
-│       └── *_repository.py # Repository implementations
+│   ├── database/           # Data access layer
+│   │   ├── schema.py       # SQLAlchemy models
+│   │   ├── session.py      # Database session management
+│   │   └── *_repository.py # Repository implementations
+│   ├── resources/          # MCP resource implementations
+│   ├── tools/              # MCP tool implementations
+│   ├── prompts/            # MCP prompt implementations
+│   └── data/               # Data files and utilities
 ├── tests/                  # Comprehensive test suite
 ├── docs/                   # Project documentation
 └── justfile               # Task automation
@@ -185,7 +189,7 @@ For a learning project with SQLite, the mixed approach provides the best balance
 
 ## 📖 Learning Resources
 
-- See `src/virtual_library_mcp/server.py` for detailed MCP protocol explanations
+- See `src/server.py` for detailed MCP protocol explanations
 - Check `docs/DEVELOPMENT.md` for development workflow
 - Review test files for usage examples
 
