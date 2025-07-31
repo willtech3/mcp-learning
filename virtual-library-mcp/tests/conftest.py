@@ -25,6 +25,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from virtual_library_mcp.config import ServerConfig, reset_config
+from virtual_library_mcp.database.schema import Base
 
 # === Pytest Configuration ===
 
@@ -75,6 +76,7 @@ def test_db_session(test_database_url: str) -> Generator[Session, None, None]:
     )
 
     # Create all tables
+    Base.metadata.create_all(bind=engine)
 
     # Create session factory
     session_local = sessionmaker(

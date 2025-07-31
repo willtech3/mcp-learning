@@ -83,6 +83,15 @@ class CirculationStats(BaseModel):
     returns_this_month: int
 
 
+class ReservationQueueInfo(BaseModel):
+    """Information about a book's reservation queue."""
+
+    book_isbn: str
+    total_reservations: int
+    pending_reservations: int
+    estimated_wait_days: int | None
+
+
 class CirculationSortOptions(str, enum.Enum):
     """Sorting options for circulation queries."""
 
@@ -363,6 +372,12 @@ class CirculationRepository:
         if not book:
             raise NotFoundError(f"Book {reservation_data.book_isbn} not found")
 
+        # Check if book has available copies - reservations are only for unavailable books
+        if book.available_copies > 0:
+            raise RepositoryException(
+                f"Book has available copies ({book.available_copies}) - checkout instead of reserving"
+            )
+
         # Check for existing reservation
         existing = mcp_safe_query(
             self.session,
@@ -608,6 +623,75 @@ class CirculationRepository:
             "Failed to get reservation queue",
         )
         return [self._reservation_to_model(r) for r in results]
+
+    def get_reservation_queue_info(self, book_isbn: str) -> ReservationQueueInfo:
+        """
+        Get reservation queue information for a book.
+
+        Args:
+            book_isbn: Book ISBN
+        Returns:
+            Queue information including estimated wait time
+        """
+        # Count total reservations
+        total_reservations = (
+            mcp_safe_query(
+                self.session,
+                lambda s: s.execute(
+                    select(func.count())
+                    .select_from(ReservationDB)
+                    .where(ReservationDB.book_isbn == book_isbn)
+                ).scalar(),
+                "Failed to count total reservations",
+            )
+            or 0
+        )
+
+        # Count pending reservations
+        pending_reservations = (
+            mcp_safe_query(
+                self.session,
+                lambda s: s.execute(
+                    select(func.count())
+                    .select_from(ReservationDB)
+                    .where(
+                        and_(
+                            ReservationDB.book_isbn == book_isbn,
+                            ReservationDB.status == ReservationStatusEnum.PENDING,
+                        )
+                    )
+                ).scalar(),
+                "Failed to count pending reservations",
+            )
+            or 0
+        )
+
+        # Estimate wait time based on average loan period (14 days) and queue position
+        # This is a simplified estimate - in production, could use historical data
+        estimated_wait_days = None
+        if pending_reservations > 0:
+            # Get number of copies to calculate turnover rate
+            book = mcp_safe_query(
+                self.session,
+                lambda s: s.execute(
+                    select(BookDB).where(BookDB.isbn == book_isbn)
+                ).scalar_one_or_none(),
+                "Failed to get book for wait time calculation",
+            )
+
+            if book and book.total_copies > 0:
+                # Assume each copy has a 14-day loan period
+                # Wait time = (position in queue / number of copies) * loan period
+                estimated_wait_days = (pending_reservations // book.total_copies) * 14
+                if pending_reservations % book.total_copies > 0:
+                    estimated_wait_days += 14
+
+        return ReservationQueueInfo(
+            book_isbn=book_isbn,
+            total_reservations=total_reservations,
+            pending_reservations=pending_reservations,
+            estimated_wait_days=estimated_wait_days,
+        )
 
     def get_circulation_stats(self) -> CirculationStats:
         """
