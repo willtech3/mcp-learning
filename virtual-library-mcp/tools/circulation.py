@@ -15,14 +15,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..database.circulation_repository import (
+from database.circulation_repository import (
     CheckoutCreateSchema,
     CirculationRepository,
     ReservationCreateSchema,
     ReturnProcessSchema,
 )
-from ..database.repository import NotFoundError, RepositoryException
-from ..database.session import get_session
+from database.repository import NotFoundError, RepositoryException
+from database.session import get_session
 
 logger = logging.getLogger(__name__)
 

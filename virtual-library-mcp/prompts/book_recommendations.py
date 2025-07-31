@@ -6,10 +6,10 @@ Client receives formatted prompt ready for LLM to provide suggestions.
 Usage: prompt.get("recommend_books", {"genre": "mystery", "mood": "thrilling"})
 """
 
-from ..database.book_repository import BookRepository
-from ..database.patron_repository import PatronRepository
-from ..database.repository import PaginationParams
-from ..database.session import get_session
+from database.book_repository import BookRepository
+from database.patron_repository import PatronRepository
+from database.repository import PaginationParams
+from database.session import get_session
 
 
 async def recommend_books(

@@ -24,10 +24,11 @@ from pydantic import BaseModel
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import joinedload
 
-from ..database.schema import Author as AuthorDB
-from ..database.schema import Book as BookDB
-from ..database.session import mcp_safe_commit, mcp_safe_query
-from ..models.book import Book as BookModel
+from database.schema import Author as AuthorDB
+from database.schema import Book as BookDB
+from database.session import mcp_safe_commit, mcp_safe_query
+from models.book import Book as BookModel
+
 from .repository import (
     BaseRepository,
     DuplicateError,

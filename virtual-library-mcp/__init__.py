@@ -16,7 +16,7 @@ Key Components:
 __version__ = "0.1.0"
 
 # Make database module available at package level
-from . import database
+import database
 
 __all__ = [
     "__version__",

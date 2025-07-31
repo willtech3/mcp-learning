@@ -13,7 +13,7 @@ from datetime import date, datetime
 import pytest
 from pydantic import ValidationError
 
-from src.models.author import Author
+from models.author import Author
 
 
 class TestAuthorModel:

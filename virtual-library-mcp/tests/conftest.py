@@ -25,17 +25,17 @@ import pytest_asyncio
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.config import ServerConfig, reset_config
-from src.database.author_repository import (
+from config import ServerConfig, reset_config
+from database.author_repository import (
     AuthorCreateSchema,
     AuthorRepository,
 )
-from src.database.book_repository import BookCreateSchema, BookRepository
-from src.database.patron_repository import (
+from database.book_repository import BookCreateSchema, BookRepository
+from database.patron_repository import (
     PatronCreateSchema,
     PatronRepository,
 )
-from src.database.schema import Base
+from database.schema import Base
 
 # === Pytest Configuration ===
 

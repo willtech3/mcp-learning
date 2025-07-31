@@ -19,10 +19,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.orm import joinedload
 
-from ..database.schema import Book as BookDB
-from ..database.schema import CheckoutRecord as CheckoutDB
-from ..database.schema import Patron as PatronDB
-from ..database.session import session_scope
+from database.schema import Book as BookDB
+from database.schema import CheckoutRecord as CheckoutDB
+from database.schema import Patron as PatronDB
+from database.session import session_scope
 
 logger = logging.getLogger(__name__)
 

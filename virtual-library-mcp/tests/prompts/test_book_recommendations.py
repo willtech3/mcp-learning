@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.prompts.book_recommendations import recommend_books
+from prompts.book_recommendations import recommend_books
 
 
 @pytest.mark.asyncio

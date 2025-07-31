@@ -4,9 +4,9 @@ from datetime import date
 
 import pytest
 
-from src.database.author_repository import AuthorCreateSchema, AuthorRepository
-from src.database.book_repository import BookCreateSchema, BookRepository
-from src.prompts.reading_plan import generate_reading_plan
+from database.author_repository import AuthorCreateSchema, AuthorRepository
+from database.book_repository import BookCreateSchema, BookRepository
+from prompts.reading_plan import generate_reading_plan
 
 
 @pytest.mark.asyncio

@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta
 import pytest
 from pydantic import ValidationError
 
-from src.models.circulation import (
+from models.circulation import (
     CheckoutRecord,
     CirculationStatus,
     ReservationRecord,

@@ -14,9 +14,9 @@ from typing import Any
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
-from ..database.book_repository import BookRepository, BookSearchParams
-from ..database.repository import PaginationParams
-from ..database.session import session_scope
+from database.book_repository import BookRepository, BookSearchParams
+from database.repository import PaginationParams
+from database.session import session_scope
 
 logger = logging.getLogger(__name__)
 

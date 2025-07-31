@@ -13,7 +13,7 @@ from datetime import date, timedelta
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from src.database import (
+from database import (
     Author,
     Book,
     CheckoutRecord,
@@ -46,7 +46,7 @@ class TestDatabaseSchema:
 
     def test_tables_created(self, session):
         """Verify all expected tables are created."""
-        from sqlalchemy import inspect  # noqa: PLC0415 - Test-specific import
+        from sqlalchemy import inspect
 
         inspector = inspect(session.bind)
         tables = inspector.get_table_names()

@@ -25,7 +25,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from ..config import get_config
+from config import get_config
+
 from .schema import Base
 
 # Configure logging for database operations

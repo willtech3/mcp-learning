@@ -14,9 +14,9 @@ from contextlib import contextmanager
 import pytest
 from pydantic import ValidationError
 
-from src.database.author_repository import AuthorCreateSchema, AuthorRepository
-from src.database.book_repository import BookCreateSchema, BookRepository
-from src.tools.search import SearchCatalogInput, search_catalog_handler
+from database.author_repository import AuthorCreateSchema, AuthorRepository
+from database.book_repository import BookCreateSchema, BookRepository
+from tools.search import SearchCatalogInput, search_catalog_handler
 
 # =============================================================================
 # INPUT VALIDATION TESTS
@@ -509,7 +509,7 @@ class TestSearchCatalogHandler:
 def test_session(test_db_session):
     """Provide a test database session."""
     # Import at module level is preferred, but we need it here for test isolation
-    from src.database.schema import Base  # noqa: PLC0415
+    from database.schema import Base
 
     # Create tables
     engine = test_db_session.bind
@@ -532,6 +532,6 @@ def mock_get_session(test_session, monkeypatch):
         yield test_session
 
     # Patch the get_session function in the search module
-    monkeypatch.setattr("src.tools.search.get_session", _mock_get_session)
+    monkeypatch.setattr("tools.search.get_session", _mock_get_session)
 
     return test_session

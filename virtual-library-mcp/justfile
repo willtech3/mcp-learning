@@ -46,12 +46,12 @@ dev:
     @echo "🚀 Starting Virtual Library MCP Server..."
     @echo "📖 The server will communicate via stdio (standard input/output)"
     @echo "🔗 Connect your MCP client to test the protocol implementation"
-    .venv/bin/python -m virtual_library_mcp.server
+    .venv/bin/python server.py
 
 # Run the server with debug logging
 dev-debug:
     @echo "🐛 Starting server with debug logging..."
-    MCP_LOG_LEVEL=DEBUG uv run python -m virtual_library_mcp.server
+    MCP_LOG_LEVEL=DEBUG .venv/bin/python server.py
 
 # === CODE QUALITY ===
 
@@ -59,26 +59,26 @@ dev-debug:
 # Ruff catches common Python issues and enforces MCP coding standards
 lint:
     @echo "🔍 Running ruff linter..."
-    uv run ruff check src/ tests/
+    uv run ruff check . tests/
     @echo "✅ Linting complete!"
 
 # Fix auto-fixable linting issues
 lint-fix:
     @echo "🔧 Auto-fixing linting issues..."
-    uv run ruff check --fix src/ tests/
+    uv run ruff check --fix . tests/
     @echo "✅ Auto-fixes applied!"
 
 # Format code with ruff
 # Consistent formatting is crucial for MCP protocol implementation readability
 format:
     @echo "✨ Formatting code with ruff..."
-    uv run ruff format src/ tests/
+    uv run ruff format . tests/
     @echo "✅ Code formatted!"
 
 # Check formatting without making changes
 format-check:
     @echo "📏 Checking code formatting..."
-    uv run ruff format --check src/ tests/
+    uv run ruff format --check . tests/
 
 # === TYPE CHECKING ===
 

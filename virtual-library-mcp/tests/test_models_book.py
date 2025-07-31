@@ -13,7 +13,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from src.models.book import Book
+from models.book import Book
 
 
 class TestBookModel:

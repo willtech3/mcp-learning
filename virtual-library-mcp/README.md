@@ -54,22 +54,21 @@ just dev
 
 ```text
 virtual-library-mcp/
-├── src/                    # Source code directory
-│   ├── server.py           # MCP server entry point
-│   ├── config.py           # Configuration management
-│   ├── models/             # Pydantic data models
-│   │   ├── author.py       # Author model with validation
-│   │   ├── book.py         # Book model with ISBN validation
-│   │   ├── patron.py       # Library patron model
-│   │   └── circulation.py  # Checkout/return/reservation models
-│   ├── database/           # Data access layer
-│   │   ├── schema.py       # SQLAlchemy models
-│   │   ├── session.py      # Database session management
-│   │   └── *_repository.py # Repository implementations
-│   ├── resources/          # MCP resource implementations
-│   ├── tools/              # MCP tool implementations
-│   ├── prompts/            # MCP prompt implementations
-│   └── data/               # Data files and utilities
+├── server.py               # MCP server entry point
+├── config.py               # Configuration management
+├── models/                 # Pydantic data models
+│   ├── author.py           # Author model with validation
+│   ├── book.py             # Book model with ISBN validation
+│   ├── patron.py           # Library patron model
+│   └── circulation.py      # Checkout/return/reservation models
+├── database/               # Data access layer
+│   ├── schema.py           # SQLAlchemy models
+│   ├── session.py          # Database session management
+│   └── *_repository.py     # Repository implementations
+├── resources/              # MCP resource implementations
+├── tools/                  # MCP tool implementations
+├── prompts/                # MCP prompt implementations
+├── data/                   # Data files and utilities
 ├── tests/                  # Comprehensive test suite
 ├── docs/                   # Project documentation
 └── justfile               # Task automation

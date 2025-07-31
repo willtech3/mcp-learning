@@ -26,8 +26,8 @@ from sqlalchemy import asc, desc, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from ..database.schema import Base
-from ..database.session import mcp_safe_commit, mcp_safe_query
+from database.schema import Base
+from database.session import mcp_safe_commit, mcp_safe_query
 
 # Type variables for generic repository
 ModelType = TypeVar("ModelType", bound=Base)

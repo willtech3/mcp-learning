@@ -11,10 +11,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..database.book_repository import BookRepository, BookSearchParams, BookSortOptions
-from ..database.repository import PaginationParams
-from ..database.session import get_session
-from ..models.book import Book
+from database.book_repository import BookRepository, BookSearchParams, BookSortOptions
+from database.repository import PaginationParams
+from database.session import get_session
+from models.book import Book
 
 logger = logging.getLogger(__name__)
 

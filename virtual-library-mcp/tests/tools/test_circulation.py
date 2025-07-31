@@ -14,29 +14,29 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from src.database.schema import (
+from database.schema import (
     Author as AuthorDB,
 )
-from src.database.schema import (
+from database.schema import (
     Book as BookDB,
 )
-from src.database.schema import (
+from database.schema import (
     CheckoutRecord as CheckoutDB,
 )
-from src.database.schema import (
+from database.schema import (
     CirculationStatusEnum,
     ReservationStatusEnum,
 )
-from src.database.schema import (
+from database.schema import (
     Patron as PatronDB,
 )
-from src.database.schema import (
+from database.schema import (
     ReservationRecord as ReservationDB,
 )
-from src.database.schema import (
+from database.schema import (
     ReturnRecord as ReturnDB,
 )
-from src.tools.circulation import (
+from tools.circulation import (
     checkout_book_handler,
     reserve_book_handler,
     return_book_handler,
@@ -702,6 +702,6 @@ def mock_get_session(test_db_session, monkeypatch):
         yield test_db_session
 
     # Patch the get_session function in the circulation module
-    monkeypatch.setattr("src.tools.circulation.get_session", _mock_get_session)
+    monkeypatch.setattr("tools.circulation.get_session", _mock_get_session)
 
     return test_db_session

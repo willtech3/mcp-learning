@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.prompts.review_generator import generate_book_review
+from prompts.review_generator import generate_book_review
 
 
 @pytest.mark.asyncio

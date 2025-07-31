@@ -17,9 +17,9 @@ import sys
 from pathlib import Path
 
 # Add the src directory to Python path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from virtual_library_mcp.database import get_db_manager
+from database import get_db_manager
 
 # Configure logging
 logging.basicConfig(
@@ -41,36 +41,36 @@ def main():
     )
     parser.add_argument(
         "--sample-data",
-        action="store_true", 
+        action="store_true",
         help="Load sample data after creating tables",
     )
     parser.add_argument(
         "--database-url",
         help="Override default database URL",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Initialize database manager
     logger.info("Initializing database manager...")
     db_manager = get_db_manager(args.database_url)
-    
+
     # Verify connection
     if not db_manager.verify_connection():
         logger.error("Failed to connect to database")
         sys.exit(1)
-    
+
     # Initialize schema
     try:
         logger.info("Creating database schema...")
         db_manager.init_database(drop_existing=args.drop_existing)
         logger.info("✅ Database schema created successfully!")
-        
+
         if args.sample_data:
             logger.info("Loading sample data...")
             load_sample_data(db_manager)
             logger.info("✅ Sample data loaded successfully!")
-        
+
         # Verify tables were created
         with db_manager.session_scope() as session:
             from sqlalchemy import text
@@ -79,28 +79,28 @@ def main():
                 text("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
             )
             tables = [row[0] for row in result]
-            
+
             logger.info(f"Created tables: {', '.join(tables)}")
-            
+
             expected_tables = {
                 "authors",
-                "books", 
+                "books",
                 "patrons",
                 "checkout_records",
                 "return_records",
                 "reservation_records",
             }
-            
+
             missing_tables = expected_tables - set(tables)
             if missing_tables:
                 logger.error(f"Missing expected tables: {missing_tables}")
                 sys.exit(1)
-        
+
         logger.info("✅ Database initialization complete!")
         logger.info("The Virtual Library MCP Server is ready to use.")
-        
+
     except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
+        logger.exception(f"Database initialization failed: {e}")
         sys.exit(1)
     finally:
         db_manager.close()
@@ -109,7 +109,7 @@ def main():
 def load_sample_data(db_manager):
     """
     Load sample data for testing the MCP server.
-    
+
     This creates:
     - A few authors
     - Several books
@@ -117,16 +117,16 @@ def load_sample_data(db_manager):
     - Example checkouts and reservations
     """
     from datetime import date, datetime, timedelta
-    
-    from virtual_library_mcp.database import (
-        Author,
-        Book,
-        CheckoutRecord,
-        Patron,
-        PatronStatusEnum,
-        ReservationRecord,
-    )
-    
+
+    from database import (
+    Author,
+    Book,
+    CheckoutRecord,
+    Patron,
+    PatronStatusEnum,
+    ReservationRecord,
+)
+
     with db_manager.session_scope() as session:
         # Create authors
         authors = [
@@ -157,7 +157,7 @@ def load_sample_data(db_manager):
         ]
         session.add_all(authors)
         session.flush()  # Ensure authors are available for books
-        
+
         # Create books
         books = [
             Book(
@@ -193,7 +193,7 @@ def load_sample_data(db_manager):
         ]
         session.add_all(books)
         session.flush()
-        
+
         # Create patrons
         patrons = [
             Patron(
@@ -208,7 +208,7 @@ def load_sample_data(db_manager):
             ),
             Patron(
                 id="patron_doe_jane",
-                name="Jane Doe", 
+                name="Jane Doe",
                 email="jane.doe@example.com",
                 phone="5559876543",
                 membership_date=date(2023, 6, 1),
@@ -219,7 +219,7 @@ def load_sample_data(db_manager):
         ]
         session.add_all(patrons)
         session.flush()
-        
+
         # Create an active checkout
         checkout = CheckoutRecord(
             id="checkout_202401150001",
@@ -229,7 +229,7 @@ def load_sample_data(db_manager):
             due_date=date.today() + timedelta(days=7),
         )
         session.add(checkout)
-        
+
         # Create a reservation
         reservation = ReservationRecord(
             id="reservation_202401150001",
@@ -240,7 +240,7 @@ def load_sample_data(db_manager):
             queue_position=1,
         )
         session.add(reservation)
-        
+
         logger.info(f"Created {len(authors)} authors")
         logger.info(f"Created {len(books)} books")
         logger.info(f"Created {len(patrons)} patrons")
