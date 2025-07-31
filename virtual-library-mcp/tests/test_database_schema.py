@@ -12,7 +12,8 @@ from datetime import date, timedelta
 
 import pytest
 from sqlalchemy.exc import IntegrityError
-from virtual_library_mcp.database import (
+
+from src.database import (
     Author,
     Book,
     CheckoutRecord,

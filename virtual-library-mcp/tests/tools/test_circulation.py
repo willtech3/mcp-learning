@@ -13,29 +13,30 @@ from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 
 import pytest
-from virtual_library_mcp.database.schema import (
+
+from src.database.schema import (
     Author as AuthorDB,
 )
-from virtual_library_mcp.database.schema import (
+from src.database.schema import (
     Book as BookDB,
 )
-from virtual_library_mcp.database.schema import (
+from src.database.schema import (
     CheckoutRecord as CheckoutDB,
 )
-from virtual_library_mcp.database.schema import (
+from src.database.schema import (
     CirculationStatusEnum,
     ReservationStatusEnum,
 )
-from virtual_library_mcp.database.schema import (
+from src.database.schema import (
     Patron as PatronDB,
 )
-from virtual_library_mcp.database.schema import (
+from src.database.schema import (
     ReservationRecord as ReservationDB,
 )
-from virtual_library_mcp.database.schema import (
+from src.database.schema import (
     ReturnRecord as ReturnDB,
 )
-from virtual_library_mcp.tools.circulation import (
+from src.tools.circulation import (
     checkout_book_handler,
     reserve_book_handler,
     return_book_handler,
@@ -701,6 +702,6 @@ def mock_get_session(test_db_session, monkeypatch):
         yield test_db_session
 
     # Patch the get_session function in the circulation module
-    monkeypatch.setattr("virtual_library_mcp.tools.circulation.get_session", _mock_get_session)
+    monkeypatch.setattr("src.tools.circulation.get_session", _mock_get_session)
 
     return test_db_session

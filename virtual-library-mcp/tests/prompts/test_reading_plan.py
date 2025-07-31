@@ -3,9 +3,10 @@
 from datetime import date
 
 import pytest
-from virtual_library_mcp.database.author_repository import AuthorCreateSchema, AuthorRepository
-from virtual_library_mcp.database.book_repository import BookCreateSchema, BookRepository
-from virtual_library_mcp.prompts.reading_plan import generate_reading_plan
+
+from src.database.author_repository import AuthorCreateSchema, AuthorRepository
+from src.database.book_repository import BookCreateSchema, BookRepository
+from src.prompts.reading_plan import generate_reading_plan
 
 
 @pytest.mark.asyncio

@@ -12,7 +12,8 @@ from datetime import date, timedelta
 
 import pytest
 from pydantic import ValidationError
-from virtual_library_mcp.models.patron import Patron, PatronStatus
+
+from src.models.patron import Patron, PatronStatus
 
 
 class TestPatronModel:

@@ -17,10 +17,11 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastmcp import Context
 from fastmcp.exceptions import ResourceError
-from virtual_library_mcp.database.book_repository import BookSortOptions
-from virtual_library_mcp.database.repository import PaginatedResponse
-from virtual_library_mcp.models.book import Book
-from virtual_library_mcp.resources.books import (
+
+from src.database.book_repository import BookSortOptions
+from src.database.repository import PaginatedResponse
+from src.models.book import Book
+from src.resources.books import (
     BookListResponse,
     book_resources,
     get_book_handler,
@@ -97,11 +98,11 @@ class TestBookListResource:
         )
 
         # Mock the repository
-        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+        with patch("src.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
             mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+            with patch("src.resources.books.BookRepository") as MockBookRepo:
                 # Create a mock instance with the search method
                 mock_repo = Mock()
                 # Make search return the paginated response (not async)
@@ -151,11 +152,11 @@ class TestBookListResource:
             has_previous=False,
         )
 
-        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+        with patch("src.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
             mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+            with patch("src.resources.books.BookRepository") as MockBookRepo:
                 # Create a mock instance with the search method
                 mock_repo = Mock()
                 # Make search return the paginated response (not async)
@@ -182,11 +183,11 @@ class TestBookListResource:
     @pytest.mark.asyncio
     async def test_list_books_error_handling(self, mock_context):
         """Test error handling in list resource."""
-        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+        with patch("src.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
             mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+            with patch("src.resources.books.BookRepository") as MockBookRepo:
                 mock_repo = Mock()
                 mock_repo.search.side_effect = Exception("Database connection failed")
                 MockBookRepo.return_value = mock_repo
@@ -208,11 +209,11 @@ class TestBookDetailResource:
         """Test retrieving a book by ISBN."""
         isbn = "978-0-134-68547-9"
 
-        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+        with patch("src.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
             mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+            with patch("src.resources.books.BookRepository") as MockBookRepo:
                 mock_repo = Mock()
                 mock_repo.get_by_isbn.return_value = sample_book
                 MockBookRepo.return_value = mock_repo
@@ -232,11 +233,11 @@ class TestBookDetailResource:
         """Test 404 behavior for non-existent book."""
         isbn = "978-0-000-00000-0"
 
-        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+        with patch("src.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
             mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+            with patch("src.resources.books.BookRepository") as MockBookRepo:
                 mock_repo = Mock()
                 mock_repo.get_by_isbn.return_value = None  # Book not found
                 MockBookRepo.return_value = mock_repo
@@ -256,11 +257,11 @@ class TestBookDetailResource:
         # Test with an invalid ISBN that the repository can't find
         invalid_isbn = "invalid-isbn-format"
 
-        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+        with patch("src.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
             mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+            with patch("src.resources.books.BookRepository") as MockBookRepo:
                 mock_repo = Mock()
                 # Repository returns None for invalid ISBN
                 mock_repo.get_by_isbn.return_value = None
@@ -277,11 +278,11 @@ class TestBookDetailResource:
         """Test error handling for database failures."""
         isbn = "978-0-134-68547-9"
 
-        with patch("virtual_library_mcp.resources.books.session_scope") as mock_session_scope:
+        with patch("src.resources.books.session_scope") as mock_session_scope:
             mock_session = AsyncMock()
             mock_session_scope.return_value.__enter__.return_value = mock_session
 
-            with patch("virtual_library_mcp.resources.books.BookRepository") as MockBookRepo:
+            with patch("src.resources.books.BookRepository") as MockBookRepo:
                 mock_repo = Mock()
                 mock_repo.get_by_isbn.side_effect = Exception("Connection timeout")
                 MockBookRepo.return_value = mock_repo

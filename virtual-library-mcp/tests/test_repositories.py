@@ -10,7 +10,8 @@ from datetime import date, timedelta
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from virtual_library_mcp.database import (
+
+from src.database import (
     AuthorRepository,
     Base,
     BookRepository,
@@ -18,21 +19,21 @@ from virtual_library_mcp.database import (
     PaginationParams,
     PatronRepository,
 )
-from virtual_library_mcp.database.author_repository import (
+from src.database.author_repository import (
     AuthorCreateSchema,
     AuthorSearchParams,
 )
-from virtual_library_mcp.database.book_repository import (
+from src.database.book_repository import (
     BookCreateSchema,
     BookSearchParams,
     BookUpdateSchema,
 )
-from virtual_library_mcp.database.circulation_repository import (
+from src.database.circulation_repository import (
     CheckoutCreateSchema,
     ReservationCreateSchema,
     ReturnProcessSchema,
 )
-from virtual_library_mcp.database.patron_repository import (
+from src.database.patron_repository import (
     PatronCreateSchema,
     PatronSearchParams,
 )

@@ -1,7 +1,8 @@
 """Tests for book review generator prompt functionality."""
 
 import pytest
-from virtual_library_mcp.prompts.review_generator import generate_book_review
+
+from src.prompts.review_generator import generate_book_review
 
 
 @pytest.mark.asyncio

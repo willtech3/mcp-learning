@@ -12,7 +12,8 @@ from datetime import date, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
-from virtual_library_mcp.models.circulation import (
+
+from src.models.circulation import (
     CheckoutRecord,
     CirculationStatus,
     ReservationRecord,
