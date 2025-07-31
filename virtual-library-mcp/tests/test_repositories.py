@@ -9,9 +9,9 @@ from datetime import date, timedelta
 
 import pytest
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
-from src.database import (
+from database import (
     AuthorRepository,
     Base,
     BookRepository,
@@ -19,39 +19,39 @@ from src.database import (
     PaginationParams,
     PatronRepository,
 )
-from src.database.author_repository import (
+from database.author_repository import (
     AuthorCreateSchema,
     AuthorSearchParams,
 )
-from src.database.book_repository import (
+from database.book_repository import (
     BookCreateSchema,
     BookSearchParams,
     BookUpdateSchema,
 )
-from src.database.circulation_repository import (
+from database.circulation_repository import (
     CheckoutCreateSchema,
     ReservationCreateSchema,
     ReturnProcessSchema,
 )
-from src.database.patron_repository import (
+from database.patron_repository import (
     PatronCreateSchema,
     PatronSearchParams,
 )
 
 
 @pytest.fixture
-def test_session():
+def test_session() -> Session:
     """Create a test database session."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    SessionLocal = sessionmaker(bind=engine)
+    session = SessionLocal()
     yield session
     session.close()
 
 
 @pytest.fixture
-def repositories(test_session):
+def repositories(test_session: Session) -> dict[str, object]:
     """Create repository instances."""
     return {
         "book": BookRepository(test_session),
@@ -61,7 +61,7 @@ def repositories(test_session):
     }
 
 
-def test_author_repository_crud(repositories):
+def test_author_repository_crud(repositories: dict[str, object]) -> None:
     """Test basic CRUD operations for authors."""
     author_repo = repositories["author"]
 
@@ -90,7 +90,7 @@ def test_author_repository_crud(repositories):
     assert len(result.items) == 1
 
 
-def test_book_repository_search(repositories):
+def test_book_repository_search(repositories: dict[str, object]) -> None:
     """Test book search functionality."""
     author_repo = repositories["author"]
     book_repo = repositories["book"]
@@ -134,7 +134,7 @@ def test_book_repository_search(repositories):
     assert results.items[0].isbn == "9780061120084"
 
 
-def test_circulation_workflow(repositories):
+def test_circulation_workflow(repositories: dict[str, object]) -> None:
     """Test complete circulation workflow."""
     # Create test data
     author = repositories["author"].create(AuthorCreateSchema(name="Test Author"))
@@ -179,7 +179,7 @@ def test_circulation_workflow(repositories):
     assert active.items[0].id == checkout.id
 
 
-def test_pagination(repositories):
+def test_pagination(repositories: dict[str, object]) -> None:
     """Test pagination functionality."""
     author_repo = repositories["author"]
 
@@ -205,7 +205,7 @@ def test_pagination(repositories):
     assert page3.has_previous is True
 
 
-def test_book_update(repositories):
+def test_book_update(repositories: dict[str, object]) -> None:
     """Test book update functionality."""
     author_repo = repositories["author"]
     book_repo = repositories["book"]
@@ -243,7 +243,7 @@ def test_book_update(repositories):
         book_repo.update(book.isbn, update_data)
 
 
-def test_patron_edge_cases(repositories):
+def test_patron_edge_cases(repositories: dict[str, object]) -> None:
     """Test patron repository edge cases."""
     patron_repo = repositories["patron"]
 
@@ -261,7 +261,7 @@ def test_patron_edge_cases(repositories):
     assert results.items[0].id == patron1.id
 
 
-def test_circulation_edge_cases(repositories):
+def test_circulation_edge_cases(repositories: dict[str, object]) -> None:
     """Test circulation edge cases and error handling."""
     # Create test data
     author = repositories["author"].create(AuthorCreateSchema(name="Test Author"))
@@ -323,7 +323,7 @@ def test_circulation_edge_cases(repositories):
     assert reservation.status == "pending"
 
 
-def test_return_with_fines(repositories):
+def test_return_with_fines(repositories: dict[str, object]) -> None:
     """Test return process with fine calculation."""
 
     # Create test data
@@ -375,7 +375,7 @@ def test_return_with_fines(repositories):
     assert updated_patron.outstanding_fines == 1.25
 
 
-def test_sorting_and_filtering(repositories):
+def test_sorting_and_filtering(repositories: dict[str, object]) -> None:
     """Test advanced sorting and filtering options."""
     author_repo = repositories["author"]
     book_repo = repositories["book"]

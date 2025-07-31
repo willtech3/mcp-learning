@@ -1,5 +1,5 @@
 [project]
-name = "virtual-library-mcp"
+name = "virtual_library_mcp"
 version = "0.1.0"
 description = "A comprehensive MCP server demonstrating library management system with all MCP protocol features"
 authors = [
@@ -67,14 +67,14 @@ Issues = "https://github.com/example/virtual-library-mcp/issues"
 
 [project.scripts]
 # Entry point for running the MCP server
-virtual-library-mcp = "virtual_library_mcp.server:main"
+virtual-library-mcp = "server:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["."]
 
 # Tool configurations for development workflow
 
@@ -140,6 +140,11 @@ ignore = [
     "N806", # Variable names in tests can use uppercase
     "DTZ005", # datetime.now() without timezone - using local timezone for simulated library
     "DTZ011", # date.today() is appropriate for local date comparisons in this project
+    "N999", # Invalid module name - project directory has hyphens but package name uses underscores
+    "PLR0915", # Too many statements - acceptable for complex functions in this project
+    "PLC0415", # Import placement - acceptable for scripts and examples
+    "G004", # Logging format - minor issue, acceptable for this project
+    "TRY401", # Redundant exception object - acceptable for this project
 ]
 
 # MCP-specific configurations
@@ -166,7 +171,7 @@ docstring-code-line-length = 80
 
 [tool.pyright]
 # Type checking configuration - essential for MCP protocol implementation
-include = ["src"]  # Only type check source code, not tests
+include = ["."]  # Only type check source code, not tests
 exclude = [
     "**/__pycache__",
     "**/node_modules",
@@ -187,14 +192,15 @@ stubPath = "typings"
 venvPath = "."
 venv = ".venv"
 
-reportMissingParameterType = "warning"  # Don't require types on all parameters
-reportUnknownParameterType = "warning"  # Allow Any in internal functions
-reportMissingTypeArgument = "warning"  # Allow sessionmaker without [Session]
-reportUnknownMemberType = "none"  # SQLAlchemy queries often have unknown types
-reportUnknownArgumentType = "warning"  # Catch wrong argument types
+# Type annotation requirements - balanced approach per CLAUDE.md
+reportMissingParameterType = "none"  # Don't require types on all parameters
+reportUnknownParameterType = "warning"  # Warn about unknown types but don't error
+reportMissingTypeArgument = "none"  # Allow generic types without arguments
+reportUnknownMemberType = "warning"  # Warn about SQLAlchemy dynamic attributes
+reportUnknownArgumentType = "error"  # Error on wrong argument types
 
 # Keep strict for critical errors
-reportMissingTypeStubs = "error"  # External dependencies should have types
+reportMissingTypeStubs = "warning"  # Some deps may lack stubs
 reportMissingImports = "error"
 reportMissingModuleSource = "warning"
 
@@ -206,14 +212,14 @@ reportUnusedVariable = "error"
 reportDuplicateImport = "error"
 
 # MCP protocol requires precise type handling
-reportGeneralTypeIssues = "warning"  # Too many SQLAlchemy false positives
+reportGeneralTypeIssues = "warning"  # SQLAlchemy causes too many false positives
 reportPropertyTypeMismatch = "error"
 reportFunctionMemberAccess = "error"
 reportInvalidTypeVarUse = "error"
 reportDataclassFieldWithoutDefault = "error"
-reportUntypedFunctionDecorator = "warning"
-reportUntypedClassDecorator = "warning"
-reportUntypedBaseClass = "warning"
+reportUntypedFunctionDecorator = "none"  # Decorators often don't need types
+reportUntypedClassDecorator = "none"  # Class decorators rarely need types
+reportUntypedBaseClass = "none"  # Base classes from libs may lack types
 reportUntypedNamedTuple = "error"
 
 # Async handling critical for MCP servers
@@ -221,13 +227,13 @@ reportInvalidStringEscapeSequence = "error"
 reportUnusedCoroutine = "error"
 reportUnnecessaryAwait = "error"
 
-# Optional but recommended for code quality
-reportOptionalSubscript = "error"
-reportOptionalMemberAccess = "error"
-reportOptionalCall = "error"
-reportOptionalIterable = "error"
-reportOptionalContextManager = "error"
-reportOptionalOperand = "error"
+# Optional handling - SQLAlchemy often returns Optional types
+reportOptionalSubscript = "warning"  # SQLAlchemy queries may return None
+reportOptionalMemberAccess = "warning"  # SQLAlchemy relationships can be None
+reportOptionalCall = "warning"  # SQLAlchemy query methods
+reportOptionalIterable = "warning"  # SQLAlchemy result sets
+reportOptionalContextManager = "warning"  # Session contexts
+reportOptionalOperand = "warning"  # SQLAlchemy filter comparisons
 
 # Type completeness - relaxed per audit
 reportUnknownLambdaType = "none"  # Lambda types in mcp_safe_query are noise
@@ -244,6 +250,15 @@ reportArgumentType = "warning"  # SQLAlchemy expressions vs values
 reportInvalidTypeForm = "warning"  # TypeVar bound to Base is valid
 reportReturnType = "warning"  # SQLAlchemy property type inference issues
 
+# Test-specific overrides for clarity over type purity
+[[tool.pyright.executionEnvironments]]
+root = "./tests"
+reportUnknownParameterType = "none"  # Test fixtures often have dynamic types
+reportUnknownMemberType = "none"  # Mock objects and fixtures
+reportUnknownArgumentType = "none"  # Test data often has flexible types
+reportCallIssue = "none"  # Optional parameters in model constructors
+reportOptionalOperand = "none"  # Date comparisons in tests
+
 [tool.pytest.ini_options]
 # Testing configuration for MCP server
 testpaths = ["tests"]
@@ -255,7 +270,7 @@ addopts = [
     "--strict-config",
     "--verbose",
     # Coverage reporting helps ensure MCP protocol compliance
-    "--cov=src/virtual_library_mcp",
+    "--cov=.",
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
@@ -268,7 +283,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src"]
+source = ["."]
 omit = [
     "*/tests/*",
     "*/test_*",

@@ -13,7 +13,7 @@ from datetime import date, timedelta
 import pytest
 from pydantic import ValidationError
 
-from src.models.patron import Patron, PatronStatus
+from models.patron import Patron, PatronStatus
 
 
 class TestPatronModel:
@@ -141,6 +141,7 @@ class TestPatronModel:
             membership_date=date(2023, 1, 1),
             expiration_date=date(2024, 1, 1),
         )
+        assert patron.expiration_date is not None
         assert patron.membership_date < patron.expiration_date
 
         # Membership date in future
@@ -403,6 +404,7 @@ class TestPatronModel:
         )
 
         patron.renew_membership(years=1)
+        assert patron.expiration_date is not None
         assert patron.expiration_date.year == date.today().year + 1
         assert patron.status == PatronStatus.ACTIVE
 
@@ -417,7 +419,9 @@ class TestPatronModel:
         )
 
         original_expiration = patron.expiration_date
+        assert original_expiration is not None
         patron.renew_membership(years=2)
+        assert patron.expiration_date is not None
         assert patron.expiration_date.year == original_expiration.year + 2
 
         # Invalid renewal period
