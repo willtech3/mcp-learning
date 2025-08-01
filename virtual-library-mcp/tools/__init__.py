@@ -21,6 +21,8 @@ The tools module follows MCP best practices:
 
 from .circulation import checkout_book, reserve_book, return_book
 from .search import search_catalog
+from .bulk_import import bulk_import_books
+from .catalog_maintenance import regenerate_catalog_tool
 
 # Export all tools for server registration
 # WHY: The server needs a single list of all available tools
@@ -31,6 +33,16 @@ all_tools = [
     checkout_book,
     return_book,
     reserve_book,
+    bulk_import_books,
+    regenerate_catalog_tool,
 ]
 
-__all__ = ["all_tools", "checkout_book", "reserve_book", "return_book", "search_catalog"]
+__all__ = [
+    "all_tools", 
+    "checkout_book", 
+    "reserve_book", 
+    "return_book", 
+    "search_catalog",
+    "bulk_import_books",
+    "regenerate_catalog_tool",
+]

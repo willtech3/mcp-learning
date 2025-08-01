@@ -1,0 +1,43 @@
+[
+  {
+    "isbn": "978-9-01-234567-8",
+    "title": "The Cloud Architect's Guide",
+    "author_name": "Alexandra Kumar",
+    "genre": "Technology",
+    "publication_year": 2023,
+    "available_copies": 4,
+    "total_copies": 5
+  },
+  {
+    "isbn": "978-0-98-765432-1",
+    "title": "Midnight in Tokyo",
+    "author_name": "James Nakamura",
+    "genre": "Fiction",
+    "publication_year": 2022,
+    "available_copies": 2
+  },
+  {
+    "isbn": "978-1-11-222333-4",
+    "title": "Machine Learning Essentials",
+    "author_name": "Dr. Sarah Mitchell",
+    "genre": "Technology",
+    "publication_year": 2024,
+    "available_copies": 6
+  },
+  {
+    "isbn": "978-2-22-333444-5",
+    "title": "The Baker's Secret",
+    "author_name": "Marie Dubois",
+    "genre": "Mystery",
+    "publication_year": 2021,
+    "available_copies": 3
+  },
+  {
+    "isbn": "978-3-33-444555-6",
+    "title": "Understanding Psychology",
+    "author_name": "Dr. Richard Cohen",
+    "genre": "Science",
+    "publication_year": 2023,
+    "available_copies": 5
+  }
+]
