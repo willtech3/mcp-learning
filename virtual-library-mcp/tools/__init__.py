@@ -19,6 +19,8 @@ The tools module follows MCP best practices:
 - Atomic operations with rollback on failure
 """
 
+from .bulk_import import bulk_import_books
+from .catalog_maintenance import regenerate_catalog_tool
 from .circulation import checkout_book, reserve_book, return_book
 from .search import search_catalog
 
@@ -31,6 +33,16 @@ all_tools = [
     checkout_book,
     return_book,
     reserve_book,
+    bulk_import_books,
+    regenerate_catalog_tool,
 ]
 
-__all__ = ["all_tools", "checkout_book", "reserve_book", "return_book", "search_catalog"]
+__all__ = [
+    "all_tools",
+    "bulk_import_books",
+    "checkout_book",
+    "regenerate_catalog_tool",
+    "reserve_book",
+    "return_book",
+    "search_catalog",
+]
