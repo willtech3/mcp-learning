@@ -15,7 +15,6 @@ The generated data includes:
 """
 
 import random
-import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -23,10 +22,7 @@ from faker import Faker
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-# Add the src directory to the path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from virtual_library_mcp.database.schema import (
+from database.schema import (
     Author,
     Base,
     Book,
@@ -315,7 +311,7 @@ def generate_circulation_history(
     active_patrons = [p for p in patrons if p.status == PatronStatusEnum.ACTIVE]
 
     # Track books currently checked out by each patron
-    patron_checkouts: dict[str, list[str]] = {p.id: [] for p in patrons}
+    patron_checkouts = {p.id: [] for p in patrons}
 
     # Generate historical checkouts (80% returned)
     for i in range(int(num_checkouts * 0.8)):

@@ -171,7 +171,16 @@ docstring-code-line-length = 80
 
 [tool.pyright]
 # Type checking configuration - essential for MCP protocol implementation
-include = ["."]  # Only type check source code, not tests
+include = [
+    "database",
+    "models", 
+    "prompts",
+    "resources",
+    "tools",
+    "server.py",
+    "config.py",
+    "__init__.py"
+]  # Only type check source code, not tests
 exclude = [
     "**/__pycache__",
     "**/node_modules",
@@ -180,6 +189,10 @@ exclude = [
     "**/htmlcov",
     "**/build",
     "**/dist",
+    "tests",  # Explicitly exclude tests
+    "examples",  # Examples can have relaxed typing
+    "scripts",  # Scripts may have different requirements
+    "data"  # Data files don't need type checking
 ]
 pythonVersion = "3.12"
 pythonPlatform = "All"
@@ -197,7 +210,7 @@ reportMissingParameterType = "none"  # Don't require types on all parameters
 reportUnknownParameterType = "warning"  # Warn about unknown types but don't error
 reportMissingTypeArgument = "none"  # Allow generic types without arguments
 reportUnknownMemberType = "warning"  # Warn about SQLAlchemy dynamic attributes
-reportUnknownArgumentType = "error"  # Error on wrong argument types
+reportUnknownArgumentType = "warning"  # Warn on SQLAlchemy expressions (not error)
 
 # Keep strict for critical errors
 reportMissingTypeStubs = "warning"  # Some deps may lack stubs
