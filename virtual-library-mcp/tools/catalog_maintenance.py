@@ -64,7 +64,7 @@ async def regenerate_catalog(ctx: Context) -> dict[str, Any]:
         "search_indexes": index_results,
         "circulation_stats": stats_results,
         "recommendations_cache": cache_results,
-        "message": "Catalog regeneration completed successfully"
+        "message": "Catalog regeneration completed successfully",
     }
 
 
@@ -76,7 +76,7 @@ async def _verify_data_integrity(
         "books_checked": 0,
         "orphaned_books": 0,
         "missing_authors": 0,
-        "invalid_circulations": 0
+        "invalid_circulations": 0,
     }
 
     with session_scope() as session:
@@ -86,14 +86,12 @@ async def _verify_data_integrity(
 
         # Check for orphaned books (no author)
         await ctx.report_progress(
-            progress=start_progress + 5,
-            total=100,
-            message="Checking for orphaned books"
+            progress=start_progress + 5, total=100, message="Checking for orphaned books"
         )
 
-        orphaned = session.query(func.count(BookDB.isbn)).filter(
-            BookDB.author_id.is_(None)
-        ).scalar() or 0
+        orphaned = (
+            session.query(func.count(BookDB.isbn)).filter(BookDB.author_id.is_(None)).scalar() or 0
+        )
         results["orphaned_books"] = orphaned
 
         if orphaned > 0:
@@ -101,15 +99,16 @@ async def _verify_data_integrity(
 
         # Check for invalid circulations
         await ctx.report_progress(
-            progress=start_progress + 10,
-            total=100,
-            message="Validating circulation records"
+            progress=start_progress + 10, total=100, message="Validating circulation records"
         )
 
         # Find circulations with non-existent books or patrons
-        invalid_circs = session.query(func.count(CheckoutRecord.id)).filter(
-            ~CheckoutRecord.book.has() | ~CheckoutRecord.patron.has()
-        ).scalar() or 0
+        invalid_circs = (
+            session.query(func.count(CheckoutRecord.id))
+            .filter(~CheckoutRecord.book.has() | ~CheckoutRecord.patron.has())
+            .scalar()
+            or 0
+        )
         results["invalid_circulations"] = invalid_circs
 
         if invalid_circs > 0:
@@ -119,9 +118,7 @@ async def _verify_data_integrity(
         await asyncio.sleep(0.2)  # Simulate processing time
 
         await ctx.report_progress(
-            progress=end_progress,
-            total=100,
-            message="Data integrity check complete"
+            progress=end_progress, total=100, message="Data integrity check complete"
         )
 
     return results
@@ -131,11 +128,7 @@ async def _rebuild_search_indexes(
     ctx: Context, start_progress: int, end_progress: int
 ) -> dict[str, Any]:
     """Rebuild search indexes with progress reporting."""
-    results = {
-        "books_indexed": 0,
-        "authors_indexed": 0,
-        "genres_indexed": 0
-    }
+    results = {"books_indexed": 0, "authors_indexed": 0, "genres_indexed": 0}
 
     with session_scope() as session:
         # Index books
@@ -153,7 +146,7 @@ async def _rebuild_search_indexes(
             await ctx.report_progress(
                 progress=progress,
                 total=100,
-                message=f"Indexing books {i+1}-{current_batch}/{total_books}"
+                message=f"Indexing books {i + 1}-{current_batch}/{total_books}",
             )
 
             # Simulate indexing time
@@ -163,7 +156,7 @@ async def _rebuild_search_indexes(
         await ctx.report_progress(
             progress=start_progress + int(progress_range * 0.7),
             total=100,
-            message="Indexing authors"
+            message="Indexing authors",
         )
 
         total_authors = session.query(func.count(AuthorDB.id)).scalar() or 0
@@ -174,7 +167,7 @@ async def _rebuild_search_indexes(
         await ctx.report_progress(
             progress=start_progress + int(progress_range * 0.9),
             total=100,
-            message="Indexing genres"
+            message="Indexing genres",
         )
 
         unique_genres = session.query(func.count(func.distinct(BookDB.genre))).scalar() or 0
@@ -182,9 +175,7 @@ async def _rebuild_search_indexes(
         await asyncio.sleep(0.1)
 
         await ctx.report_progress(
-            progress=end_progress,
-            total=100,
-            message="Search indexes rebuilt"
+            progress=end_progress, total=100, message="Search indexes rebuilt"
         )
 
     await ctx.info(f"Indexed {total_books} books, {total_authors} authors, {unique_genres} genres")
@@ -199,7 +190,7 @@ async def _update_circulation_stats(
         "active_loans": 0,
         "overdue_loans": 0,
         "total_circulations": 0,
-        "popular_books_updated": 0
+        "popular_books_updated": 0,
     }
 
     with session_scope() as session:
@@ -207,9 +198,7 @@ async def _update_circulation_stats(
 
         # Count active loans
         await ctx.report_progress(
-            progress=start_progress + 5,
-            total=100,
-            message="Counting active loans"
+            progress=start_progress + 5, total=100, message="Counting active loans"
         )
 
         active_loans = repo.get_active_loans()
@@ -217,9 +206,7 @@ async def _update_circulation_stats(
 
         # Count overdue loans
         await ctx.report_progress(
-            progress=start_progress + 10,
-            total=100,
-            message="Checking for overdue loans"
+            progress=start_progress + 10, total=100, message="Checking for overdue loans"
         )
 
         overdue_loans = repo.get_overdue_loans()
@@ -230,9 +217,7 @@ async def _update_circulation_stats(
 
         # Update total circulation count
         await ctx.report_progress(
-            progress=start_progress + 20,
-            total=100,
-            message="Updating circulation totals"
+            progress=start_progress + 20, total=100, message="Updating circulation totals"
         )
 
         total_circs = session.query(func.count(CheckoutRecord.id)).scalar() or 0
@@ -240,9 +225,7 @@ async def _update_circulation_stats(
 
         # Simulate updating popular books cache
         await ctx.report_progress(
-            progress=end_progress - 5,
-            total=100,
-            message="Updating popular books cache"
+            progress=end_progress - 5, total=100, message="Updating popular books cache"
         )
 
         # In a real system, this would update a cache table
@@ -250,9 +233,7 @@ async def _update_circulation_stats(
         await asyncio.sleep(0.2)
 
         await ctx.report_progress(
-            progress=end_progress,
-            total=100,
-            message="Circulation statistics updated"
+            progress=end_progress, total=100, message="Circulation statistics updated"
         )
 
     return results
@@ -262,11 +243,7 @@ async def _generate_recommendations_cache(
     ctx: Context, start_progress: int, end_progress: int
 ) -> dict[str, Any]:
     """Generate recommendations cache with progress reporting."""
-    results = {
-        "patrons_processed": 0,
-        "recommendations_generated": 0,
-        "cache_size_kb": 0
-    }
+    results = {"patrons_processed": 0, "recommendations_generated": 0, "cache_size_kb": 0}
 
     with session_scope() as session:
         patron_repo = PatronRepository(session)
@@ -289,7 +266,7 @@ async def _generate_recommendations_cache(
             await ctx.report_progress(
                 progress=progress,
                 total=100,
-                message=f"Generating recommendations for patrons {i+1}-{batch_end}/{total_patrons}"
+                message=f"Generating recommendations for patrons {i + 1}-{batch_end}/{total_patrons}",
             )
 
             # Simulate recommendation generation
@@ -304,9 +281,7 @@ async def _generate_recommendations_cache(
         results["cache_size_kb"] = recommendations_count * 2  # Estimate 2KB per recommendation
 
         await ctx.report_progress(
-            progress=end_progress,
-            total=100,
-            message="Recommendations cache generated"
+            progress=end_progress, total=100, message="Recommendations cache generated"
         )
 
         await ctx.info(
@@ -332,32 +307,31 @@ async def regenerate_catalog_handler(_: dict[str, Any], ctx: Context) -> dict[st
             f"✓ Data Integrity: {result['integrity_check']['books_checked']} books checked",
         ]
 
-        if result['integrity_check']['orphaned_books'] > 0:
+        if result["integrity_check"]["orphaned_books"] > 0:
             summary_lines.append(
                 f"  ⚠ {result['integrity_check']['orphaned_books']} orphaned books found"
             )
-        if result['integrity_check']['invalid_circulations'] > 0:
+        if result["integrity_check"]["invalid_circulations"] > 0:
             summary_lines.append(
                 f"  ⚠ {result['integrity_check']['invalid_circulations']} invalid circulations found"
             )
 
-        summary_lines.extend([
-            "",
-            f"✓ Search Indexes: {result['search_indexes']['books_indexed']} books, "
-            f"{result['search_indexes']['authors_indexed']} authors, "
-            f"{result['search_indexes']['genres_indexed']} genres indexed",
-            "",
-            f"✓ Circulation Stats: {result['circulation_stats']['active_loans']} active loans, "
-            f"{result['circulation_stats']['overdue_loans']} overdue",
-            "",
-            f"✓ Recommendations: Generated for {result['recommendations_cache']['patrons_processed']} patrons "
-            f"({result['recommendations_cache']['recommendations_generated']} total recommendations)"
-        ])
+        summary_lines.extend(
+            [
+                "",
+                f"✓ Search Indexes: {result['search_indexes']['books_indexed']} books, "
+                f"{result['search_indexes']['authors_indexed']} authors, "
+                f"{result['search_indexes']['genres_indexed']} genres indexed",
+                "",
+                f"✓ Circulation Stats: {result['circulation_stats']['active_loans']} active loans, "
+                f"{result['circulation_stats']['overdue_loans']} overdue",
+                "",
+                f"✓ Recommendations: Generated for {result['recommendations_cache']['patrons_processed']} patrons "
+                f"({result['recommendations_cache']['recommendations_generated']} total recommendations)",
+            ]
+        )
 
-        return {
-            "content": [{"type": "text", "text": "\n".join(summary_lines)}],
-            "data": result
-        }
+        return {"content": [{"type": "text", "text": "\n".join(summary_lines)}], "data": result}
 
     except Exception as e:
         logger.exception("Unexpected error in regenerate_catalog tool")

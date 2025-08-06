@@ -85,8 +85,8 @@ def demonstrate_configuration():
         # This would fail validation
         ServerConfig(
             server_name="Invalid Name!",  # Contains invalid characters
-            server_version="1.0",          # Invalid version format
-            http_port=80,                  # Reserved port
+            server_version="1.0",  # Invalid version format
+            http_port=80,  # Reserved port
         )
     except Exception as e:
         print("   Validation prevented invalid configuration:")
@@ -131,8 +131,12 @@ def demonstrate_environment_override():
     print(f"   Subscriptions: {config.enable_subscriptions} (default)")
 
     # Clean up
-    for key in ["VIRTUAL_LIBRARY_SERVER_NAME", "VIRTUAL_LIBRARY_DEBUG",
-                "VIRTUAL_LIBRARY_LOG_LEVEL", "VIRTUAL_LIBRARY_ENABLE_SAMPLING"]:
+    for key in [
+        "VIRTUAL_LIBRARY_SERVER_NAME",
+        "VIRTUAL_LIBRARY_DEBUG",
+        "VIRTUAL_LIBRARY_LOG_LEVEL",
+        "VIRTUAL_LIBRARY_ENABLE_SAMPLING",
+    ]:
         os.environ.pop(key, None)
 
 

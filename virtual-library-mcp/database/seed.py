@@ -67,10 +67,7 @@ def generate_isbn13() -> str:
 
     # Calculate check digit
     isbn_without_check = f"{prefix}{group}{publisher}{title}"
-    total = sum(
-        int(digit) * (3 if i % 2 else 1)
-        for i, digit in enumerate(isbn_without_check)
-    )
+    total = sum(int(digit) * (3 if i % 2 else 1) for i, digit in enumerate(isbn_without_check))
     check_digit = (10 - (total % 10)) % 10
 
     return f"{isbn_without_check}{check_digit}"
@@ -87,18 +84,33 @@ def generate_authors(num_authors: int = 120) -> list[Author]:
     """
     authors = []
     nationalities = [
-        "American", "British", "Canadian", "Australian", "Irish",
-        "French", "German", "Italian", "Spanish", "Russian",
-        "Japanese", "Chinese", "Indian", "Brazilian", "Mexican",
-        "Swedish", "Norwegian", "Danish", "Dutch", "Belgian"
+        "American",
+        "British",
+        "Canadian",
+        "Australian",
+        "Irish",
+        "French",
+        "German",
+        "Italian",
+        "Spanish",
+        "Russian",
+        "Japanese",
+        "Chinese",
+        "Indian",
+        "Brazilian",
+        "Mexican",
+        "Swedish",
+        "Norwegian",
+        "Danish",
+        "Dutch",
+        "Belgian",
     ]
 
     for i in range(num_authors):
         # Generate birth date between 1850 and 2000
         birth_year = random.randint(1850, 2000)
         birth_date = fake.date_between(
-            start_date=date(birth_year, 1, 1),
-            end_date=date(birth_year, 12, 31)
+            start_date=date(birth_year, 1, 1), end_date=date(birth_year, 12, 31)
         )
 
         # 20% chance of being deceased
@@ -106,21 +118,22 @@ def generate_authors(num_authors: int = 120) -> list[Author]:
         if random.random() < 0.2 and birth_year < 1980:
             death_year = random.randint(birth_year + 30, 2024)
             death_date = fake.date_between(
-                start_date=date(death_year, 1, 1),
-                end_date=date(min(death_year, 2024), 12, 31)
+                start_date=date(death_year, 1, 1), end_date=date(min(death_year, 2024), 12, 31)
             )
 
         author = Author(
-            id=f"author_{i+1:05d}",
+            id=f"author_{i + 1:05d}",
             name=fake.name(),
             biography=fake.text(max_nb_chars=500),
             birth_date=birth_date,
             death_date=death_date,
             nationality=random.choice(nationalities),
-            photo_url=f"https://example.com/authors/author_{i+1:05d}.jpg" if random.random() > 0.3 else None,
+            photo_url=f"https://example.com/authors/author_{i + 1:05d}.jpg"
+            if random.random() > 0.3
+            else None,
             website=fake.url() if random.random() > 0.5 else None,
             created_at=fake.date_time_between(start_date="-2y", end_date="now"),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
         authors.append(author)
 
@@ -139,18 +152,50 @@ def generate_books(authors: list[Author], num_books: int = 1200) -> list[Book]:
     books = []
 
     genres = [
-        "Fiction", "Mystery", "Science Fiction", "Fantasy", "Romance",
-        "Thriller", "Horror", "Biography", "History", "Science",
-        "Self-Help", "Business", "Psychology", "Philosophy", "Poetry",
-        "Drama", "Comedy", "Adventure", "Children's", "Young Adult"
+        "Fiction",
+        "Mystery",
+        "Science Fiction",
+        "Fantasy",
+        "Romance",
+        "Thriller",
+        "Horror",
+        "Biography",
+        "History",
+        "Science",
+        "Self-Help",
+        "Business",
+        "Psychology",
+        "Philosophy",
+        "Poetry",
+        "Drama",
+        "Comedy",
+        "Adventure",
+        "Children's",
+        "Young Adult",
     ]
 
     # Genre weights for realistic distribution
     genre_weights = [
-        20, 15, 12, 12, 10,  # Popular fiction genres
-        8, 5, 8, 10, 8,      # Mix of fiction and non-fiction
-        6, 6, 5, 5, 3,       # Non-fiction
-        4, 3, 5, 8, 10       # Other categories
+        20,
+        15,
+        12,
+        12,
+        10,  # Popular fiction genres
+        8,
+        5,
+        8,
+        10,
+        8,  # Mix of fiction and non-fiction
+        6,
+        6,
+        5,
+        5,
+        3,  # Non-fiction
+        4,
+        3,
+        5,
+        8,
+        10,  # Other categories
     ]
 
     for _ in range(num_books):
@@ -181,9 +226,11 @@ def generate_books(authors: list[Author], num_books: int = 1200) -> list[Book]:
             available_copies=available_copies,
             total_copies=total_copies,
             description=fake.text(max_nb_chars=800),
-            cover_url=f"https://example.com/covers/{generate_isbn13()}.jpg" if random.random() > 0.2 else None,
+            cover_url=f"https://example.com/covers/{generate_isbn13()}.jpg"
+            if random.random() > 0.2
+            else None,
             created_at=fake.date_time_between(start_date="-2y", end_date="now"),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
         books.append(book)
 
@@ -205,7 +252,7 @@ def generate_patrons(num_patrons: int = 60) -> list[Patron]:
         PatronStatusEnum.ACTIVE: 70,
         PatronStatusEnum.SUSPENDED: 10,
         PatronStatusEnum.EXPIRED: 15,
-        PatronStatusEnum.PENDING: 5
+        PatronStatusEnum.PENDING: 5,
     }
 
     for i in range(num_patrons):
@@ -213,10 +260,9 @@ def generate_patrons(num_patrons: int = 60) -> list[Patron]:
         membership_date = fake.date_between(start_date="-5y", end_date="today")
 
         # Status affects other fields
-        status = random.choices(
-            list(status_weights.keys()),
-            weights=list(status_weights.values())
-        )[0]
+        status = random.choices(list(status_weights.keys()), weights=list(status_weights.values()))[
+            0
+        ]
 
         # Expiration date based on status
         if status == PatronStatusEnum.EXPIRED:
@@ -227,7 +273,7 @@ def generate_patrons(num_patrons: int = 60) -> list[Patron]:
             if min_expiration < today:
                 expiration_date = fake.date_between(
                     start_date=min_expiration,
-                    end_date=today - timedelta(days=1)  # At least 1 day ago
+                    end_date=today - timedelta(days=1),  # At least 1 day ago
                 )
             else:
                 # If membership is too recent, set expiration to yesterday
@@ -235,8 +281,7 @@ def generate_patrons(num_patrons: int = 60) -> list[Patron]:
         elif status == PatronStatusEnum.ACTIVE:
             # Active patrons have future expiration dates
             expiration_date = fake.date_between(
-                start_date=date.today() + timedelta(days=1),
-                end_date="+2y"
+                start_date=date.today() + timedelta(days=1), end_date="+2y"
             )
         else:
             # Suspended or pending patrons may not have expiration dates
@@ -261,17 +306,27 @@ def generate_patrons(num_patrons: int = 60) -> list[Patron]:
 
         # Preferred genres (JSON array as string)
         num_preferred = random.randint(1, 5)
-        preferred_genres = random.sample([
-            "Fiction", "Mystery", "Science Fiction", "Fantasy", "Romance",
-            "History", "Biography", "Science", "Philosophy"
-        ], num_preferred)
+        preferred_genres = random.sample(
+            [
+                "Fiction",
+                "Mystery",
+                "Science Fiction",
+                "Fantasy",
+                "Romance",
+                "History",
+                "Biography",
+                "Science",
+                "Philosophy",
+            ],
+            num_preferred,
+        )
 
         patron = Patron(
-            id=f"patron_{i+1:05d}",
+            id=f"patron_{i + 1:05d}",
             name=fake.name(),
             email=fake.email(),
             phone=fake.phone_number()[:20],  # Limit length
-            address=fake.address().replace('\n', ', '),
+            address=fake.address().replace("\n", ", "),
             membership_date=membership_date,
             expiration_date=expiration_date,
             status=status,
@@ -283,7 +338,9 @@ def generate_patrons(num_patrons: int = 60) -> list[Patron]:
             notification_preferences='{"email": true, "sms": false}',
             created_at=membership_date,
             updated_at=datetime.now(),
-            last_activity=fake.date_time_between(start_date="-30d", end_date="now") if status == PatronStatusEnum.ACTIVE else None
+            last_activity=fake.date_time_between(start_date="-30d", end_date="now")
+            if status == PatronStatusEnum.ACTIVE
+            else None,
         )
         patrons.append(patron)
 
@@ -291,9 +348,7 @@ def generate_patrons(num_patrons: int = 60) -> list[Patron]:
 
 
 def generate_circulation_history(
-    patrons: list[Patron],
-    books: list[Book],
-    num_checkouts: int = 500
+    patrons: list[Patron], books: list[Book], num_checkouts: int = 500
 ) -> tuple[list[CheckoutRecord], list[ReturnRecord], list[ReservationRecord]]:
     """
     Generate realistic circulation history including checkouts, returns, and reservations.
@@ -324,10 +379,7 @@ def generate_circulation_history(
 
         # Return date: usually before due date, sometimes late
         if random.random() < 0.8:  # 80% returned on time
-            return_date = fake.date_time_between(
-                start_date=checkout_date,
-                end_date=due_date
-            )
+            return_date = fake.date_time_between(start_date=checkout_date, end_date=due_date)
             late_days = 0
             fine_amount = 0.0
         else:  # 20% returned late
@@ -336,7 +388,7 @@ def generate_circulation_history(
             fine_amount = late_days * 0.25  # $0.25 per day
 
         checkout = CheckoutRecord(
-            id=f"checkout_{i+1:06d}",
+            id=f"checkout_{i + 1:06d}",
             patron_id=patron.id,
             book_isbn=book.isbn,
             checkout_date=checkout_date,
@@ -348,13 +400,13 @@ def generate_circulation_history(
             fine_paid=random.random() < 0.9,  # 90% of fines are paid
             notes=fake.sentence() if random.random() < 0.1 else None,
             created_at=checkout_date,
-            updated_at=return_date
+            updated_at=return_date,
         )
         checkouts.append(checkout)
 
         # Create corresponding return record
         return_record = ReturnRecord(
-            id=f"return_{i+1:06d}",
+            id=f"return_{i + 1:06d}",
             checkout_id=checkout.id,
             patron_id=patron.id,
             book_isbn=book.isbn,
@@ -365,7 +417,7 @@ def generate_circulation_history(
             fine_paid=fine_amount if checkout.fine_paid else 0.0,
             notes=fake.sentence() if random.random() < 0.05 else None,
             processed_by="Library Staff",
-            created_at=return_date
+            created_at=return_date,
         )
         returns.append(return_record)
 
@@ -398,7 +450,7 @@ def generate_circulation_history(
             fine_amount = 0.0
 
         checkout = CheckoutRecord(
-            id=f"checkout_{checkout_counter+i+1:06d}",
+            id=f"checkout_{checkout_counter + i + 1:06d}",
             patron_id=patron.id,
             book_isbn=book.isbn,
             checkout_date=checkout_date,
@@ -410,7 +462,7 @@ def generate_circulation_history(
             fine_paid=False,
             notes=None,
             created_at=checkout_date,
-            updated_at=checkout_date
+            updated_at=checkout_date,
         )
         checkouts.append(checkout)
         patron_checkouts[patron.id].append(book.isbn)
@@ -431,7 +483,7 @@ def generate_circulation_history(
             reservation_date = fake.date_time_between(start_date="-1M", end_date="now")
 
             reservation = ReservationRecord(
-                id=f"reservation_{reservation_counter+1:05d}",
+                id=f"reservation_{reservation_counter + 1:05d}",
                 patron_id=patron.id,
                 book_isbn=book.isbn,
                 reservation_date=reservation_date,
@@ -442,7 +494,7 @@ def generate_circulation_history(
                 queue_position=position,
                 notes=None,
                 created_at=reservation_date,
-                updated_at=reservation_date
+                updated_at=reservation_date,
             )
             reservations.append(reservation)
             reservation_counter += 1
@@ -511,9 +563,9 @@ def seed_database(database_url: str = "sqlite:///library.db"):
         progress.update(f"Generated {len(reservations)} reservation records")
 
         # Print summary statistics
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("DATABASE SEEDING COMPLETE")
-        print("="*50)
+        print("=" * 50)
         print(f"Authors:       {len(authors):,}")
         print(f"Books:         {len(books):,}")
         print(f"Patrons:       {len(patrons):,}")
@@ -521,12 +573,18 @@ def seed_database(database_url: str = "sqlite:///library.db"):
         print(f"  - Suspended: {sum(1 for p in patrons if p.status == PatronStatusEnum.SUSPENDED)}")
         print(f"  - Expired:   {sum(1 for p in patrons if p.status == PatronStatusEnum.EXPIRED)}")
         print(f"Checkouts:     {len(checkouts):,}")
-        print(f"  - Active:    {sum(1 for c in checkouts if c.status == CirculationStatusEnum.ACTIVE)}")
-        print(f"  - Completed: {sum(1 for c in checkouts if c.status == CirculationStatusEnum.COMPLETED)}")
-        print(f"  - Overdue:   {sum(1 for c in checkouts if c.status == CirculationStatusEnum.OVERDUE)}")
+        print(
+            f"  - Active:    {sum(1 for c in checkouts if c.status == CirculationStatusEnum.ACTIVE)}"
+        )
+        print(
+            f"  - Completed: {sum(1 for c in checkouts if c.status == CirculationStatusEnum.COMPLETED)}"
+        )
+        print(
+            f"  - Overdue:   {sum(1 for c in checkouts if c.status == CirculationStatusEnum.OVERDUE)}"
+        )
         print(f"Returns:       {len(returns):,}")
         print(f"Reservations:  {len(reservations):,}")
-        print("="*50)
+        print("=" * 50)
 
     except Exception as e:
         session.rollback()

@@ -41,14 +41,11 @@ class BulkImportInput(BaseModel):
     file_path: str = Field(
         description="Path to the CSV or JSON file containing books to import",
         min_length=1,
-        examples=["/tmp/books.csv", "/data/import/catalog.json"]
+        examples=["/tmp/books.csv", "/data/import/catalog.json"],
     )
 
     batch_size: int = Field(
-        default=50,
-        description="Number of books to process in each batch",
-        ge=1,
-        le=1000
+        default=50, description="Number of books to process in each batch", ge=1, le=1000
     )
 
 
@@ -76,13 +73,13 @@ async def import_books_from_file(
         raise FileNotFoundError(f"Import file not found: {file_path}")
 
     file_type = path.suffix.lower()
-    if file_type not in ['.csv', '.json']:
+    if file_type not in [".csv", ".json"]:
         raise ValueError(f"Unsupported file type: {file_type}. Use .csv or .json")
 
     await ctx.info(f"Starting import from {path.name}")
 
     # Read and parse the file
-    books_data = _read_csv_file(path) if file_type == '.csv' else _read_json_file(path)
+    books_data = _read_csv_file(path) if file_type == ".csv" else _read_json_file(path)
 
     total_books = len(books_data)
     await ctx.info(f"Found {total_books} books to import")
@@ -94,9 +91,8 @@ async def import_books_from_file(
     start_time = time.time()
 
     with session_scope() as session:
-
         for i in range(0, total_books, batch_size):
-            batch = books_data[i:i + batch_size]
+            batch = books_data[i : i + batch_size]
             batch_num = (i // batch_size) + 1
             total_batches = (total_books + batch_size - 1) // batch_size
 
@@ -119,7 +115,7 @@ async def import_books_from_file(
                 await ctx.report_progress(
                     progress=current_book,
                     total=total_books,
-                    message=f"Importing book {current_book}/{total_books}{eta_str}"
+                    message=f"Importing book {current_book}/{total_books}{eta_str}",
                 )
 
                 try:
@@ -161,20 +157,16 @@ async def import_books_from_file(
                 await ctx.error(error_msg)
 
     # Final progress report
-    await ctx.report_progress(
-        progress=total_books,
-        total=total_books,
-        message="Import completed"
-    )
+    await ctx.report_progress(progress=total_books, total=total_books, message="Import completed")
 
     # Generate summary
     summary = {
         "total_books": total_books,
         "successful_imports": successful,
         "failed_imports": failed,
-        "success_rate": f"{(successful/total_books)*100:.1f}%" if total_books > 0 else "0%",
+        "success_rate": f"{(successful / total_books) * 100:.1f}%" if total_books > 0 else "0%",
         "errors": errors[:10] if errors else [],  # Limit errors in response
-        "errors_truncated": len(errors) > 10
+        "errors_truncated": len(errors) > 10,
     }
 
     if failed > 0:
@@ -188,24 +180,24 @@ async def import_books_from_file(
 def _read_csv_file(path: Path) -> list[dict[str, Any]]:
     """Read books data from a CSV file."""
     books = []
-    with path.open(newline='', encoding='utf-8') as f:
+    with path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             # Convert year to int if present
-            if row.get('publication_year'):
+            if row.get("publication_year"):
                 try:
-                    row['publication_year'] = int(row['publication_year'])
+                    row["publication_year"] = int(row["publication_year"])
                 except ValueError:
                     pass
 
             # Convert available_copies to int if present
-            if row.get('available_copies'):
+            if row.get("available_copies"):
                 try:
-                    row['available_copies'] = int(row['available_copies'])
+                    row["available_copies"] = int(row["available_copies"])
                 except ValueError:
-                    row['available_copies'] = 1
+                    row["available_copies"] = 1
             else:
-                row['available_copies'] = 1
+                row["available_copies"] = 1
 
             books.append(row)
     return books
@@ -213,7 +205,7 @@ def _read_csv_file(path: Path) -> list[dict[str, Any]]:
 
 def _read_json_file(path: Path) -> list[dict[str, Any]]:
     """Read books data from a JSON file."""
-    with path.open(encoding='utf-8') as f:
+    with path.open(encoding="utf-8") as f:
         data = json.load(f)
 
     if not isinstance(data, list):
@@ -226,15 +218,13 @@ def _create_book_in_db(session, data: dict[str, Any]) -> None:
     """Create a book in the database, handling author creation/lookup."""
     # Handle author name variations
     author_name = (
-        data.get('author_name') or
-        data.get('author') or
-        data.get('authors', 'Unknown Author')
+        data.get("author_name") or data.get("author") or data.get("authors", "Unknown Author")
     )
 
     # Ensure required fields
-    if not data.get('isbn'):
+    if not data.get("isbn"):
         raise ValueError("ISBN is required")
-    if not data.get('title'):
+    if not data.get("title"):
         raise ValueError("Title is required")
 
     # Find or create author
@@ -254,21 +244,21 @@ def _create_book_in_db(session, data: dict[str, Any]) -> None:
         author = AuthorDB(
             id=author_id,
             name=author_name,
-            biography=f"Author of {data.get('title', 'various works')}"
+            biography=f"Author of {data.get('title', 'various works')}",
         )
         session.add(author)
         session.flush()  # Ensure author ID is available
 
     # Create the book
     book = BookDB(
-        isbn=data['isbn'].replace('-', ''),  # Normalize ISBN
-        title=data['title'],
+        isbn=data["isbn"].replace("-", ""),  # Normalize ISBN
+        title=data["title"],
         author_id=author.id,
-        genre=data.get('genre', 'General'),
-        publication_year=data.get('publication_year'),
-        available_copies=data.get('available_copies', 1),
-        total_copies=data.get('total_copies', data.get('available_copies', 1)),
-        description=data.get('description')
+        genre=data.get("genre", "General"),
+        publication_year=data.get("publication_year"),
+        available_copies=data.get("available_copies", 1),
+        total_copies=data.get("total_copies", data.get("available_copies", 1)),
+        description=data.get("description"),
     )
     session.add(book)
 
@@ -292,9 +282,7 @@ async def bulk_import_books_handler(arguments: dict[str, Any], ctx: Context) -> 
         # Execute import
         try:
             result = await import_books_from_file(
-                file_path=params.file_path,
-                ctx=ctx,
-                batch_size=params.batch_size
+                file_path=params.file_path, ctx=ctx, batch_size=params.batch_size
             )
 
             # Format successful response
@@ -303,15 +291,12 @@ async def bulk_import_books_handler(arguments: dict[str, Any], ctx: Context) -> 
                 f"books imported successfully ({result['success_rate']})"
             )
 
-            if result['failed_imports'] > 0:
+            if result["failed_imports"] > 0:
                 summary_text += f"\n{result['failed_imports']} imports failed."
-                if result['errors']:
-                    summary_text += "\nFirst few errors:\n" + "\n".join(result['errors'][:5])
+                if result["errors"]:
+                    summary_text += "\nFirst few errors:\n" + "\n".join(result["errors"][:5])
 
-            return {
-                "content": [{"type": "text", "text": summary_text}],
-                "data": result
-            }
+            return {"content": [{"type": "text", "text": summary_text}], "data": result}
 
         except FileNotFoundError as e:
             return {
