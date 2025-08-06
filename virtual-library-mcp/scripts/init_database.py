@@ -23,8 +23,7 @@ from database import get_db_manager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -74,6 +73,7 @@ def main():
         # Verify tables were created
         with db_manager.session_scope() as session:
             from sqlalchemy import text
+
             # Use raw SQL to check tables exist
             result = session.execute(
                 text("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
@@ -119,13 +119,13 @@ def load_sample_data(db_manager):
     from datetime import date, datetime, timedelta
 
     from database import (
-    Author,
-    Book,
-    CheckoutRecord,
-    Patron,
-    PatronStatusEnum,
-    ReservationRecord,
-)
+        Author,
+        Book,
+        CheckoutRecord,
+        Patron,
+        PatronStatusEnum,
+        ReservationRecord,
+    )
 
     with db_manager.session_scope() as session:
         # Create authors
