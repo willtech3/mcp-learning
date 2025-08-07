@@ -3,20 +3,20 @@
 from datetime import datetime
 from typing import Any
 
+from fastmcp.server.middleware import Middleware, MiddlewareContext
+
 from . import logfire
 
 
-class MCPInstrumentationMiddleware:
+class MCPInstrumentationMiddleware(Middleware):
     """Middleware to trace all MCP protocol operations."""
 
     def __init__(self):
         self.start_time = datetime.now()
 
-    async def __call__(self, handler, request: dict[str, Any]) -> Any:
-        """Instrument MCP request handling."""
-        method = request.get("method", "unknown")
-        request_id = request.get("id")
-        params = request.get("params", {})
+    async def on_message(self, context: MiddlewareContext, call_next) -> Any:
+        """Instrument all MCP messages."""
+        method = context.method
 
         # Determine operation type
         operation_type = self._get_operation_type(method)
@@ -25,16 +25,21 @@ class MCPInstrumentationMiddleware:
             f"mcp.{operation_type}.{method}",
             _span_name=f"MCP {method}",
             mcp_method=method,
-            mcp_request_id=request_id,
             mcp_operation_type=operation_type,
-            mcp_jsonrpc_version=request.get("jsonrpc", "2.0"),
+            mcp_source=getattr(context, 'source', 'unknown'),
         ) as span:
-            # Add method-specific attributes
-            self._add_method_attributes(span, method, params)
+            # Try to extract attributes from the message
+            if hasattr(context, 'message'):
+                # For tool calls
+                if hasattr(context.message, 'name'):
+                    span.set_attribute("tool.name", context.message.name)
+                # For resource reads
+                elif hasattr(context.message, 'uri'):
+                    span.set_attribute("resource.uri", context.message.uri)
 
             try:
-                # Execute the actual handler
-                result = await handler(request)
+                # Execute the next middleware/handler
+                result = await call_next(context)
 
                 # Track success
                 span.set_attribute("mcp.status", "success")
@@ -64,14 +69,6 @@ class MCPInstrumentationMiddleware:
             return "sampling"
         return "system"
 
-    def _add_method_attributes(self, span, method: str, params: dict):
-        """Add method-specific attributes to span."""
-        if method == "tools/call":
-            span.set_attribute("tool.name", params.get("name", "unknown"))
-        elif method == "resources/read":
-            span.set_attribute("resource.uri", params.get("uri", "unknown"))
-        elif method == "prompts/get":
-            span.set_attribute("prompt.name", params.get("name", "unknown"))
 
     def _add_result_metrics(self, span, method: str, result: Any):
         """Add result-based metrics to span."""
