@@ -89,11 +89,14 @@ def initialize_observability(config: ObservabilityConfig | None = None):
     # Note: console_colors, console_include_timestamp, and console_verbose
     # are not direct parameters, they're part of ConsoleOptions
 
+    # Configure console output - None means use defaults, False means disable
+    console_setting = None if _config.console_output else False
+
     # If we're not sending to logfire, configure without authentication
     if not _config.send_to_logfire:
         logfire.configure(
             send_to_logfire=False,
-            console=_config.console_output,
+            console=console_setting,
         )
     elif not _config.token:
         logger.warning(
@@ -102,14 +105,14 @@ def initialize_observability(config: ObservabilityConfig | None = None):
         )
         logfire.configure(
             send_to_logfire=False,
-            console=_config.console_output,
+            console=console_setting,
         )
     else:
         logfire.configure(
             token=_config.token,
             environment=_config.environment,
             send_to_logfire=_config.send_to_logfire,
-            console=_config.console_output,
+            console=console_setting,
         )
 
     # Optionally instrument system metrics
