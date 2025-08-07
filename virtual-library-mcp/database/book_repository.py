@@ -28,6 +28,7 @@ from database.schema import Author as AuthorDB
 from database.schema import Book as BookDB
 from database.session import mcp_safe_commit, mcp_safe_query
 from models.book import Book as BookModel
+from observability.context import trace_repository_operation
 
 from .repository import (
     BaseRepository,
@@ -254,22 +255,23 @@ class BookRepository(BaseRepository[BookDB, BookCreateSchema, BookUpdateSchema, 
         Returns:
             Book model or None if not found
         """
-        # Normalize ISBN by removing hyphens
-        normalized_isbn = isbn.replace("-", "")
+        with trace_repository_operation("book", "get_by_isbn", "books"):
+            # Normalize ISBN by removing hyphens
+            normalized_isbn = isbn.replace("-", "")
 
-        query = select(BookDB).where(BookDB.isbn == normalized_isbn)
-        query = query.options(joinedload(BookDB.author))
+            query = select(BookDB).where(BookDB.isbn == normalized_isbn)
+            query = query.options(joinedload(BookDB.author))
 
-        result = mcp_safe_query(
-            self.session,
-            lambda s: s.execute(query).unique().scalar_one_or_none(),
-            "Failed to get book by ISBN",
-        )
+            result = mcp_safe_query(
+                self.session,
+                lambda s: s.execute(query).unique().scalar_one_or_none(),
+                "Failed to get book by ISBN",
+            )
 
-        if result is None:
-            return None
+            if result is None:
+                return None
 
-        return self._to_response_model(result)
+            return self._to_response_model(result)
 
     def get_by_author(
         self,

@@ -35,12 +35,9 @@ async def test_request_ai_generation_success(mock_context_with_sampling):
     # Mock the sampling response
     mock_response = CreateMessageResult(
         role="assistant",
-        content=TextContent(
-            type="text",
-            text="This is the generated AI response."
-        ),
+        content=TextContent(type="text", text="This is the generated AI response."),
         model="claude-3-sonnet",
-        stop_reason="end_turn"
+        stop_reason="end_turn",
     )
 
     # Mock the create_message method
@@ -54,7 +51,7 @@ async def test_request_ai_generation_success(mock_context_with_sampling):
         prompt="Generate something interesting",
         system_prompt="You are a helpful assistant",
         max_tokens=100,
-        temperature=0.7
+        temperature=0.7,
     )
 
     # Assert
@@ -108,12 +105,9 @@ async def test_generate_book_summary(mock_context_with_sampling):
     # Mock response
     mock_response = CreateMessageResult(
         role="assistant",
-        content=TextContent(
-            type="text",
-            text="A compelling tale of adventure and discovery..."
-        ),
+        content=TextContent(type="text", text="A compelling tale of adventure and discovery..."),
         model="claude-3-sonnet",
-        stop_reason="end_turn"
+        stop_reason="end_turn",
     )
 
     mock_context_with_sampling.request_context.session.create_message = AsyncMock(
@@ -126,7 +120,7 @@ async def test_generate_book_summary(mock_context_with_sampling):
         book_title="The Adventure",
         author="Jane Doe",
         genre="Fiction",
-        year=2023
+        year=2023,
     )
 
     # Assert
@@ -148,11 +142,10 @@ async def test_generate_reading_recommendation(mock_context_with_sampling):
     mock_response = CreateMessageResult(
         role="assistant",
         content=TextContent(
-            type="text",
-            text="Based on your love of mystery novels, I recommend..."
+            type="text", text="Based on your love of mystery novels, I recommend..."
         ),
         model="claude-3-sonnet",
-        stop_reason="end_turn"
+        stop_reason="end_turn",
     )
 
     mock_context_with_sampling.request_context.session.create_message = AsyncMock(
@@ -165,7 +158,7 @@ async def test_generate_reading_recommendation(mock_context_with_sampling):
         patron_name="John Smith",
         favorite_genres=["Mystery", "Thriller"],
         recent_books=["Gone Girl", "The Silent Patient"],
-        reading_level="adult"
+        reading_level="adult",
     )
 
     # Assert
@@ -189,17 +182,14 @@ async def test_model_preferences():
         role="assistant",
         content=TextContent(type="text", text="Response"),
         model="claude-3-sonnet",
-        stop_reason="end_turn"
+        stop_reason="end_turn",
     )
 
     context.request_context.session.create_message = AsyncMock(return_value=mock_response)
 
     # Act with custom priorities
     await request_ai_generation(
-        context=context,
-        prompt="Test",
-        intelligence_priority=0.9,
-        speed_priority=0.2
+        context=context, prompt="Test", intelligence_priority=0.9, speed_priority=0.2
     )
 
     # Assert model preferences

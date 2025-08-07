@@ -17,6 +17,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from config import get_config
+from observability import initialize_observability
 from prompts import all_prompts
 from resources import all_resources
 from tools import all_tools
@@ -33,6 +34,9 @@ logger = logging.getLogger(__name__)
 # Load configuration
 config = get_config()
 
+# Initialize observability
+initialize_observability()
+
 # Create the FastMCP server instance
 mcp = FastMCP(
     name=config.server_name,
@@ -44,6 +48,9 @@ mcp = FastMCP(
         "tools to perform actions, and prompts for AI-assisted recommendations."
     ),
 )
+
+# Add instrumentation middleware
+# Note: FastMCP doesn't directly support middleware yet, so we'll integrate differently
 
 # Register all resources with the MCP server
 

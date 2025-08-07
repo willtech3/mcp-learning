@@ -39,6 +39,9 @@ dependencies = [
     
     # HTTP client for external API integrations (future use)
     "httpx>=0.26.0",
+    
+    # Observability and monitoring with Pydantic Logfire
+    "logfire>=2.0.0",
 ]
 
 [project.optional-dependencies]
