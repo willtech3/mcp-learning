@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 InsightType = Literal["summary", "themes", "discussion_questions", "similar_books"]
 
 
-async def generate_book_insights(
+async def generate_book_insights_handler(
     context: Context,
     isbn: str = Field(description="ISBN of the book to generate insights for"),
     insight_type: InsightType = Field(
@@ -231,3 +231,15 @@ To find books similar to this one, consider:
 *Note: AI-generated personalized recommendations require a client with sampling support.*"""
 
     return base_info + "Invalid insight type requested."
+
+
+# Export as dictionary for server registration
+generate_book_insights = {
+    "name": "generate_book_insights",
+    "description": (
+        "Generate AI-powered insights about a book including summaries, themes, "
+        "discussion questions, or similar book recommendations. Demonstrates MCP "
+        "sampling integration for dynamic content generation."
+    ),
+    "handler": generate_book_insights_handler,
+}

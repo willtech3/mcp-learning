@@ -18,7 +18,7 @@ from mcp.types import CreateMessageResult, TextContent
 from database.schema import Author
 from database.schema import Book as BookDB
 from models.book import Book
-from tools.book_insights import InsightType, generate_book_insights
+from tools.book_insights import InsightType, generate_book_insights_handler
 
 
 @pytest.fixture
@@ -127,7 +127,7 @@ async def test_generate_book_insights_with_sampling_summary(
 
     # Act: Generate insights with mocked repositories
     with mock_repositories(mock_book_model):
-        result = await generate_book_insights(
+        result = await generate_book_insights_handler(
             context=mock_context_with_sampling,
             isbn="9780134110362",
             insight_type="summary"
@@ -157,7 +157,7 @@ async def test_generate_book_insights_without_sampling(
     """Test fallback behavior when sampling is not available."""
     # Act: Generate insights without sampling
     with mock_repositories(mock_book_model):
-        result = await generate_book_insights(
+        result = await generate_book_insights_handler(
             context=mock_context_without_sampling,
             isbn="9780134110362",
             insight_type="summary"
@@ -201,7 +201,7 @@ async def test_generate_book_insights_themes(
 
     # Act
     with mock_repositories(mock_book_model):
-        result = await generate_book_insights(
+        result = await generate_book_insights_handler(
             context=mock_context_with_sampling,
             isbn="9780134110362",
             insight_type="themes"
@@ -226,7 +226,7 @@ async def test_generate_book_insights_sampling_failure(
 
     # Act
     with mock_repositories(mock_book_model):
-        result = await generate_book_insights(
+        result = await generate_book_insights_handler(
             context=mock_context_with_sampling,
             isbn="9780134110362",
             insight_type="summary"
@@ -246,7 +246,7 @@ async def test_generate_book_insights_invalid_isbn(
     """Test handling of invalid ISBN."""
     # Act
     with mock_repositories(None):  # Return None for invalid ISBN
-        result = await generate_book_insights(
+        result = await generate_book_insights_handler(
             context=mock_context_with_sampling,
             isbn="invalid-isbn",
             insight_type="summary"
@@ -267,7 +267,7 @@ async def test_all_insight_types(
     for insight_type in insight_types:
         # Act
         with mock_repositories(mock_book_model):
-            result = await generate_book_insights(
+            result = await generate_book_insights_handler(
                 context=mock_context_without_sampling,
                 isbn="9780134110362",
                 insight_type=insight_type
@@ -316,7 +316,7 @@ async def test_sampling_request_parameters(
 
         # Act
         with mock_repositories(mock_book_model):
-            await generate_book_insights(
+            await generate_book_insights_handler(
                 context=mock_context_with_sampling,
                 isbn="9780134110362",
                 insight_type=insight_type
