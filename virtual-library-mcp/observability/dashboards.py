@@ -3,12 +3,12 @@
 # MCP Protocol Overview Queries
 MCP_REQUEST_RATE = """
 -- Request rate by method (last hour)
-SELECT 
+SELECT
     DATE_TRUNC('minute', timestamp) as minute,
     attributes->>'mcp_method' as method,
     COUNT(*) as requests
 FROM spans
-WHERE 
+WHERE
     name LIKE 'MCP %'
     AND timestamp > NOW() - INTERVAL '1 hour'
 GROUP BY minute, method
@@ -17,7 +17,7 @@ ORDER BY minute DESC;
 
 MCP_SLOWEST_OPERATIONS = """
 -- Slowest operations (P95)
-SELECT 
+SELECT
     attributes->>'mcp_method' as method,
     PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) as p95_ms,
     COUNT(*) as count
@@ -30,7 +30,7 @@ ORDER BY p95_ms DESC;
 # Library Operations Queries
 BOOK_CIRCULATION_TRENDS = """
 -- Book circulation trends
-SELECT 
+SELECT
     DATE_TRUNC('hour', timestamp) as hour,
     attributes->>'event_type' as event,
     attributes->>'genre' as genre,
@@ -43,7 +43,7 @@ ORDER BY hour DESC;
 
 MOST_ACTIVE_PATRONS = """
 -- Most active patrons
-SELECT 
+SELECT
     attributes->>'patron_id' as patron,
     COUNT(*) as actions
 FROM spans
@@ -57,7 +57,7 @@ LIMIT 10;
 # Error Tracking Queries
 ERROR_RATE = """
 -- Error rate by method
-SELECT 
+SELECT
     attributes->>'mcp_method' as method,
     COUNT(CASE WHEN attributes->>'mcp.status' = 'error' THEN 1 END) as errors,
     COUNT(*) as total,
