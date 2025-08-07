@@ -1,6 +1,6 @@
 """Custom metrics for Virtual Library MCP Server."""
 
-import logfire
+from . import logfire
 
 # MCP Protocol Metrics
 mcp_request_counter = logfire.metric_counter(

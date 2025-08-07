@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-import logfire
+from . import logfire
 
 
 class MCPInstrumentationMiddleware:

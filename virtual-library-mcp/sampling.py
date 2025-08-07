@@ -14,7 +14,6 @@ Key concepts demonstrated:
 
 import logging
 
-import logfire
 from fastmcp import Context
 from mcp.types import (
     CreateMessageRequestParams,
@@ -24,6 +23,7 @@ from mcp.types import (
     TextContent,
 )
 
+from observability import logfire
 from observability.metrics import ai_generation_requests, ai_generation_tokens
 
 logger = logging.getLogger(__name__)

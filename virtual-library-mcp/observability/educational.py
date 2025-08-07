@@ -1,7 +1,6 @@
 """Educational context and hints for learning MCP."""
 
 
-
 def add_educational_context(span, operation: str):
     """Add educational context to spans for learning."""
 

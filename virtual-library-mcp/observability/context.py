@@ -2,7 +2,7 @@
 
 from contextlib import contextmanager
 
-import logfire
+from . import logfire
 
 
 @contextmanager

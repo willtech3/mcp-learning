@@ -5,7 +5,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-import logfire
+from . import logfire
 
 
 def trace_tool(tool_name: str):

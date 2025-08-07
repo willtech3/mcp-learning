@@ -24,7 +24,8 @@ class ObservabilityConfig(BaseModel):
         default_factory=lambda: os.getenv("LOGFIRE_SEND", "true").lower() == "true"
     )
 
-    # Sampling
+    # Sampling - Simple uniform sampling rate for educational clarity
+    # 1.0 = sample everything, 0.1 = sample 10% of requests
     sample_rate: float = Field(default=1.0, ge=0.0, le=1.0)
 
     # Performance
