@@ -87,8 +87,8 @@ async def request_ai_generation(
             ],
             intelligence_priority=intelligence_priority,
             speed_priority=speed_priority,
-            # Cost priority is inverse of the other two
-            cost_priority=1.0 - (intelligence_priority + speed_priority) / 2,
+            # Cost priority is inverse of the other two (bounded to avoid negative values)
+            cost_priority=max(0.0, 1.0 - (intelligence_priority + speed_priority) / 2),
         )
 
         # Build the complete request parameters

@@ -234,7 +234,7 @@ To find books similar to this one, consider:
 
 
 # Export as dictionary for server registration
-generate_book_insights = {
+generate_book_insights_tool = {
     "name": "generate_book_insights",
     "description": (
         "Generate AI-powered insights about a book including summaries, themes, "
