@@ -48,7 +48,7 @@ class DevelopmentConfig(ObservabilityConfig):
 
     sample_rate: float = 1.0  # Sample everything
     console_output: bool = True
-    send_to_logfire: bool = False  # Default to False in dev (no token required)
+    send_to_logfire: bool = True  # Send to Logfire dashboard for full visibility
     debug_mode: bool = True
 
 
