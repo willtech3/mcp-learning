@@ -14,6 +14,7 @@ import signal
 import sys
 from typing import Any
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from config import get_config
@@ -21,6 +22,9 @@ from observability import initialize_observability
 from prompts import all_prompts
 from resources import all_resources
 from tools import all_tools
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize logging - stderr for logs, stdout for MCP protocol
 logging.basicConfig(

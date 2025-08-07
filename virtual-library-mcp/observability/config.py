@@ -24,15 +24,11 @@ class ObservabilityConfig(BaseModel):
         default_factory=lambda: os.getenv("LOGFIRE_SEND", "true").lower() == "true"
     )
 
-    # Sampling - Simple uniform sampling rate for educational clarity
-    # 1.0 = sample everything, 0.1 = sample 10% of requests
     sample_rate: float = Field(default=1.0, ge=0.0, le=1.0)
 
-    # Performance
     max_span_attributes: int = 50
     max_attribute_length: int = 1000
 
-    # Debug
     debug_mode: bool = Field(
         default_factory=lambda: os.getenv("LOGFIRE_DEBUG", "false").lower() == "true"
     )
@@ -41,7 +37,7 @@ class ObservabilityConfig(BaseModel):
 class ProductionConfig(ObservabilityConfig):
     """Production-specific configuration."""
 
-    sample_rate: float = 0.1  # Sample 10% of requests
+    sample_rate: float = 1.0  
     console_output: bool = False
     send_to_logfire: bool = True
     max_span_attributes: int = 30
@@ -52,7 +48,7 @@ class DevelopmentConfig(ObservabilityConfig):
 
     sample_rate: float = 1.0  # Sample everything
     console_output: bool = True
-    send_to_logfire: bool = False
+    send_to_logfire: bool = True  # Send to Logfire to see everything in dashboard
     debug_mode: bool = True
 
 

@@ -88,12 +88,31 @@ def initialize_observability(config: ObservabilityConfig | None = None):
     # Configure logfire with appropriate parameters
     # Note: console_colors, console_include_timestamp, and console_verbose
     # are not direct parameters, they're part of ConsoleOptions
-    logfire.configure(
-        token=_config.token,
-        environment=_config.environment,
-        send_to_logfire=_config.send_to_logfire,
-        console=_config.console_output,
-    )
+    
+    # If we're not sending to logfire, configure without authentication
+    if not _config.send_to_logfire:
+        logfire.configure(
+            send_to_logfire=False,
+            console=_config.console_output,
+        )
+    else:
+        # If sending to logfire, we need a token
+        if not _config.token:
+            logger.warning(
+                "LOGFIRE_TOKEN not found but send_to_logfire is True. "
+                "Disabling send_to_logfire. Set LOGFIRE_TOKEN in .env to enable."
+            )
+            logfire.configure(
+                send_to_logfire=False,
+                console=_config.console_output,
+            )
+        else:
+            logfire.configure(
+                token=_config.token,
+                environment=_config.environment,
+                send_to_logfire=_config.send_to_logfire,
+                console=_config.console_output,
+            )
 
     # Optionally instrument system metrics
     if _config.environment == "production":
