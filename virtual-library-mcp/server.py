@@ -18,7 +18,9 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from config import get_config
-from observability import initialize_observability
+from observability import LOGFIRE_AVAILABLE, initialize_observability
+from observability import get_config as get_obs_config
+from observability.middleware import MCPInstrumentationMiddleware
 from prompts import all_prompts
 from resources import all_resources
 from tools import all_tools
@@ -53,8 +55,15 @@ mcp = FastMCP(
     ),
 )
 
-# Add instrumentation middleware
-# Note: FastMCP doesn't directly support middleware yet, so we'll integrate differently
+# Add observability middleware if enabled
+obs_config = get_obs_config()
+if obs_config.enabled and LOGFIRE_AVAILABLE:
+    logger.info("Enabling observability middleware for MCP protocol tracing")
+    mcp.add_middleware(MCPInstrumentationMiddleware())
+elif not obs_config.enabled:
+    logger.debug("Observability middleware disabled via configuration")
+elif not LOGFIRE_AVAILABLE:
+    logger.debug("Observability middleware unavailable (Logfire not installed)")
 
 # Register all resources with the MCP server
 

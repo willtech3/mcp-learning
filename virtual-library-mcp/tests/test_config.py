@@ -35,7 +35,7 @@ class TestServerConfig:
         # Accept either virtual_library.db (from .env) or data/library.db (default)
         assert config.database_path in [
             Path("virtual_library.db").absolute(),
-            Path("data/library.db").absolute()
+            Path("data/library.db").absolute(),
         ]
 
         # Security: sensitive fields are None by default
