@@ -23,6 +23,7 @@ from database.circulation_repository import (
 )
 from database.repository import NotFoundError, RepositoryException
 from database.session import get_session
+
 # Observability is handled by middleware, not decorators
 
 logger = logging.getLogger(__name__)

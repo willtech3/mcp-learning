@@ -118,7 +118,7 @@ def initialize_observability(config: ObservabilityConfig | None = None):
     # Optionally instrument system metrics
     if _config.environment == "production":
         logfire.instrument_system_metrics()
-    
+
     # Instrument SQLite3 for database query tracing
     # This captures all SQL queries with timing and parameters
     try:

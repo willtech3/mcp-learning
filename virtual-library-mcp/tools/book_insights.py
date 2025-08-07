@@ -16,6 +16,7 @@ from database.author_repository import AuthorRepository
 from database.book_repository import BookRepository
 from database.session import session_scope
 from models.book import Book
+
 # Observability is handled by middleware, not decorators
 from sampling import request_ai_generation
 
