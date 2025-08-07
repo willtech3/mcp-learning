@@ -158,6 +158,9 @@ ignore = [
 "src/server.py" = [
     "PLR0913", # Many parameters OK for server initialization
 ]
+"tools/*" = [
+    "B008",  # Field() in function defaults is the FastMCP pattern for tool parameters
+]
 
 [tool.ruff.format]
 # Use double quotes for consistency with MCP protocol JSON strings
