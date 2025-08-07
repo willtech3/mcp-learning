@@ -18,6 +18,8 @@ from database.schema import Book as BookDB
 from database.schema import CheckoutRecord
 from database.session import session_scope
 
+# Observability is handled by middleware, not decorators
+
 logger = logging.getLogger(__name__)
 
 

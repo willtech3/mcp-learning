@@ -122,13 +122,13 @@ def generate_authors(num_authors: int = 120) -> list[Author]:
             )
 
         author = Author(
-            id=f"author_{i + 1:05d}",
+            id=f"author_{i + 1:06d}",
             name=fake.name(),
             biography=fake.text(max_nb_chars=500),
             birth_date=birth_date,
             death_date=death_date,
             nationality=random.choice(nationalities),
-            photo_url=f"https://example.com/authors/author_{i + 1:05d}.jpg"
+            photo_url=f"https://example.com/authors/author_{i + 1:06d}.jpg"
             if random.random() > 0.3
             else None,
             website=fake.url() if random.random() > 0.5 else None,

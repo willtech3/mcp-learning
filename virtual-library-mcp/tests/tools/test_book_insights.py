@@ -29,7 +29,7 @@ def mock_author():
         name="F. Scott Fitzgerald",
         birth_date=date(1896, 9, 24),
         nationality="American",
-        biography="American novelist and short story writer"
+        biography="American novelist and short story writer",
     )
 
 
@@ -86,8 +86,10 @@ def mock_book_model(mock_book_db):
 @contextmanager
 def mock_repositories(book_model, author_name="F. Scott Fitzgerald"):
     """Helper to mock both book and author repositories."""
-    with patch('tools.book_insights.BookRepository') as MockBookRepo, \
-         patch('tools.book_insights.AuthorRepository') as MockAuthorRepo:
+    with (
+        patch("tools.book_insights.BookRepository") as MockBookRepo,
+        patch("tools.book_insights.AuthorRepository") as MockAuthorRepo,
+    ):
         # Mock book repository
         mock_book_repo = Mock()
         mock_book_repo.get_by_isbn.return_value = book_model
@@ -114,10 +116,10 @@ async def test_generate_book_insights_with_sampling_summary(
         role="assistant",
         content=TextContent(
             type="text",
-            text="This seminal work by Andrew Hunt and David Thomas revolutionizes how developers approach their craft. Through practical wisdom and timeless principles, the authors guide readers toward becoming more effective programmers. The book covers essential topics from personal responsibility to architectural decisions, making it invaluable for developers at any stage of their career."
+            text="This seminal work by Andrew Hunt and David Thomas revolutionizes how developers approach their craft. Through practical wisdom and timeless principles, the authors guide readers toward becoming more effective programmers. The book covers essential topics from personal responsibility to architectural decisions, making it invaluable for developers at any stage of their career.",
         ),
         model="claude-3-sonnet",
-        stop_reason="end_turn"
+        stop_reason="end_turn",
     )
 
     # Mock the create_message method
@@ -128,9 +130,7 @@ async def test_generate_book_insights_with_sampling_summary(
     # Act: Generate insights with mocked repositories
     with mock_repositories(mock_book_model):
         result = await generate_book_insights_handler(
-            context=mock_context_with_sampling,
-            isbn="9780134110362",
-            insight_type="summary"
+            context=mock_context_with_sampling, isbn="9780134110362", insight_type="summary"
         )
 
     # Assert: Check the result
@@ -158,9 +158,7 @@ async def test_generate_book_insights_without_sampling(
     # Act: Generate insights without sampling
     with mock_repositories(mock_book_model):
         result = await generate_book_insights_handler(
-            context=mock_context_without_sampling,
-            isbn="9780134110362",
-            insight_type="summary"
+            context=mock_context_without_sampling, isbn="9780134110362", insight_type="summary"
         )
 
     # Assert: Check fallback response
@@ -168,13 +166,13 @@ async def test_generate_book_insights_without_sampling(
     assert "The Pragmatic Programmer" in result
     assert "Technology" in result
     assert "A classic book on software development best practices" in result
-    assert "AI-generated summaries require a client with sampling support" not in result  # Has description
+    assert (
+        "AI-generated summaries require a client with sampling support" not in result
+    )  # Has description
 
 
 @pytest.mark.asyncio
-async def test_generate_book_insights_themes(
-    mock_context_with_sampling, mock_book_model
-):
+async def test_generate_book_insights_themes(mock_context_with_sampling, mock_book_model):
     """Test generating theme analysis using sampling."""
 
     mock_response = CreateMessageResult(
@@ -189,10 +187,10 @@ async def test_generate_book_insights_themes(
 
 4. **Communication and Teamwork**: How effective communication is as important as technical skills in software development.
 
-5. **Software Entropy**: The concept of technical debt and how to prevent code decay through refactoring and maintenance."""
+5. **Software Entropy**: The concept of technical debt and how to prevent code decay through refactoring and maintenance.""",
         ),
         model="claude-3-sonnet",
-        stop_reason="end_turn"
+        stop_reason="end_turn",
     )
 
     mock_context_with_sampling.request_context.session.create_message = AsyncMock(
@@ -202,9 +200,7 @@ async def test_generate_book_insights_themes(
     # Act
     with mock_repositories(mock_book_model):
         result = await generate_book_insights_handler(
-            context=mock_context_with_sampling,
-            isbn="9780134110362",
-            insight_type="themes"
+            context=mock_context_with_sampling, isbn="9780134110362", insight_type="themes"
         )
 
     # Assert
@@ -214,9 +210,7 @@ async def test_generate_book_insights_themes(
 
 
 @pytest.mark.asyncio
-async def test_generate_book_insights_sampling_failure(
-    mock_context_with_sampling, mock_book_model
-):
+async def test_generate_book_insights_sampling_failure(mock_context_with_sampling, mock_book_model):
     """Test handling of sampling failures."""
 
     # Mock a sampling failure
@@ -227,9 +221,7 @@ async def test_generate_book_insights_sampling_failure(
     # Act
     with mock_repositories(mock_book_model):
         result = await generate_book_insights_handler(
-            context=mock_context_with_sampling,
-            isbn="9780134110362",
-            insight_type="summary"
+            context=mock_context_with_sampling, isbn="9780134110362", insight_type="summary"
         )
 
     # Assert: Should fall back gracefully
@@ -240,16 +232,12 @@ async def test_generate_book_insights_sampling_failure(
 
 
 @pytest.mark.asyncio
-async def test_generate_book_insights_invalid_isbn(
-    mock_context_with_sampling
-):
+async def test_generate_book_insights_invalid_isbn(mock_context_with_sampling):
     """Test handling of invalid ISBN."""
     # Act
     with mock_repositories(None):  # Return None for invalid ISBN
         result = await generate_book_insights_handler(
-            context=mock_context_with_sampling,
-            isbn="invalid-isbn",
-            insight_type="summary"
+            context=mock_context_with_sampling, isbn="invalid-isbn", insight_type="summary"
         )
 
     # Assert
@@ -257,12 +245,15 @@ async def test_generate_book_insights_invalid_isbn(
 
 
 @pytest.mark.asyncio
-async def test_all_insight_types(
-    mock_context_without_sampling, mock_book_model
-):
+async def test_all_insight_types(mock_context_without_sampling, mock_book_model):
     """Test all insight types work with fallback responses."""
 
-    insight_types: list[InsightType] = ["summary", "themes", "discussion_questions", "similar_books"]
+    insight_types: list[InsightType] = [
+        "summary",
+        "themes",
+        "discussion_questions",
+        "similar_books",
+    ]
 
     for insight_type in insight_types:
         # Act
@@ -270,7 +261,7 @@ async def test_all_insight_types(
             result = await generate_book_insights_handler(
                 context=mock_context_without_sampling,
                 isbn="9780134110362",
-                insight_type=insight_type
+                insight_type=insight_type,
             )
 
         # Assert
@@ -287,16 +278,14 @@ async def test_all_insight_types(
 
 
 @pytest.mark.asyncio
-async def test_sampling_request_parameters(
-    mock_context_with_sampling, mock_book_model
-):
+async def test_sampling_request_parameters(mock_context_with_sampling, mock_book_model):
     """Test that sampling requests use appropriate parameters for different insight types."""
 
     mock_response = CreateMessageResult(
         role="assistant",
         content=TextContent(type="text", text="Mock response"),
         model="claude-3-sonnet",
-        stop_reason="end_turn"
+        stop_reason="end_turn",
     )
 
     mock_create_message = AsyncMock(return_value=mock_response)
@@ -317,9 +306,7 @@ async def test_sampling_request_parameters(
         # Act
         with mock_repositories(mock_book_model):
             await generate_book_insights_handler(
-                context=mock_context_with_sampling,
-                isbn="9780134110362",
-                insight_type=insight_type
+                context=mock_context_with_sampling, isbn="9780134110362", insight_type=insight_type
             )
 
         # Assert

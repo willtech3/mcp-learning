@@ -107,6 +107,35 @@ class AuthorRepository(
     def response_schema(self):
         return AuthorModel
 
+    def _generate_author_id(self, name: str) -> str:
+        """Generate a unique author ID based on the name."""
+        import random
+        import string
+
+        # Create a base from the author's name
+        name_parts = name.lower().split()
+        if len(name_parts) >= 2:
+            # Use last name and first initial
+            base = f"{name_parts[-1]}_{name_parts[0][0]}"
+        else:
+            # Use the single name
+            base = name_parts[0] if name_parts else "unknown"
+
+        # Remove any non-alphanumeric characters
+        base = "".join(c for c in base if c.isalnum() or c == "_")
+
+        # Add random suffix to ensure uniqueness (at least 6 chars total after "author_")
+        random_suffix = "".join(random.choices(string.digits, k=4))
+
+        # Ensure the ID meets the pattern requirement (at least 6 chars after "author_")
+        author_id = f"author_{base}_{random_suffix}"
+
+        # If still too short, pad with random characters
+        while len(author_id.split("_", 1)[1]) < 6:
+            author_id += random.choice(string.ascii_lowercase + string.digits)
+
+        return author_id
+
     def create(self, data: AuthorCreateSchema) -> AuthorModel:
         """
         Create a new author with generated ID.

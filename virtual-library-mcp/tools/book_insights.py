@@ -16,6 +16,8 @@ from database.author_repository import AuthorRepository
 from database.book_repository import BookRepository
 from database.session import session_scope
 from models.book import Book
+
+# Observability is handled by middleware, not decorators
 from sampling import request_ai_generation
 
 logger = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ async def generate_book_insights_handler(
     isbn: str = Field(description="ISBN of the book to generate insights for"),
     insight_type: InsightType = Field(
         default="summary",
-        description="Type of insight to generate: summary, themes, discussion_questions, or similar_books"
+        description="Type of insight to generate: summary, themes, discussion_questions, or similar_books",
     ),
 ) -> str:
     """
@@ -94,7 +96,7 @@ Title: {book.title}
 Author: {author_name}
 Genre: {book.genre}
 Published: {book.publication_year}
-Current description: {book.description or 'No description available'}
+Current description: {book.description or "No description available"}
 
 Generate a compelling 2-3 paragraph summary that would help library patrons decide if they want to read this book.
 Focus on the main themes, writing style, and what makes it unique."""
@@ -119,7 +121,7 @@ async def _generate_themes(context, book: Book, author_name: str) -> str | None:
 Title: {book.title}
 Author: {author_name}
 Genre: {book.genre}
-Description: {book.description or 'No description available'}
+Description: {book.description or "No description available"}
 
 Identify and explain 3-5 major themes in this book. For each theme, provide a brief explanation of how it's explored in the story."""
 
@@ -167,7 +169,7 @@ async def _generate_similar_books(context, book: Book, author_name: str) -> str 
 Title: {book.title}
 Author: {author_name}
 Genre: {book.genre}
-Description: {book.description or 'No description available'}
+Description: {book.description or "No description available"}
 
 Suggest 4-5 books that readers who enjoyed this book might also like.
 For each recommendation, explain what makes it similar (themes, style, genre) and what makes it unique."""
@@ -195,7 +197,10 @@ def _generate_fallback_response(book: Book, author_name: str, insight_type: Insi
     base_info = f"**Book Information**\n\nTitle: {book.title}\nAuthor: {author_name}\nGenre: {book.genre}\nYear: {book.publication_year}\n\n"
 
     if insight_type == "summary":
-        return base_info + (book.description or "No summary available. AI-generated summaries require a client with sampling support.")
+        return base_info + (
+            book.description
+            or "No summary available. AI-generated summaries require a client with sampling support."
+        )
 
     if insight_type == "themes":
         fallback_themes = {
@@ -206,10 +211,15 @@ def _generate_fallback_response(book: Book, author_name: str, insight_type: Insi
             "Fantasy": "Often explores: good vs evil, power and corruption, coming of age, and destiny.",
         }
         genre_themes = fallback_themes.get(book.genre, "Themes vary by genre and author style.")
-        return base_info + f"**Genre-Typical Themes**\n\n{genre_themes}\n\n*Note: AI-generated theme analysis requires a client with sampling support.*"
+        return (
+            base_info
+            + f"**Genre-Typical Themes**\n\n{genre_themes}\n\n*Note: AI-generated theme analysis requires a client with sampling support.*"
+        )
 
     if insight_type == "discussion_questions":
-        return base_info + """**Generic Discussion Questions**
+        return (
+            base_info
+            + """**Generic Discussion Questions**
 
 1. What was your overall impression of this book?
 2. Which character did you relate to most and why?
@@ -218,9 +228,12 @@ def _generate_fallback_response(book: Book, author_name: str, insight_type: Insi
 5. How did the book's setting influence the story?
 
 *Note: AI-generated discussion questions tailored to this specific book require a client with sampling support.*"""
+        )
 
     if insight_type == "similar_books":
-        return base_info + f"""**Finding Similar Books**
+        return (
+            base_info
+            + f"""**Finding Similar Books**
 
 To find books similar to this one, consider:
 - Other books by {author_name}
@@ -229,6 +242,7 @@ To find books similar to this one, consider:
 - Books with similar themes or settings
 
 *Note: AI-generated personalized recommendations require a client with sampling support.*"""
+        )
 
     return base_info + "Invalid insight type requested."
 

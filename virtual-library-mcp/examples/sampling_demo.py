@@ -45,9 +45,9 @@ class SamplingDemo:
 
     def print_section(self, title: str):
         """Print a formatted section header."""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f" {title}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
     def print_step(self, step: int, description: str):
         """Print a numbered step."""
@@ -74,12 +74,7 @@ class SamplingDemo:
         self.print_step(1, "Building Sampling Request")
 
         request = CreateMessageRequestParams(
-            messages=[
-                SamplingMessage(
-                    role="user",
-                    content=TextContent(type="text", text=prompt)
-                )
-            ],
+            messages=[SamplingMessage(role="user", content=TextContent(type="text", text=prompt))],
             modelPreferences=ModelPreferences(
                 hints=[
                     ModelHint(name="claude-3-sonnet"),
@@ -144,13 +139,15 @@ class SamplingDemo:
 4. How might the world be different if everyone applied these principles?
 5. What questions does this book leave unanswered for you?"""
         else:
-            simulated_response = "This is a simulated LLM response demonstrating how sampling works in MCP."
+            simulated_response = (
+                "This is a simulated LLM response demonstrating how sampling works in MCP."
+            )
 
         result = CreateMessageResult(
             role="assistant",
             content=TextContent(type="text", text=simulated_response),
             model="claude-3-sonnet-20240307",
-            stop_reason="end_turn"
+            stop_reason="end_turn",
         )
 
         print(f"Model used: {result.model}")
@@ -182,19 +179,18 @@ class SamplingDemo:
             Genre: Business
             Year: 1997""",
             system_prompt="You are a knowledgeable librarian creating engaging book summaries.",
-            simulate_success=True
+            simulate_success=True,
         )
 
         # Demo 2: User rejection
         await self.simulate_sampling_request(
             prompt="Generate discussion questions for The Great Gatsby",
-            simulate_user_rejection=True
+            simulate_user_rejection=True,
         )
 
         # Demo 3: API failure
         await self.simulate_sampling_request(
-            prompt="Analyze the themes in 1984 by George Orwell",
-            simulate_success=False
+            prompt="Analyze the themes in 1984 by George Orwell", simulate_success=False
         )
 
         # Demo 4: Different insight type
@@ -204,7 +200,7 @@ class SamplingDemo:
             Author: Yuval Noah Harari
             Genre: Non-fiction/History""",
             system_prompt="You are a library recommendation expert.",
-            simulate_success=True
+            simulate_success=True,
         )
 
         self.print_section("Demo Complete")

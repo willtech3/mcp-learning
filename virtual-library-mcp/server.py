@@ -14,12 +14,19 @@ import signal
 import sys
 from typing import Any
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from config import get_config
+from observability import LOGFIRE_AVAILABLE, initialize_observability
+from observability import get_config as get_obs_config
+from observability.middleware import MCPInstrumentationMiddleware
 from prompts import all_prompts
 from resources import all_resources
 from tools import all_tools
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize logging - stderr for logs, stdout for MCP protocol
 logging.basicConfig(
@@ -33,6 +40,9 @@ logger = logging.getLogger(__name__)
 # Load configuration
 config = get_config()
 
+# Initialize observability
+initialize_observability()
+
 # Create the FastMCP server instance
 mcp = FastMCP(
     name=config.server_name,
@@ -44,6 +54,16 @@ mcp = FastMCP(
         "tools to perform actions, and prompts for AI-assisted recommendations."
     ),
 )
+
+# Add observability middleware if enabled
+obs_config = get_obs_config()
+if obs_config.enabled and LOGFIRE_AVAILABLE:
+    logger.info("Enabling observability middleware for MCP protocol tracing")
+    mcp.add_middleware(MCPInstrumentationMiddleware())
+elif not obs_config.enabled:
+    logger.debug("Observability middleware disabled via configuration")
+elif not LOGFIRE_AVAILABLE:
+    logger.debug("Observability middleware unavailable (Logfire not installed)")
 
 # Register all resources with the MCP server
 
@@ -68,26 +88,34 @@ for resource in all_resources:
 logger.info("Registered %d resources", len(all_resources))
 
 # Register all tools with the MCP server
-for tool in all_tools:
-    logger.debug("Registering tool: %s", tool["name"])
+for tool_def in all_tools:
+    logger.debug("Registering tool: %s", tool_def["name"])
     try:
-        mcp.tool(
-            name=tool["name"],
-            description=tool["description"],
-        )(tool["handler"])
+        # FastMCP requires the handler to be decorated directly
+        # We'll use the add_tool method with Tool.from_function
+        from fastmcp.tools import Tool
+
+        tool_instance = Tool.from_function(
+            fn=tool_def["handler"],
+            name=tool_def["name"],
+            description=tool_def["description"],
+        )
+        mcp.add_tool(tool_instance)
     except Exception:
-        logger.exception("Failed to register tool %s", tool["name"])
+        logger.exception("Failed to register tool %s", tool_def["name"])
         raise
 
 logger.info("Registered %d tools", len(all_tools))
 
 # Register all prompts with the MCP server
-for prompt in all_prompts:
-    logger.debug("Registering prompt: %s", prompt.__name__)
+# FastMCP expects prompts to be decorated functions
+for prompt_fn in all_prompts:
+    logger.debug("Registering prompt: %s", prompt_fn.__name__)
     try:
-        mcp.prompt()(prompt)
+        # Use the prompt decorator to register the function
+        mcp.prompt()(prompt_fn)
     except Exception:
-        logger.exception("Failed to register prompt %s", prompt.__name__)
+        logger.exception("Failed to register prompt %s", prompt_fn.__name__)
         raise
 
 logger.info("Registered %d prompts", len(all_prompts))

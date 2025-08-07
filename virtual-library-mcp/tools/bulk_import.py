@@ -19,6 +19,8 @@ from database.schema import Author as AuthorDB
 from database.schema import Book as BookDB
 from database.session import session_scope
 
+# Observability is handled by middleware, not decorators
+
 logger = logging.getLogger(__name__)
 
 

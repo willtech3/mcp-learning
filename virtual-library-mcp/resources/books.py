@@ -19,6 +19,8 @@ from database.repository import PaginationParams
 from database.session import session_scope
 from models.book import Book
 
+# Observability is handled by middleware, not decorators
+
 logger = logging.getLogger(__name__)
 
 

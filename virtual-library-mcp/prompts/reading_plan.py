@@ -16,7 +16,7 @@ from database.session import get_session
 async def generate_reading_plan(
     goal: str,
     duration: Literal["week", "month", "quarter", "year"] = "month",
-    experience_level: Literal["beginner", "intermediate", "advanced"] = "beginner",
+    experience_level: Literal["beginner", "intermediate", "advanced", "expert"] = "beginner",
     time_commitment: Literal["light", "moderate", "intensive"] = "moderate",
     _session=None,  # For testing
 ) -> str:
@@ -27,7 +27,7 @@ async def generate_reading_plan(
     """
 
     # Get database session
-    session = _session or next(get_session())
+    session = _session or get_session()
     should_close = _session is None
 
     try:
@@ -82,7 +82,7 @@ Available books that might be relevant:
 Please create a structured reading plan that:
 
 1. **Learning Path Overview**
-   - Explain the progression from {experience_level} to the next level
+   - Explain the progression from {experience_level} level{" to mastery" if experience_level == "expert" else " to the next level"}
    - Identify key concepts to master
    - Set realistic milestones
 

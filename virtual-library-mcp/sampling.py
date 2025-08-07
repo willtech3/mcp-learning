@@ -23,6 +23,9 @@ from mcp.types import (
     TextContent,
 )
 
+from observability import logfire
+from observability.metrics import ai_generation_requests, ai_generation_tokens
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,73 +59,85 @@ async def request_ai_generation(
     Returns:
         The generated text if successful, None if sampling failed or unavailable
     """
-    # Step 1: Check if the client supports sampling
-    # This is crucial - not all MCP clients have LLM capabilities
-    if not context.request_context.session.client_capabilities.sampling:
-        logger.info("Client does not support sampling - returning None")
-        return None
+    with logfire.span(
+        "ai.sampling.request",
+        ai_max_tokens=max_tokens,
+        ai_temperature=temperature,
+        ai_intelligence_priority=intelligence_priority,
+        ai_speed_priority=speed_priority,
+    ) as span:
+        # Step 1: Check if the client supports sampling
+        # This is crucial - not all MCP clients have LLM capabilities
+        if not context.request_context.session.client_capabilities.sampling:
+            logger.info("Client does not support sampling - returning None")
+            span.set_attribute("ai.fallback", "no_capability")
+            return None
 
-    try:
-        # Step 2: Build the sampling request
-        # The request includes messages, model preferences, and generation parameters
+        try:
+            # Record request metric
+            ai_generation_requests.add(1, {"status": "requested"})
 
-        # Create the message array with the user's prompt
-        messages = [
-            SamplingMessage(
-                role="user",
-                content=TextContent(
-                    type="text",
-                    text=prompt
-                )
+            # Step 2: Build the sampling request
+            # The request includes messages, model preferences, and generation parameters
+
+            # Create the message array with the user's prompt
+            messages = [SamplingMessage(role="user", content=TextContent(type="text", text=prompt))]
+
+            # Model preferences help the client choose the right model
+            # Higher values indicate higher priority for that aspect
+            model_preferences = ModelPreferences(
+                hints=[
+                    # Prefer Claude models for this educational example
+                    ModelHint(name="claude-3-sonnet"),
+                    ModelHint(name="claude"),
+                ],
+                intelligence_priority=intelligence_priority,
+                speed_priority=speed_priority,
+                # Cost priority is inverse of the other two (bounded to avoid negative values)
+                cost_priority=max(0.0, 1.0 - (intelligence_priority + speed_priority) / 2),
             )
-        ]
 
-        # Model preferences help the client choose the right model
-        # Higher values indicate higher priority for that aspect
-        model_preferences = ModelPreferences(
-            hints=[
-                # Prefer Claude models for this educational example
-                ModelHint(name="claude-3-sonnet"),
-                ModelHint(name="claude"),
-            ],
-            intelligence_priority=intelligence_priority,
-            speed_priority=speed_priority,
-            # Cost priority is inverse of the other two (bounded to avoid negative values)
-            cost_priority=max(0.0, 1.0 - (intelligence_priority + speed_priority) / 2),
-        )
+            # Build the complete request parameters
+            request_params = CreateMessageRequestParams(
+                messages=messages,
+                modelPreferences=model_preferences,
+                maxTokens=max_tokens,
+                temperature=temperature,
+            )
 
-        # Build the complete request parameters
-        request_params = CreateMessageRequestParams(
-            messages=messages,
-            modelPreferences=model_preferences,
-            maxTokens=max_tokens,
-            temperature=temperature,
-        )
+            # Add system prompt if provided
+            if system_prompt:
+                request_params.systemPrompt = system_prompt
 
-        # Add system prompt if provided
-        if system_prompt:
-            request_params.systemPrompt = system_prompt
+            # Step 3: Make the sampling request
+            # This is an async operation that goes to the client
+            logger.debug(f"Sending sampling request with prompt: {prompt[:100]}...")
 
-        # Step 3: Make the sampling request
-        # This is an async operation that goes to the client
-        logger.debug(f"Sending sampling request with prompt: {prompt[:100]}...")
+            result = await context.request_context.session.create_message(request_params)
 
-        result = await context.request_context.session.create_message(request_params)
+            # Step 4: Extract and return the generated text
+            # The result contains the AI's response in a structured format
+            if result and result.content and result.content.type == "text":
+                generated_text = result.content.text
+                logger.info(f"Successfully generated {len(generated_text)} characters")
 
-        # Step 4: Extract and return the generated text
-        # The result contains the AI's response in a structured format
-        if result and result.content and result.content.type == "text":
-            generated_text = result.content.text
-            logger.info(f"Successfully generated {len(generated_text)} characters")
-            return generated_text
-        logger.warning("Sampling returned unexpected content type")
-        return None
+                # Track token usage
+                estimated_tokens = len(generated_text.split()) * 1.3  # Rough estimate
+                ai_generation_tokens.record(estimated_tokens)
+                span.set_attribute("ai.estimated_tokens", estimated_tokens)
+                span.set_attribute("ai.response_length", len(generated_text))
 
-    except Exception:
-        # Step 5: Handle errors gracefully
-        # Common errors include timeouts, user rejection, or API issues
-        logger.exception("Sampling request failed")
-        return None
+                return generated_text
+            logger.warning("Sampling returned unexpected content type")
+            return None
+
+        except Exception as e:
+            # Step 5: Handle errors gracefully
+            # Common errors include timeouts, user rejection, or API issues
+            logger.exception("Sampling request failed")
+            span.set_attribute("ai.error", str(e))
+            ai_generation_requests.add(1, {"status": "failed"})
+            return None
 
 
 async def generate_book_summary(

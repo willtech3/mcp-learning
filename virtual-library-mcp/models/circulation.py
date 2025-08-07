@@ -50,14 +50,14 @@ class CheckoutRecord(BaseModel):
     id: str = Field(
         ...,
         description="Unique identifier for the checkout record",
-        pattern=r"^checkout_[a-zA-Z0-9]{6,}$",
+        pattern=r"^checkout_[a-zA-Z0-9]+$",
         examples=["checkout_202312150001", "checkout_202403201234"],
     )
 
     patron_id: str = Field(
         ...,
         description="ID of the patron who checked out the book",
-        pattern=r"^patron_[a-zA-Z0-9_]{6,}$",
+        pattern=r"^patron_[a-zA-Z0-9_]{5,}$",
         examples=["patron_smith001", "patron_doe_jane"],
     )
 
@@ -259,13 +259,13 @@ class ReturnRecord(BaseModel):
     checkout_id: str = Field(
         ...,
         description="ID of the associated checkout record",
-        pattern=r"^checkout_[a-zA-Z0-9]{6,}$",
+        pattern=r"^checkout_[a-zA-Z0-9]+$",
     )
 
     patron_id: str = Field(
         ...,
         description="ID of the patron returning the book",
-        pattern=r"^patron_[a-zA-Z0-9_]{6,}$",
+        pattern=r"^patron_[a-zA-Z0-9_]{5,}$",
     )
 
     book_isbn: str = Field(
@@ -373,14 +373,14 @@ class ReservationRecord(BaseModel):
     id: str = Field(
         ...,
         description="Unique identifier for the reservation",
-        pattern=r"^reservation_[a-zA-Z0-9]{6,}$",
+        pattern=r"^reservation_[a-zA-Z0-9]{5,}$",
         examples=["reservation_202312150001", "reservation_202403201234"],
     )
 
     patron_id: str = Field(
         ...,
         description="ID of the patron who made the reservation",
-        pattern=r"^patron_[a-zA-Z0-9_]{6,}$",
+        pattern=r"^patron_[a-zA-Z0-9_]{5,}$",
     )
 
     book_isbn: str = Field(

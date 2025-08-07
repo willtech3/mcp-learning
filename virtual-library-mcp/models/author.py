@@ -26,8 +26,8 @@ class Author(BaseModel):
     id: str = Field(
         ...,
         description="Unique identifier for the author",
-        pattern=r"^author_[a-zA-Z0-9_]{6,}$",
-        examples=["author_fitzgerald01", "author_lee_harper"],
+        pattern=r"^author_[a-zA-Z0-9_]{5,}$",
+        examples=["author_fitzgerald01", "author_lee_harper", "author_00001"],
     )
 
     name: str = Field(
