@@ -95,6 +95,7 @@ def initialize_observability(config: ObservabilityConfig | None = None):
     # If we're not sending to logfire, configure without authentication
     if not _config.send_to_logfire:
         logfire.configure(
+            service_name=_config.project_name,
             send_to_logfire=False,
             console=console_setting,
         )
@@ -104,11 +105,13 @@ def initialize_observability(config: ObservabilityConfig | None = None):
             "Disabling send_to_logfire. Set LOGFIRE_TOKEN in .env to enable."
         )
         logfire.configure(
+            service_name=_config.project_name,
             send_to_logfire=False,
             console=console_setting,
         )
     else:
         logfire.configure(
+            service_name=_config.project_name,
             token=_config.token,
             environment=_config.environment,
             send_to_logfire=_config.send_to_logfire,
