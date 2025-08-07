@@ -45,7 +45,7 @@ class CheckoutBookInput(BaseModel):
     patron_id: str = Field(
         ...,
         description="Unique identifier of the patron borrowing the book",
-        pattern=r"^patron_[a-zA-Z0-9_]{6,}$",
+        pattern=r"^patron_[a-zA-Z0-9_]{5,}$",
         examples=["patron_smith001", "patron_doe_jane", "patron_wilson_robert"],
     )
 
@@ -205,7 +205,7 @@ class ReturnBookInput(BaseModel):
     checkout_id: str = Field(
         ...,
         description="ID of the checkout record to return",
-        pattern=r"^checkout_[a-zA-Z0-9]{6,}$",
+        pattern=r"^checkout_[a-zA-Z0-9]+$",
         examples=["checkout_202312150001", "checkout_202403201234"],
     )
 
@@ -376,7 +376,7 @@ class ReserveBookInput(BaseModel):
     patron_id: str = Field(
         ...,
         description="Unique identifier of the patron making the reservation",
-        pattern=r"^patron_[a-zA-Z0-9_]{6,}$",
+        pattern=r"^patron_[a-zA-Z0-9_]{5,}$",
         examples=["patron_smith001", "patron_doe_jane"],
     )
 

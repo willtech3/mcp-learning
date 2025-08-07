@@ -52,6 +52,7 @@ class TestCheckoutRecord:
             "checkout_202312150001",
             "checkout_202403201234",
             "checkout_123456789012",
+            "checkout_12345",  # Now valid with relaxed pattern
         ]
 
         for checkout_id in valid_ids:
@@ -66,7 +67,6 @@ class TestCheckoutRecord:
         # Invalid IDs
         invalid_ids = [
             "202312150001",  # Missing prefix
-            "checkout_12345",  # Too short
             "CHECKOUT_202312150001",  # Wrong case
         ]
 

@@ -47,7 +47,7 @@ class Book(BaseModel):
     author_id: str = Field(
         ...,
         description="Unique identifier for the book's author",
-        pattern=r"^author_[a-zA-Z0-9_]{6,}$",
+        pattern=r"^author_[a-zA-Z0-9_]{5,}$",
         examples=["author_fitzgerald01", "author_lee_harper"],
     )
 

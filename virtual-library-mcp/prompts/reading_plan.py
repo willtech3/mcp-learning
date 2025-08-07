@@ -27,7 +27,7 @@ async def generate_reading_plan(
     """
 
     # Get database session
-    session = _session or next(get_session())
+    session = _session or get_session()
     should_close = _session is None
 
     try:

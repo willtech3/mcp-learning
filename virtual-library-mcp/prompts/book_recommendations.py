@@ -25,7 +25,7 @@ async def recommend_books(
     for LLM to suggest readings based on genre, mood, and history.
     """
 
-    session = _session or next(get_session())
+    session = _session or get_session()
     should_close = _session is None
 
     try:

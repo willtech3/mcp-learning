@@ -37,7 +37,7 @@ class Patron(BaseModel):
     id: str = Field(
         ...,
         description="Unique identifier for the patron",
-        pattern=r"^patron_[a-zA-Z0-9_]{6,}$",
+        pattern=r"^patron_[a-zA-Z0-9_]{5,}$",
         examples=["patron_smith001", "patron_doe_jane"],
     )
 

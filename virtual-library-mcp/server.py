@@ -79,26 +79,34 @@ for resource in all_resources:
 logger.info("Registered %d resources", len(all_resources))
 
 # Register all tools with the MCP server
-for tool in all_tools:
-    logger.debug("Registering tool: %s", tool["name"])
+for tool_def in all_tools:
+    logger.debug("Registering tool: %s", tool_def["name"])
     try:
-        mcp.tool(
-            name=tool["name"],
-            description=tool["description"],
-        )(tool["handler"])
+        # FastMCP requires the handler to be decorated directly
+        # We'll use the add_tool method with Tool.from_function
+        from fastmcp.tools import Tool
+
+        tool_instance = Tool.from_function(
+            fn=tool_def["handler"],
+            name=tool_def["name"],
+            description=tool_def["description"],
+        )
+        mcp.add_tool(tool_instance)
     except Exception:
-        logger.exception("Failed to register tool %s", tool["name"])
+        logger.exception("Failed to register tool %s", tool_def["name"])
         raise
 
 logger.info("Registered %d tools", len(all_tools))
 
 # Register all prompts with the MCP server
-for prompt in all_prompts:
-    logger.debug("Registering prompt: %s", prompt.__name__)
+# FastMCP expects prompts to be decorated functions
+for prompt_fn in all_prompts:
+    logger.debug("Registering prompt: %s", prompt_fn.__name__)
     try:
-        mcp.prompt()(prompt)
+        # Use the prompt decorator to register the function
+        mcp.prompt()(prompt_fn)
     except Exception:
-        logger.exception("Failed to register prompt %s", prompt.__name__)
+        logger.exception("Failed to register prompt %s", prompt_fn.__name__)
         raise
 
 logger.info("Registered %d prompts", len(all_prompts))

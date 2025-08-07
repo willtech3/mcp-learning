@@ -37,7 +37,7 @@ class ObservabilityConfig(BaseModel):
 class ProductionConfig(ObservabilityConfig):
     """Production-specific configuration."""
 
-    sample_rate: float = 1.0  
+    sample_rate: float = 1.0
     console_output: bool = False
     send_to_logfire: bool = True
     max_span_attributes: int = 30
