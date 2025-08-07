@@ -48,6 +48,8 @@ class TestAuthorModel:
             "author_doe_jane",
             "author_fitzgerald01",
             "author_12345678",
+            "author_00001",  # 5 digits (minimum allowed)
+            "author_12345",  # 5 characters exactly
         ]
 
         for author_id in valid_ids:
@@ -60,7 +62,7 @@ class TestAuthorModel:
         # Invalid IDs
         invalid_ids = [
             "smith001",  # Missing prefix
-            "author_123",  # Too short
+            "author_123",  # Too short (less than 5 chars after prefix)
             "AUTHOR_smith001",  # Wrong case
             "author-smith001",  # Wrong separator
         ]

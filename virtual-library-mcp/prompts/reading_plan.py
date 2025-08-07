@@ -82,7 +82,7 @@ Available books that might be relevant:
 Please create a structured reading plan that:
 
 1. **Learning Path Overview**
-   - Explain the progression from {experience_level} level{' to mastery' if experience_level == 'expert' else ' to the next level'}
+   - Explain the progression from {experience_level} level{" to mastery" if experience_level == "expert" else " to the next level"}
    - Identify key concepts to master
    - Set realistic milestones
 

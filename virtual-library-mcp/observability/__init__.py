@@ -85,6 +85,8 @@ def initialize_observability(config: ObservabilityConfig | None = None):
         )
         return
 
+    logger.info("Initializing Logfire with service_name=%s", _config.project_name)
+
     # Configure logfire with appropriate parameters
     # Note: console_colors, console_include_timestamp, and console_verbose
     # are not direct parameters, they're part of ConsoleOptions

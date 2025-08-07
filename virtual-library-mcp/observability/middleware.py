@@ -5,7 +5,7 @@ from typing import Any
 
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 
-from . import logfire
+from . import LOGFIRE_AVAILABLE, get_config, logfire
 
 
 class MCPInstrumentationMiddleware(Middleware):
@@ -13,9 +13,16 @@ class MCPInstrumentationMiddleware(Middleware):
 
     def __init__(self):
         self.start_time = datetime.now()
+        # Ensure we have a valid config
+        self.config = get_config()
+        self.enabled = LOGFIRE_AVAILABLE and self.config.enabled
 
     async def on_message(self, context: MiddlewareContext, call_next) -> Any:
         """Instrument all MCP messages."""
+        # Skip if not enabled
+        if not self.enabled:
+            return await call_next(context)
+
         method = context.method
 
         # Determine operation type
@@ -26,15 +33,15 @@ class MCPInstrumentationMiddleware(Middleware):
             _span_name=f"MCP {method}",
             mcp_method=method,
             mcp_operation_type=operation_type,
-            mcp_source=getattr(context, 'source', 'unknown'),
+            mcp_source=getattr(context, "source", "unknown"),
         ) as span:
             # Try to extract attributes from the message
-            if hasattr(context, 'message'):
+            if hasattr(context, "message"):
                 # For tool calls
-                if hasattr(context.message, 'name'):
+                if hasattr(context.message, "name"):
                     span.set_attribute("tool.name", context.message.name)
                 # For resource reads
-                elif hasattr(context.message, 'uri'):
+                elif hasattr(context.message, "uri"):
                     span.set_attribute("resource.uri", context.message.uri)
 
             try:
@@ -68,7 +75,6 @@ class MCPInstrumentationMiddleware(Middleware):
         if method.startswith("completion/"):
             return "sampling"
         return "system"
-
 
     def _add_result_metrics(self, span, method: str, result: Any):
         """Add result-based metrics to span."""

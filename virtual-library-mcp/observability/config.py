@@ -10,7 +10,7 @@ class ObservabilityConfig(BaseModel):
 
     # Connection
     token: str = Field(default_factory=lambda: os.getenv("LOGFIRE_TOKEN", ""))
-    project_name: str = "virtual-library-mcp"
+    project_name: str = "virtual-library"
     environment: str = Field(default_factory=lambda: os.getenv("ENVIRONMENT", "development"))
 
     # Behavior
