@@ -39,7 +39,7 @@ async def test_generate_reading_plan_durations(test_db_session):
 @pytest.mark.asyncio
 async def test_generate_reading_plan_experience_levels(test_db_session):
     """Test plans for different experience levels."""
-    levels = ["beginner", "intermediate", "advanced"]
+    levels = ["beginner", "intermediate", "advanced", "expert"]
 
     for level in levels:
         result = await generate_reading_plan(
@@ -48,7 +48,10 @@ async def test_generate_reading_plan_experience_levels(test_db_session):
 
         assert isinstance(result, str)
         assert f"Experience Level: {level}" in result
-        assert f"progression from {level}" in result
+        if level == "expert":
+            assert "progression from expert level to mastery" in result
+        else:
+            assert f"progression from {level}" in result
 
 
 @pytest.mark.asyncio
