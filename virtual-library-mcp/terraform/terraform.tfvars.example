@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# From Google Cloud Console -> APIs & Services -> Credentials, after the
+# bootstrap apply prints the base_url (see DEPLOYMENT.md).
+google_oauth_client_id = "1234567890-abc.apps.googleusercontent.com"
+
+# Who may use the server. Strongly recommended for personal deployments.
+auth_allowed_emails = ["you@gmail.com"]
