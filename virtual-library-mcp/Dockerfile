@@ -46,9 +46,16 @@ USER app
 # Cloud Run injects PORT; default to 8080 for local docker runs.
 # The HTTP transport refuses to start without auth unless explicitly
 # overridden, so a misconfigured deployment fails closed.
+#
+# HOME=/tmp: FastMCP's OAuth proxy persists dynamic client registrations
+# under ~/.local/share/fastmcp. The app user's home is read-only by
+# design, and on Cloud Run /tmp is a writable in-memory tmpfs. Stored
+# registrations are per-instance and ephemeral, which FastMCP handles:
+# clients simply re-register on first contact with a fresh instance.
 ENV VIRTUAL_LIBRARY_TRANSPORT=http \
     VIRTUAL_LIBRARY_HTTP_HOST=0.0.0.0 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    HOME=/tmp
 
 EXPOSE 8080
 
