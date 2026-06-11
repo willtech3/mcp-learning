@@ -1,22 +1,34 @@
 """
 Database seeding script for the Virtual Library MCP Server.
 
-This script generates realistic test data to demonstrate all MCP protocol features:
-- Resources: Queryable authors, books, and patrons
-- Tools: Circulation records for checkout/return operations
-- Subscriptions: State changes that trigger real-time updates
-- Progress: Reports progress during generation for long operations
+The catalog (authors and books) is curated, real-world data loaded from
+JSON files in ``database/seed_data/``. Patrons and circulation history are
+simulated on top of it with deterministic randomness (seeded Faker/random),
+so every seeded database tells the same coherent story:
 
-The generated data includes:
-- 100+ unique authors with biographical information
-- 1000+ books with valid ISBNs across multiple genres
-- 50+ patrons with varying membership statuses
-- Realistic circulation history showing checkouts, returns, and reservations
+- Books are real titles with accurate authors, years, genres, and original
+  one-paragraph descriptions. ISBNs are *synthetic but structurally valid*
+  ISBN-13s (correct check digit) derived from a hash of title+author, so the
+  catalog never misattributes a real publisher identifier.
+- Circulation is simulated patron-by-patron, month-by-month. Every derived
+  number (a book's available copies, a patron's current/total checkouts,
+  outstanding fines, even suspended status) is computed FROM the simulated
+  checkout records rather than rolled independently. MCP stats resources
+  therefore always agree with the underlying circulation data.
+
+MCP relevance: seeded data feeds Resources (catalog browsing), Tools
+(checkout/return against real availability), Prompts and Sampling
+(recommendations grounded in plausible reading history), and Subscriptions
+(state changes against a believable baseline).
 """
 
+import hashlib
+import json
 import random
-from datetime import date, datetime, timedelta
+import unicodedata
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
+from typing import cast
 
 from faker import Faker
 from sqlalchemy import create_engine
@@ -35,571 +47,585 @@ from database.schema import (
     ReturnRecord,
 )
 
-# Initialize Faker for realistic data generation
+# Deterministic generation: same catalog + same seed = same library
+# (relative to the run date, since circulation is simulated up to "today").
 fake = Faker()
-Faker.seed(42)  # Consistent data across runs
+Faker.seed(42)
 random.seed(42)
 
+SEED_DATA_DIR = Path(__file__).parent / "seed_data"
 
-class ProgressReporter:
-    """Reports progress during data generation - demonstrates MCP progress notifications."""
+# Circulation policy constants — keep in sync with CirculationRepository.
+LOAN_DAYS = 14
+FINE_PER_DAY = 0.25
+SUSPENSION_FINE_THRESHOLD = 10.0
+HISTORY_MONTHS = 24
 
-    def __init__(self, total_steps: int) -> None:
-        self.total_steps = total_steps
-        self.current_step = 0
-        self.current_task = ""
-
-    def update(self, task: str, increment: int = 1) -> None:
-        """Update progress with current task."""
-        self.current_task = task
-        self.current_step += increment
-        percentage = (self.current_step / self.total_steps) * 100
-        print(f"[{percentage:5.1f}%] {task}")
+# How many copies the library owns, by curated popularity tier (1-5).
+COPIES_BY_POPULARITY = {1: (1, 2), 2: (1, 3), 3: (2, 4), 4: (3, 5), 5: (4, 6)}
 
 
-def generate_isbn13() -> str:
-    """Generate a valid ISBN-13 number."""
-    # ISBN-13 format: 978-X-XXXX-XXXX-X
-    prefix = "978"
-    group = str(random.randint(0, 9))
-    publisher = str(random.randint(1000, 9999))
-    title = str(random.randint(1000, 9999))
-
-    # Calculate check digit
-    isbn_without_check = f"{prefix}{group}{publisher}{title}"
-    total = sum(int(digit) * (3 if i % 2 else 1) for i, digit in enumerate(isbn_without_check))
-    check_digit = (10 - (total % 10)) % 10
-
-    return f"{isbn_without_check}{check_digit}"
+# ---------------------------------------------------------------------------
+# Catalog loading (curated data)
+# ---------------------------------------------------------------------------
 
 
-def generate_authors(num_authors: int = 120) -> list[Author]:
-    """
-    Generate unique authors with realistic biographical information.
-
-    MCP Integration:
-    - Each author gets a unique ID following the pattern 'author_XXXXX'
-    - Biographical data supports rich resource representations
-    - Birth/death dates enable filtering and historical queries
-    """
-    authors = []
-    nationalities = [
-        "American",
-        "British",
-        "Canadian",
-        "Australian",
-        "Irish",
-        "French",
-        "German",
-        "Italian",
-        "Spanish",
-        "Russian",
-        "Japanese",
-        "Chinese",
-        "Indian",
-        "Brazilian",
-        "Mexican",
-        "Swedish",
-        "Norwegian",
-        "Danish",
-        "Dutch",
-        "Belgian",
-    ]
-
-    for i in range(num_authors):
-        # Generate birth date between 1850 and 2000
-        birth_year = random.randint(1850, 2000)
-        birth_date = fake.date_between(
-            start_date=date(birth_year, 1, 1), end_date=date(birth_year, 12, 31)
-        )
-
-        # 20% chance of being deceased
-        death_date = None
-        if random.random() < 0.2 and birth_year < 1980:
-            death_year = random.randint(birth_year + 30, 2024)
-            death_date = fake.date_between(
-                start_date=date(death_year, 1, 1), end_date=date(min(death_year, 2024), 12, 31)
-            )
-
-        author = Author(
-            id=f"author_{i + 1:06d}",
-            name=fake.name(),
-            biography=fake.text(max_nb_chars=500),
-            birth_date=birth_date,
-            death_date=death_date,
-            nationality=random.choice(nationalities),
-            photo_url=f"https://example.com/authors/author_{i + 1:06d}.jpg"
-            if random.random() > 0.3
-            else None,
-            website=fake.url() if random.random() > 0.5 else None,
-            created_at=fake.date_time_between(start_date="-2y", end_date="now"),
-            updated_at=datetime.now(),
-        )
-        authors.append(author)
-
+def load_catalog() -> list[dict]:
+    """Load and merge every curated collection file in seed_data/."""
+    authors: list[dict] = []
+    for path in sorted(SEED_DATA_DIR.glob("*.json")):
+        with path.open(encoding="utf-8") as f:
+            collection = json.load(f)
+        authors.extend(collection["authors"])
+    if not authors:
+        raise FileNotFoundError(f"No seed collections found in {SEED_DATA_DIR}")
     return authors
 
 
-def generate_books(authors: list[Author], num_books: int = 1200) -> list[Book]:
+def _ascii_slug(text: str) -> str:
+    """Lowercase ASCII identifier fragment: 'García Márquez' -> 'garcia_marquez'."""
+    decomposed = unicodedata.normalize("NFKD", text)
+    ascii_text = decomposed.encode("ascii", "ignore").decode("ascii")
+    cleaned = "".join(c if c.isalnum() else "_" for c in ascii_text.lower())
+    while "__" in cleaned:
+        cleaned = cleaned.replace("__", "_")
+    return cleaned.strip("_")
+
+
+def author_id_for(name: str, used: set[str]) -> str:
+    """Readable, unique author ID: 'Jane Austen' -> 'author_austen_jane'."""
+    parts = [p for p in (_ascii_slug(part) for part in name.split()) if p]
+    base = f"{parts[-1]}_{parts[0]}" if len(parts) >= 2 else parts[0]
+    # Model requires at least 5 chars after the 'author_' prefix.
+    base = base.ljust(5, "0")
+    candidate = f"author_{base}"
+    suffix = 2
+    while candidate in used:
+        candidate = f"author_{base}_{suffix}"
+        suffix += 1
+    used.add(candidate)
+    return candidate
+
+
+def isbn_check_digit(first_twelve: str) -> str:
+    """Compute the ISBN-13 check digit (alternating 1/3 weights)."""
+    total = sum(int(d) * (3 if i % 2 else 1) for i, d in enumerate(first_twelve))
+    return str((10 - (total % 10)) % 10)
+
+
+def isbn13_for(title: str, author_name: str, used: set[str]) -> str:
+    """Derive a stable, checksum-valid ISBN-13 from title + author.
+
+    Hash-derived rather than random so the same book always gets the same
+    ISBN across reseeds — handy for demos, bookmarks, and bug reports.
     """
-    Generate books with valid ISBNs distributed across multiple genres.
+    digest = hashlib.md5(f"{title}|{author_name}".encode()).hexdigest()
+    body = f"{int(digest, 16) % 10**9:09d}"
+    while True:
+        first_twelve = f"978{body}"
+        isbn = first_twelve + isbn_check_digit(first_twelve)
+        if isbn not in used:
+            used.add(isbn)
+            return isbn
+        body = f"{(int(body) + 1) % 10**9:09d}"
 
-    MCP Integration:
-    - ISBNs serve as unique resource identifiers
-    - Available copies enable real-time availability tracking
-    - Genre distribution supports filtering and recommendations
-    """
-    books = []
 
-    genres = [
-        "Fiction",
-        "Mystery",
-        "Science Fiction",
-        "Fantasy",
-        "Romance",
-        "Thriller",
-        "Horror",
-        "Biography",
-        "History",
-        "Science",
-        "Self-Help",
-        "Business",
-        "Psychology",
-        "Philosophy",
-        "Poetry",
-        "Drama",
-        "Comedy",
-        "Adventure",
-        "Children's",
-        "Young Adult",
-    ]
+def build_authors_and_books(catalog: list[dict]) -> tuple[list[Author], list[Book]]:
+    """Materialize curated catalog entries as ORM rows."""
+    authors: list[Author] = []
+    books: list[Book] = []
+    used_author_ids: set[str] = set()
+    used_isbns: set[str] = set()
 
-    # Genre weights for realistic distribution
-    genre_weights = [
-        20,
-        15,
-        12,
-        12,
-        10,  # Popular fiction genres
-        8,
-        5,
-        8,
-        10,
-        8,  # Mix of fiction and non-fiction
-        6,
-        6,
-        5,
-        5,
-        3,  # Non-fiction
-        4,
-        3,
-        5,
-        8,
-        10,  # Other categories
-    ]
-
-    for _ in range(num_books):
-        author = random.choice(authors)
-        genre = random.choices(genres, weights=genre_weights)[0]
-
-        # Generate publication year based on author's lifetime
-        max_year = author.death_date.year if author.death_date is not None else 2024
-
-        min_year = author.birth_date.year + 20  # Authors typically start publishing after 20
-        publication_year = random.randint(min(min_year, 2023), min(max_year, 2024))
-
-        # Total copies: more for popular genres
-        if genre in ["Fiction", "Mystery", "Thriller", "Romance"]:
-            total_copies = random.randint(3, 10)
-        else:
-            total_copies = random.randint(1, 5)
-
-        # Available copies: some books are checked out
-        available_copies = random.randint(0, total_copies)
-
-        book = Book(
-            isbn=generate_isbn13(),
-            title=fake.catch_phrase().title() + ": " + fake.bs().title(),
-            author_id=author.id,
-            genre=genre,
-            publication_year=publication_year,
-            available_copies=available_copies,
-            total_copies=total_copies,
-            description=fake.text(max_nb_chars=800),
-            cover_url=f"https://example.com/covers/{generate_isbn13()}.jpg"
-            if random.random() > 0.2
-            else None,
-            created_at=fake.date_time_between(start_date="-2y", end_date="now"),
-            updated_at=datetime.now(),
+    for entry in catalog:
+        author_id = author_id_for(entry["name"], used_author_ids)
+        catalogued_at = fake.date_time_between(start_date="-3y", end_date="-1y")
+        authors.append(
+            Author(
+                id=author_id,
+                name=entry["name"],
+                biography=entry.get("biography"),
+                birth_date=date.fromisoformat(entry["birth_date"])
+                if entry.get("birth_date")
+                else None,
+                death_date=date.fromisoformat(entry["death_date"])
+                if entry.get("death_date")
+                else None,
+                nationality=entry.get("nationality"),
+                created_at=catalogued_at,
+                updated_at=catalogued_at,
+            )
         )
-        books.append(book)
 
-    return books
+        for book in entry["books"]:
+            popularity = book.get("popularity", 2)
+            low, high = COPIES_BY_POPULARITY[popularity]
+            total_copies = random.randint(low, high)
+            added_at = fake.date_time_between(start_date="-3y", end_date="-6M")
+            books.append(
+                Book(
+                    isbn=isbn13_for(book["title"], entry["name"], used_isbns),
+                    title=book["title"],
+                    author_id=author_id,
+                    genre=book["genre"],
+                    publication_year=book["year"],
+                    total_copies=total_copies,
+                    available_copies=total_copies,  # adjusted after simulation
+                    description=book["description"],
+                    created_at=added_at,
+                    updated_at=added_at,
+                )
+            )
+
+    return authors, books
 
 
-def generate_patrons(num_patrons: int = 60) -> list[Patron]:
+# ---------------------------------------------------------------------------
+# Patrons (simulated people; names/contact details are synthetic)
+# ---------------------------------------------------------------------------
+
+# Reading personas give patrons coherent tastes instead of uniform randomness.
+PERSONAS: dict[str, list[str]] = {
+    "literary": ["Fiction", "Historical Fiction", "Poetry", "Drama"],
+    "speculative": ["Science Fiction", "Fantasy", "Dystopian", "Horror"],
+    "page_turner": ["Mystery", "Thriller", "True Crime", "Romance"],
+    "curious_mind": ["Science", "History", "Psychology", "Philosophy"],
+    "self_improver": ["Self-Help", "Business", "Memoir", "Biography"],
+    "young_at_heart": ["Young Adult", "Children", "Fantasy", "Adventure"],
+}
+
+
+def build_patrons(num_patrons: int = 60) -> tuple[list[Patron], dict[str, float]]:
+    """Generate synthetic patrons with personas and unique contact details.
+
+    Returns the patrons plus a per-patron monthly reading rate used only by
+    the circulation simulation (not a persisted column).
     """
-    Generate library patrons with varying membership statuses.
-
-    MCP Integration:
-    - Patron IDs enable user-specific tool operations
-    - Status variations demonstrate access control in MCP
-    - Borrowing limits show tool constraints
-    """
-    patrons = []
-
-    status_weights = {
-        PatronStatusEnum.ACTIVE: 70,
-        PatronStatusEnum.SUSPENDED: 10,
-        PatronStatusEnum.EXPIRED: 15,
-        PatronStatusEnum.PENDING: 5,
-    }
+    patrons: list[Patron] = []
+    reading_rates: dict[str, float] = {}
+    used_emails: set[str] = set()
+    today = date.today()
 
     for i in range(num_patrons):
-        # Membership date: between 5 years ago and today
-        membership_date = fake.date_between(start_date="-5y", end_date="today")
+        name = fake.name()
+        slug = _ascii_slug(name).replace("_", ".")
+        email = f"{slug}@example.com"
+        if email in used_emails:
+            email = f"{slug}{i}@example.com"
+        used_emails.add(email)
 
-        # Status affects other fields
-        status = random.choices(list(status_weights.keys()), weights=list(status_weights.values()))[
-            0
-        ]
+        # A few recent sign-ups stay PENDING with no history yet.
+        is_pending = i % 23 == 0
+        if is_pending:
+            membership_date = fake.date_between(start_date="-13d", end_date="today")
+        else:
+            membership_date = fake.date_between(start_date="-5y", end_date="-3M")
 
-        # Expiration date based on status
-        if status == PatronStatusEnum.EXPIRED:
-            # For expired patrons, expiration date is in the past
-            # Ensure we have a valid date range
-            min_expiration = membership_date + timedelta(days=365)
-            today = date.today()
-            if min_expiration < today:
-                expiration_date = fake.date_between(
-                    start_date=min_expiration,
-                    end_date=today - timedelta(days=1),  # At least 1 day ago
-                )
-            else:
-                # If membership is too recent, set expiration to yesterday
-                expiration_date = today - timedelta(days=1)
-        elif status == PatronStatusEnum.ACTIVE:
-            # Active patrons have future expiration dates
+        # Memberships run in 1-year terms; ~12% lapsed without renewing.
+        # A lapse is only possible if a full term fits before "recently".
+        earliest_lapse = membership_date + timedelta(days=365)
+        can_have_lapsed = earliest_lapse < today - timedelta(days=14)
+        if not is_pending and can_have_lapsed and random.random() < 0.12:
             expiration_date = fake.date_between(
-                start_date=date.today() + timedelta(days=1), end_date="+2y"
+                start_date=max(earliest_lapse, today - timedelta(days=700)),
+                end_date=today - timedelta(days=14),
             )
         else:
-            # Suspended or pending patrons may not have expiration dates
-            expiration_date = None
+            expiration_date = today + timedelta(days=random.randint(30, 540))
 
-        # Borrowing limit varies by patron type
-        borrowing_limit = random.choice([3, 5, 5, 5, 10, 10, 15])  # Most have 5 or 10
-
-        # Current checkouts based on status
-        if status == PatronStatusEnum.ACTIVE:
-            current_checkouts = random.randint(0, min(borrowing_limit - 1, 5))
-        else:
-            current_checkouts = 0
-
-        # Outstanding fines
-        if status == PatronStatusEnum.SUSPENDED:
-            outstanding_fines = round(random.uniform(10.0, 50.0), 2)
-        elif random.random() < 0.1:  # 10% have small fines
-            outstanding_fines = round(random.uniform(0.5, 9.99), 2)
-        else:
-            outstanding_fines = 0.0
-
-        # Preferred genres (JSON array as string)
-        num_preferred = random.randint(1, 5)
-        preferred_genres = random.sample(
-            [
-                "Fiction",
-                "Mystery",
-                "Science Fiction",
-                "Fantasy",
-                "Romance",
-                "History",
-                "Biography",
-                "Science",
-                "Philosophy",
-            ],
-            num_preferred,
+        # Most patrons share a persona's core tastes with a personal twist.
+        persona_genres = random.choice(list(PERSONAS.values()))
+        extra_pool = [g for genres in PERSONAS.values() for g in genres]
+        preferred = list(
+            dict.fromkeys([*random.sample(persona_genres, 3), random.choice(extra_pool)])
         )
 
-        patron = Patron(
-            id=f"patron_{i + 1:05d}",
-            name=fake.name(),
-            email=fake.email(),
-            phone=fake.phone_number()[:20],  # Limit length
-            address=fake.address().replace("\n", ", "),
-            membership_date=membership_date,
-            expiration_date=expiration_date,
-            status=status,
-            borrowing_limit=borrowing_limit,
-            current_checkouts=current_checkouts,
-            total_checkouts=random.randint(current_checkouts, current_checkouts + 50),
-            outstanding_fines=outstanding_fines,
-            preferred_genres=str(preferred_genres),  # Store as string for SQLite
-            notification_preferences='{"email": true, "sms": false}',
-            created_at=membership_date,
-            updated_at=datetime.now(),
-            last_activity=fake.date_time_between(start_date="-30d", end_date="now")
-            if status == PatronStatusEnum.ACTIVE
-            else None,
+        patrons.append(
+            Patron(
+                id=f"patron_{i + 1:05d}",
+                name=name,
+                email=email,
+                phone=fake.numerify("(###) ###-####"),
+                address=fake.address().replace("\n", ", "),
+                membership_date=membership_date,
+                expiration_date=expiration_date,
+                status=PatronStatusEnum.PENDING if is_pending else PatronStatusEnum.ACTIVE,
+                borrowing_limit=random.choice([3, 5, 5, 5, 10, 10, 15]),
+                current_checkouts=0,  # derived from simulation
+                total_checkouts=0,  # derived from simulation
+                outstanding_fines=0.0,  # derived from simulation
+                preferred_genres=json.dumps(preferred),
+                notification_preferences=json.dumps({"email": True, "sms": random.random() < 0.3}),
+                created_at=datetime.combine(membership_date, time(10, 0)),
+                updated_at=datetime.now(),
+                last_activity=None,  # derived from simulation
+            )
         )
-        patrons.append(patron)
+        # Mix of occasional readers and voracious ones (books per month).
+        reading_rates[patrons[-1].id] = random.choice([0.4, 0.8, 1.0, 1.5, 2.5, 4.0])
 
-    return patrons
+    return patrons, reading_rates
 
 
-def generate_circulation_history(
-    patrons: list[Patron], books: list[Book], num_checkouts: int = 500
+# ---------------------------------------------------------------------------
+# Circulation simulation
+# ---------------------------------------------------------------------------
+
+
+def _weighted_book_pool(books: list[Book]) -> list[str]:
+    """ISBN pool weighted by copies^2, so well-stocked popular titles circulate most.
+
+    Copy counts were themselves derived from curated popularity, making this a
+    cheap proxy: a 6-copy bestseller appears 36x more often than a 1-copy title.
+    """
+    pool: list[str] = []
+    for book in books:
+        weight = max(1, int(book.total_copies)) ** 2
+        pool.extend([book.isbn] * weight)
+    return pool
+
+
+def simulate_circulation(
+    patrons: list[Patron], books: list[Book], reading_rates: dict[str, float]
 ) -> tuple[list[CheckoutRecord], list[ReturnRecord], list[ReservationRecord]]:
-    """
-    Generate realistic circulation history including checkouts, returns, and reservations.
+    """Simulate HISTORY_MONTHS of borrowing and derive all aggregate state."""
+    today = datetime.now().date()
+    pool = _weighted_book_pool(books)
+    genre_index: dict[str, list[str]] = {}
+    for book in books:
+        genre_index.setdefault(book.genre, []).append(book.isbn)
 
-    MCP Integration:
-    - Demonstrates stateful operations across multiple tables
-    - Shows how tools create and update related records
-    - Provides data for subscription-based notifications
-    """
-    checkouts = []
-    returns = []
-    reservations = []
+    available = {b.isbn: b.total_copies for b in books}
+    raw_checkouts: list[dict] = []
+    active_counts: dict[str, int] = {}
 
-    # Get only active patrons for checkouts
-    active_patrons = [p for p in patrons if p.status == PatronStatusEnum.ACTIVE]
-
-    # Track books currently checked out by each patron
-    patron_checkouts = {p.id: [] for p in patrons}
-
-    # Generate historical checkouts (80% returned)
-    for i in range(int(num_checkouts * 0.8)):
-        patron = random.choice(active_patrons)
-        book = random.choice(books)
-
-        # Checkout date: between 2 years ago and 2 months ago
-        checkout_date = fake.date_time_between(start_date="-2y", end_date="-2M")
-        due_date = (checkout_date + timedelta(days=21)).date()
-
-        # Return date: usually before due date, sometimes late
-        if random.random() < 0.8:  # 80% returned on time
-            return_date = fake.date_time_between(start_date=checkout_date, end_date=due_date)
-            late_days = 0
-            fine_amount = 0.0
-        else:  # 20% returned late
-            late_days = random.randint(1, 30)
-            return_date = checkout_date + timedelta(days=21 + late_days)
-            fine_amount = late_days * 0.25  # $0.25 per day
-
-        checkout = CheckoutRecord(
-            id=f"checkout_{i + 1:06d}",
-            patron_id=patron.id,
-            book_isbn=book.isbn,
-            checkout_date=checkout_date,
-            due_date=due_date,
-            return_date=return_date,
-            status=CirculationStatusEnum.COMPLETED,
-            renewal_count=random.randint(0, 2),
-            fine_amount=fine_amount,
-            fine_paid=random.random() < 0.9,  # 90% of fines are paid
-            notes=fake.sentence() if random.random() < 0.1 else None,
-            created_at=checkout_date,
-            updated_at=return_date,
-        )
-        checkouts.append(checkout)
-
-        # Create corresponding return record
-        return_record = ReturnRecord(
-            id=f"return_{i + 1:06d}",
-            checkout_id=checkout.id,
-            patron_id=patron.id,
-            book_isbn=book.isbn,
-            return_date=return_date,
-            condition=random.choice(["excellent", "good", "good", "good", "fair"]),
-            late_days=late_days,
-            fine_assessed=fine_amount,
-            fine_paid=fine_amount if checkout.fine_paid else 0.0,
-            notes=fake.sentence() if random.random() < 0.05 else None,
-            processed_by="Library Staff",
-            created_at=return_date,
-        )
-        returns.append(return_record)
-
-    # Generate current checkouts (20% of total)
-    checkout_counter = len(checkouts)
-    for i in range(int(num_checkouts * 0.2)):
-        patron = random.choice(active_patrons)
-
-        # Skip if patron is at checkout limit
-        if len(patron_checkouts[patron.id]) >= patron.borrowing_limit:
+    for patron in patrons:
+        if patron.status == PatronStatusEnum.PENDING:
             continue
+        preferred = json.loads(patron.preferred_genres)
+        preferred_isbns = [i for g in preferred for i in genre_index.get(g, [])]
+        rate = reading_rates[patron.id]
 
-        book = random.choice(books)
+        # cast() because the legacy declarative schema types attributes as Column[...]
+        membership = cast("date", patron.membership_date)
+        expiration = cast("date", patron.expiration_date)  # always set by build_patrons
+        start = max(membership, today - timedelta(days=HISTORY_MONTHS * 30))
+        borrowing_end = min(expiration, today)
+        cursor = start
+        active_count = 0
 
-        # Skip if book has no available copies
-        if book.available_copies <= 0:
-            continue
+        while cursor < borrowing_end:
+            # How many books this patron borrows this month.
+            month_checkouts = int(rate) + (1 if random.random() < (rate % 1) else 0)
+            for _ in range(month_checkouts):
+                checkout_day = cursor + timedelta(days=random.randint(0, 27))
+                if checkout_day >= borrowing_end:
+                    continue
+                # 70% of picks come from the patron's preferred genres.
+                if preferred_isbns and random.random() < 0.7:
+                    isbn = random.choice(preferred_isbns)
+                else:
+                    isbn = random.choice(pool)
 
-        # Recent checkout: within last 3 weeks
-        checkout_date = fake.date_time_between(start_date="-3w", end_date="now")
-        due_date = (checkout_date + timedelta(days=21)).date()
+                checkout_date = datetime.combine(
+                    checkout_day, time(random.randint(9, 19), random.randint(0, 59))
+                )
+                due = checkout_day + timedelta(days=LOAN_DAYS)
+                days_out = (today - checkout_day).days
 
-        # Determine if overdue
-        if due_date < date.today():
-            status = CirculationStatusEnum.OVERDUE
-            late_days = (date.today() - due_date).days
-            fine_amount = late_days * 0.25
-        else:
-            status = CirculationStatusEnum.ACTIVE
-            fine_amount = 0.0
+                # Recent checkouts may still be open; older ones are returned.
+                still_out = days_out <= LOAN_DAYS and random.random() < 0.8
+                overdue_unreturned = (
+                    LOAN_DAYS < days_out <= LOAN_DAYS + 30 and random.random() < 0.12
+                )
 
-        checkout = CheckoutRecord(
-            id=f"checkout_{checkout_counter + i + 1:06d}",
-            patron_id=patron.id,
-            book_isbn=book.isbn,
-            checkout_date=checkout_date,
-            due_date=due_date,
-            return_date=None,
-            status=status,
-            renewal_count=random.randint(0, 1),
-            fine_amount=fine_amount,
-            fine_paid=False,
-            notes=None,
-            created_at=checkout_date,
-            updated_at=checkout_date,
-        )
-        checkouts.append(checkout)
-        patron_checkouts[patron.id].append(book.isbn)
+                if still_out or overdue_unreturned:
+                    if active_count >= patron.borrowing_limit or available[isbn] <= 0:
+                        continue
+                    available[isbn] -= 1
+                    active_count += 1
+                    raw_checkouts.append(
+                        {
+                            "patron": patron,
+                            "isbn": isbn,
+                            "checkout_date": checkout_date,
+                            "due": due,
+                            "returned": None,
+                        }
+                    )
+                else:
+                    # Returned: 82% on time, 18% late with a daily fine.
+                    if random.random() < 0.82:
+                        return_day = checkout_day + timedelta(days=random.randint(2, LOAN_DAYS))
+                        return_day = min(return_day, today)
+                    else:
+                        return_day = due + timedelta(days=random.randint(1, 21))
+                        return_day = min(return_day, today)
+                    raw_checkouts.append(
+                        {
+                            "patron": patron,
+                            "isbn": isbn,
+                            "checkout_date": checkout_date,
+                            "due": due,
+                            "returned": datetime.combine(
+                                return_day, time(random.randint(9, 19), random.randint(0, 59))
+                            ),
+                        }
+                    )
+            cursor += timedelta(days=30)
+        active_counts[patron.id] = active_count
 
-        # Update book availability (in memory only for generation)
-        book.available_copies -= 1
-
-    # Generate reservations for popular books with no copies
-    unavailable_books = [b for b in books if b.available_copies == 0]
-    reservation_counter = 0
-
-    for book in random.sample(unavailable_books, min(50, len(unavailable_books))):
-        # 1-5 patrons waiting for each unavailable book
-        num_reservations = random.randint(1, 5)
-        waiting_patrons = random.sample(active_patrons, min(num_reservations, len(active_patrons)))
-
-        for position, patron in enumerate(waiting_patrons, 1):
-            reservation_date = fake.date_time_between(start_date="-1M", end_date="now")
-
-            reservation = ReservationRecord(
-                id=f"reservation_{reservation_counter + 1:05d}",
-                patron_id=patron.id,
-                book_isbn=book.isbn,
-                reservation_date=reservation_date,
-                expiration_date=(reservation_date + timedelta(days=90)).date(),
-                notification_date=None,
-                pickup_deadline=None,
-                status=ReservationStatusEnum.PENDING,
-                queue_position=position,
-                notes=None,
-                created_at=reservation_date,
-                updated_at=reservation_date,
+    # Engineer bestseller scarcity: drain the remaining copies of the most
+    # popular titles with fresh checkouts so reservation queues form — the
+    # state that makes availability tracking and queue tools worth demoing.
+    bestsellers = sorted(books, key=lambda b: b.total_copies, reverse=True)[:12]
+    open_borrowers = [
+        p for p in patrons if p.status == PatronStatusEnum.ACTIVE and p.expiration_date > today
+    ]
+    for book in bestsellers:
+        while available[book.isbn] > 0:
+            with_capacity = [
+                p for p in open_borrowers if active_counts.get(p.id, 0) < p.borrowing_limit
+            ]
+            if not with_capacity:
+                break
+            patron = random.choice(with_capacity)
+            checkout_day = today - timedelta(days=random.randint(0, LOAN_DAYS - 2))
+            available[book.isbn] -= 1
+            active_counts[patron.id] = active_counts.get(patron.id, 0) + 1
+            raw_checkouts.append(
+                {
+                    "patron": patron,
+                    "isbn": book.isbn,
+                    "checkout_date": datetime.combine(
+                        checkout_day, time(random.randint(9, 19), random.randint(0, 59))
+                    ),
+                    "due": checkout_day + timedelta(days=LOAN_DAYS),
+                    "returned": None,
+                }
             )
-            reservations.append(reservation)
-            reservation_counter += 1
+
+    # Materialize ORM rows in chronological order so IDs read naturally.
+    raw_checkouts.sort(key=lambda c: c["checkout_date"])
+    checkouts: list[CheckoutRecord] = []
+    returns: list[ReturnRecord] = []
+    fines_by_patron: dict[str, float] = {}
+    activity_by_patron: dict[str, datetime] = {}
+    totals_by_patron: dict[str, int] = {}
+    active_by_patron: dict[str, int] = {}
+
+    for i, raw in enumerate(raw_checkouts, start=1):
+        patron = raw["patron"]
+        checkout_id = f"checkout_{i:06d}"
+        returned: datetime | None = raw["returned"]
+        due: date = raw["due"]
+
+        totals_by_patron[patron.id] = totals_by_patron.get(patron.id, 0) + 1
+        last_event = returned or raw["checkout_date"]
+        if patron.id not in activity_by_patron or last_event > activity_by_patron[patron.id]:
+            activity_by_patron[patron.id] = last_event
+
+        if returned is not None:
+            late_days = max(0, (returned.date() - due).days)
+            fine = round(late_days * FINE_PER_DAY, 2)
+            fine_is_paid = fine == 0 or random.random() < 0.92
+            if not fine_is_paid:
+                fines_by_patron[patron.id] = fines_by_patron.get(patron.id, 0.0) + fine
+            checkouts.append(
+                CheckoutRecord(
+                    id=checkout_id,
+                    patron_id=patron.id,
+                    book_isbn=raw["isbn"],
+                    checkout_date=raw["checkout_date"],
+                    due_date=due,
+                    return_date=returned,
+                    status=CirculationStatusEnum.COMPLETED,
+                    renewal_count=random.choices([0, 1, 2], weights=[75, 20, 5])[0],
+                    fine_amount=fine,
+                    fine_paid=fine_is_paid,
+                    created_at=raw["checkout_date"],
+                    updated_at=returned,
+                )
+            )
+            returns.append(
+                ReturnRecord(
+                    id=f"return_{i:06d}",
+                    checkout_id=checkout_id,
+                    patron_id=patron.id,
+                    book_isbn=raw["isbn"],
+                    return_date=returned,
+                    condition=random.choices(
+                        ["excellent", "good", "fair", "poor"], weights=[20, 65, 12, 3]
+                    )[0],
+                    late_days=late_days,
+                    fine_assessed=fine,
+                    fine_paid=fine if fine_is_paid else 0.0,
+                    processed_by="Front Desk",
+                    created_at=returned,
+                )
+            )
+        else:
+            is_overdue = due < today
+            accrued = round(max(0, (today - due).days) * FINE_PER_DAY, 2)
+            if accrued:
+                fines_by_patron[patron.id] = fines_by_patron.get(patron.id, 0.0) + accrued
+            active_by_patron[patron.id] = active_by_patron.get(patron.id, 0) + 1
+            checkouts.append(
+                CheckoutRecord(
+                    id=checkout_id,
+                    patron_id=patron.id,
+                    book_isbn=raw["isbn"],
+                    checkout_date=raw["checkout_date"],
+                    due_date=due,
+                    return_date=None,
+                    status=CirculationStatusEnum.OVERDUE
+                    if is_overdue
+                    else CirculationStatusEnum.ACTIVE,
+                    renewal_count=random.choices([0, 1], weights=[85, 15])[0],
+                    fine_amount=accrued,
+                    fine_paid=False,
+                    created_at=raw["checkout_date"],
+                    updated_at=raw["checkout_date"],
+                )
+            )
+
+    # Push derived aggregates back onto patrons and books.
+    for patron in patrons:
+        patron.total_checkouts = totals_by_patron.get(patron.id, 0)
+        patron.current_checkouts = active_by_patron.get(patron.id, 0)
+        patron.outstanding_fines = round(fines_by_patron.get(patron.id, 0.0), 2)
+        patron.last_activity = activity_by_patron.get(patron.id)
+        # Status is a consequence of the data: lapsed term -> EXPIRED,
+        # heavy unpaid fines -> SUSPENDED. (PENDING was set at creation.)
+        if patron.status == PatronStatusEnum.ACTIVE:
+            if patron.expiration_date and patron.expiration_date < today:
+                patron.status = PatronStatusEnum.EXPIRED
+            elif patron.outstanding_fines > SUSPENSION_FINE_THRESHOLD:
+                patron.status = PatronStatusEnum.SUSPENDED
+
+    for book in books:
+        book.available_copies = available[book.isbn]
+
+    # Reservations: queues form on popular titles with no copies on the shelf.
+    reservations: list[ReservationRecord] = []
+    eligible_patrons = [p for p in patrons if p.status == PatronStatusEnum.ACTIVE]
+    hot_and_gone = [b for b in books if available[b.isbn] == 0 and b.total_copies >= 3]
+    holders: dict[str, set[str]] = {}
+    for c in checkouts:
+        if c.return_date is None:
+            holders.setdefault(c.book_isbn, set()).add(c.patron_id)
+
+    counter = 1
+    for book in hot_and_gone:
+        queue_size = random.randint(1, 4)
+        waiting = [p for p in eligible_patrons if p.id not in holders.get(book.isbn, set())]
+        for position, patron in enumerate(random.sample(waiting, min(queue_size, len(waiting))), 1):
+            reserved_at = fake.date_time_between(start_date="-30d", end_date="now")
+            reservations.append(
+                ReservationRecord(
+                    id=f"reservation_{counter:05d}",
+                    patron_id=patron.id,
+                    book_isbn=book.isbn,
+                    reservation_date=reserved_at,
+                    expiration_date=(reserved_at + timedelta(days=90)).date(),
+                    status=ReservationStatusEnum.PENDING,
+                    queue_position=position,
+                    created_at=reserved_at,
+                    updated_at=reserved_at,
+                )
+            )
+            counter += 1
 
     return checkouts, returns, reservations
 
 
-def seed_database(database_url: str = "sqlite:///library.db"):
-    """
-    Main function to seed the database with generated data.
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
-    This demonstrates:
-    - Progress reporting for long operations (MCP progress feature)
-    - Transactional data insertion
-    - Relationship management across tables
-    """
-    # Calculate total steps for progress reporting
-    total_steps = 7  # Major operations
-    progress = ProgressReporter(total_steps)
 
-    # Create engine and tables
+def verify_consistency(
+    books: list[Book], patrons: list[Patron], checkouts: list[CheckoutRecord]
+) -> None:
+    """Assert the invariants that make the demo data trustworthy."""
+    open_by_isbn: dict[str, int] = {}
+    open_by_patron: dict[str, int] = {}
+    for c in checkouts:
+        if c.return_date is None:
+            open_by_isbn[c.book_isbn] = open_by_isbn.get(c.book_isbn, 0) + 1
+            open_by_patron[c.patron_id] = open_by_patron.get(c.patron_id, 0) + 1
+
+    for book in books:
+        expected = book.total_copies - open_by_isbn.get(book.isbn, 0)
+        assert book.available_copies == expected, f"availability drift on {book.isbn}"
+        assert 0 <= book.available_copies <= book.total_copies
+
+    for patron in patrons:
+        assert patron.current_checkouts == open_by_patron.get(patron.id, 0)
+        assert patron.current_checkouts <= patron.borrowing_limit
+
+
+def seed_database(database_url: str = "sqlite:///library.db") -> None:
+    """Create the schema and populate it with the curated + simulated dataset."""
     engine = create_engine(database_url)
-    Base.metadata.drop_all(engine)  # Clean slate
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
-    progress.update("Database tables created")
 
-    # Create session
+    print("Loading curated catalog from seed_data/ ...")
+    catalog = load_catalog()
+    authors, books = build_authors_and_books(catalog)
+    patrons, reading_rates = build_patrons()
+    print(f"  {len(authors)} authors, {len(books)} books, {len(patrons)} patrons")
+
+    print("Simulating circulation history ...")
+    checkouts, returns, reservations = simulate_circulation(patrons, books, reading_rates)
+    verify_consistency(books, patrons, checkouts)
+
     session = Session(engine)
-
     try:
-        # Generate authors
-        print("\nGenerating authors...")
-        authors = generate_authors(120)
-        session.add_all(authors)
-        session.commit()
-        progress.update(f"Generated {len(authors)} authors")
+        for label, rows in (
+            ("authors", authors),
+            ("books", books),
+            ("patrons", patrons),
+            ("checkouts", checkouts),
+            ("returns", returns),
+            ("reservations", reservations),
+        ):
+            session.add_all(rows)
+            session.commit()
+            print(f"  inserted {len(rows):>5} {label}")
 
-        # Generate books
-        print("\nGenerating books...")
-        books = generate_books(authors, 1200)
-        session.add_all(books)
-        session.commit()
-        progress.update(f"Generated {len(books)} books")
-
-        # Generate patrons
-        print("\nGenerating patrons...")
-        patrons = generate_patrons(60)
-        session.add_all(patrons)
-        session.commit()
-        progress.update(f"Generated {len(patrons)} patrons")
-
-        # Generate circulation history
-        print("\nGenerating circulation history...")
-        checkouts, returns, reservations = generate_circulation_history(patrons, books, 500)
-
-        session.add_all(checkouts)
-        session.commit()
-        progress.update(f"Generated {len(checkouts)} checkout records")
-
-        session.add_all(returns)
-        session.commit()
-        progress.update(f"Generated {len(returns)} return records")
-
-        session.add_all(reservations)
-        session.commit()
-        progress.update(f"Generated {len(reservations)} reservation records")
-
-        # Print summary statistics
-        print("\n" + "=" * 50)
+        print("\n" + "=" * 56)
         print("DATABASE SEEDING COMPLETE")
-        print("=" * 50)
+        print("=" * 56)
         print(f"Authors:       {len(authors):,}")
-        print(f"Books:         {len(books):,}")
+        print(f"Books:         {len(books):,} ({sum(b.total_copies for b in books):,} copies)")
         print(f"Patrons:       {len(patrons):,}")
-        print(f"  - Active:    {sum(1 for p in patrons if p.status == PatronStatusEnum.ACTIVE)}")
-        print(f"  - Suspended: {sum(1 for p in patrons if p.status == PatronStatusEnum.SUSPENDED)}")
-        print(f"  - Expired:   {sum(1 for p in patrons if p.status == PatronStatusEnum.EXPIRED)}")
+        for status in PatronStatusEnum:
+            count = sum(1 for p in patrons if p.status == status)
+            print(f"  - {status.value:<10} {count}")
         print(f"Checkouts:     {len(checkouts):,}")
-        print(
-            f"  - Active:    {sum(1 for c in checkouts if c.status == CirculationStatusEnum.ACTIVE)}"
-        )
-        print(
-            f"  - Completed: {sum(1 for c in checkouts if c.status == CirculationStatusEnum.COMPLETED)}"
-        )
-        print(
-            f"  - Overdue:   {sum(1 for c in checkouts if c.status == CirculationStatusEnum.OVERDUE)}"
-        )
+        for status in (
+            CirculationStatusEnum.ACTIVE,
+            CirculationStatusEnum.OVERDUE,
+            CirculationStatusEnum.COMPLETED,
+        ):
+            count = sum(1 for c in checkouts if c.status == status)
+            print(f"  - {status.value:<10} {count}")
         print(f"Returns:       {len(returns):,}")
         print(f"Reservations:  {len(reservations):,}")
-        print("=" * 50)
-
-    except Exception as e:
+        print("=" * 56)
+    except Exception:
         session.rollback()
-        print(f"\nError during seeding: {e}")
         raise
     finally:
         session.close()
 
 
 if __name__ == "__main__":
-    # Use the project's database location
     db_path = Path(__file__).parent.parent / "data" / "library.db"
     db_path.parent.mkdir(exist_ok=True)
 
-    print("Starting Virtual Library MCP Server database seeding...")
+    print("Seeding the Virtual Library ...")
     print(f"Database location: {db_path}")
-
     seed_database(f"sqlite:///{db_path}")

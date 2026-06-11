@@ -1,0 +1,929 @@
+{
+  "collection": "Literary Fiction, Classics, Historical & Contemporary",
+  "authors": [
+    {
+      "name": "Jane Austen",
+      "birth_date": "1775-12-16",
+      "death_date": "1817-07-18",
+      "nationality": "British",
+      "biography": "English novelist whose six major novels critique the British landed gentry with irony and social insight. Among the most widely read writers in English literature.",
+      "books": [
+        {"title": "Pride and Prejudice", "year": 1813, "genre": "Fiction", "popularity": 5, "description": "Elizabeth Bennet spars with the proud Mr. Darcy in a sparkling comedy of manners about marriage, money, and first impressions in Regency England."},
+        {"title": "Sense and Sensibility", "year": 1811, "genre": "Fiction", "popularity": 3, "description": "Sisters Elinor and Marianne Dashwood navigate love and heartbreak after their family's fortune is lost, embodying reason and emotion in turn."},
+        {"title": "Emma", "year": 1815, "genre": "Fiction", "popularity": 4, "description": "A clever, wealthy young woman amuses herself with matchmaking in her small village, blind to her own heart until her schemes unravel."},
+        {"title": "Persuasion", "year": 1817, "genre": "Fiction", "popularity": 3, "description": "Anne Elliot is given a second chance at love when Captain Wentworth, the suitor she was persuaded to refuse years earlier, returns from sea."}
+      ]
+    },
+    {
+      "name": "Charles Dickens",
+      "birth_date": "1812-02-07",
+      "death_date": "1870-06-09",
+      "nationality": "British",
+      "biography": "Victorian novelist and social critic who created some of fiction's best-known characters. His serialized novels exposed the harsh conditions of industrial England.",
+      "books": [
+        {"title": "Great Expectations", "year": 1861, "genre": "Fiction", "popularity": 4, "description": "Orphan Pip rises from the Kent marshes to London society on a mysterious benefactor's money, learning hard lessons about class, loyalty, and gratitude."},
+        {"title": "A Tale of Two Cities", "year": 1859, "genre": "Historical Fiction", "popularity": 4, "description": "Love and sacrifice bind London and Paris during the French Revolution, culminating in one of literature's most famous acts of redemption."},
+        {"title": "Oliver Twist", "year": 1838, "genre": "Fiction", "popularity": 3, "description": "A workhouse orphan falls in with a gang of juvenile pickpockets in the London underworld in this dark portrait of Victorian poverty and crime."},
+        {"title": "David Copperfield", "year": 1850, "genre": "Fiction", "popularity": 3, "description": "Dickens's most autobiographical novel follows David from a blighted childhood through hardship, friendship, and love to maturity as a writer."}
+      ]
+    },
+    {
+      "name": "Charlotte Brontë",
+      "birth_date": "1816-04-21",
+      "death_date": "1855-03-31",
+      "nationality": "British",
+      "biography": "Eldest of the three Brontë sisters, whose passionate, psychologically rich novels challenged Victorian conventions about women's inner lives.",
+      "books": [
+        {"title": "Jane Eyre", "year": 1847, "genre": "Fiction", "popularity": 4, "description": "A plain, fiercely principled governess falls in love with her brooding employer Mr. Rochester, only to discover the terrible secret hidden in Thornfield Hall."}
+      ]
+    },
+    {
+      "name": "Emily Brontë",
+      "birth_date": "1818-07-30",
+      "death_date": "1848-12-19",
+      "nationality": "British",
+      "biography": "English novelist and poet who published a single novel of elemental passion before dying at thirty. Wrote under the pen name Ellis Bell.",
+      "books": [
+        {"title": "Wuthering Heights", "year": 1847, "genre": "Fiction", "popularity": 4, "description": "The obsessive, destructive love between Catherine Earnshaw and the foundling Heathcliff plays out across two generations on the wild Yorkshire moors."}
+      ]
+    },
+    {
+      "name": "Leo Tolstoy",
+      "birth_date": "1828-09-09",
+      "death_date": "1910-11-20",
+      "nationality": "Russian",
+      "biography": "Russian master regarded as one of the greatest novelists of all time, whose epic realism encompasses war, family, faith, and the search for meaning.",
+      "books": [
+        {"title": "Anna Karenina", "year": 1878, "genre": "Fiction", "popularity": 4, "description": "A married aristocrat's affair with Count Vronsky scandalizes St. Petersburg society, set against Levin's parallel search for an honest life on the land."},
+        {"title": "War and Peace", "year": 1869, "genre": "Historical Fiction", "popularity": 4, "description": "Five aristocratic families live, love, and suffer through Napoleon's invasion of Russia in this vast meditation on history, free will, and fate."},
+        {"title": "The Death of Ivan Ilyich", "year": 1886, "genre": "Fiction", "popularity": 2, "description": "A successful judge confronts the emptiness of his conventional life as he faces a slow, terrifying death in this piercing novella."}
+      ]
+    },
+    {
+      "name": "Fyodor Dostoevsky",
+      "birth_date": "1821-11-11",
+      "death_date": "1881-02-09",
+      "nationality": "Russian",
+      "biography": "Russian novelist and philosopher whose psychological depth and moral urgency shaped modern literature. Survived a mock execution and Siberian exile.",
+      "books": [
+        {"title": "Crime and Punishment", "year": 1866, "genre": "Fiction", "popularity": 4, "description": "Impoverished student Raskolnikov murders a pawnbroker to prove a theory about extraordinary men, then unravels under guilt and the patient pursuit of a detective."},
+        {"title": "The Brothers Karamazov", "year": 1880, "genre": "Fiction", "popularity": 4, "description": "A patricide forces three brothers — sensualist, intellectual, and monk — to confront faith, doubt, and responsibility in Dostoevsky's final masterpiece."},
+        {"title": "Notes from Underground", "year": 1864, "genre": "Fiction", "popularity": 2, "description": "A bitter, hyperconscious retired clerk rails against rationalism and his own spite in the monologue that anticipated existentialism."},
+        {"title": "The Idiot", "year": 1869, "genre": "Fiction", "popularity": 2, "description": "The saintly Prince Myshkin returns to Russia and is destroyed by a society that cannot accommodate genuine goodness."}
+      ]
+    },
+    {
+      "name": "Mark Twain",
+      "birth_date": "1835-11-30",
+      "death_date": "1910-04-21",
+      "nationality": "American",
+      "biography": "American humorist, riverboat pilot, and novelist called the father of American literature, famed for his satire and vernacular style.",
+      "books": [
+        {"title": "Adventures of Huckleberry Finn", "year": 1884, "genre": "Fiction", "popularity": 4, "description": "Huck and the runaway slave Jim raft down the Mississippi in a picaresque masterpiece that skewers the hypocrisies of antebellum America."},
+        {"title": "The Adventures of Tom Sawyer", "year": 1876, "genre": "Children", "popularity": 3, "description": "A mischievous boy in a Missouri river town whitewashes fences, hunts treasure, and witnesses a murder in this classic of American boyhood."}
+      ]
+    },
+    {
+      "name": "F. Scott Fitzgerald",
+      "birth_date": "1896-09-24",
+      "death_date": "1940-12-21",
+      "nationality": "American",
+      "biography": "American novelist and chronicler of the Jazz Age whose glittering prose captured the promise and corruption of the American Dream.",
+      "books": [
+        {"title": "The Great Gatsby", "year": 1925, "genre": "Fiction", "popularity": 5, "description": "Mysterious millionaire Jay Gatsby throws lavish parties across the bay from Daisy Buchanan, the lost love he is determined to win back, in the definitive Jazz Age novel."},
+        {"title": "Tender Is the Night", "year": 1934, "genre": "Fiction", "popularity": 2, "description": "Glamorous psychiatrist Dick Diver and his wife Nicole disintegrate on the French Riviera in Fitzgerald's most personal novel."},
+        {"title": "This Side of Paradise", "year": 1920, "genre": "Fiction", "popularity": 2, "description": "Princeton golden boy Amory Blaine drifts through romance and disillusionment in the debut that made Fitzgerald famous at twenty-three."}
+      ]
+    },
+    {
+      "name": "Ernest Hemingway",
+      "birth_date": "1899-07-21",
+      "death_date": "1961-07-02",
+      "nationality": "American",
+      "biography": "Nobel Prize-winning American writer whose spare, understated style revolutionized twentieth-century prose. Ambulance driver, war correspondent, and big-game fisherman.",
+      "books": [
+        {"title": "The Old Man and the Sea", "year": 1952, "genre": "Fiction", "popularity": 4, "description": "An aging Cuban fisherman battles a giant marlin far out in the Gulf Stream in a taut parable of endurance and dignity in defeat."},
+        {"title": "A Farewell to Arms", "year": 1929, "genre": "Historical Fiction", "popularity": 3, "description": "An American ambulance officer and an English nurse fall in love amid the chaos of the Italian front in World War I."},
+        {"title": "The Sun Also Rises", "year": 1926, "genre": "Fiction", "popularity": 3, "description": "Expatriate Jake Barnes and the magnetic Lady Brett Ashley drift from Paris cafés to the bullfights of Pamplona in the novel that defined the Lost Generation."},
+        {"title": "For Whom the Bell Tolls", "year": 1940, "genre": "Historical Fiction", "popularity": 3, "description": "American dynamiter Robert Jordan joins Republican guerrillas in the Spanish Civil War for three days that hold a lifetime of love and sacrifice."}
+      ]
+    },
+    {
+      "name": "John Steinbeck",
+      "birth_date": "1902-02-27",
+      "death_date": "1968-12-20",
+      "nationality": "American",
+      "biography": "Nobel laureate whose novels of Depression-era California gave voice to migrant workers and the dispossessed with compassion and biblical sweep.",
+      "books": [
+        {"title": "The Grapes of Wrath", "year": 1939, "genre": "Fiction", "popularity": 4, "description": "The Joad family flees the Oklahoma Dust Bowl for California's promised land, finding exploitation and solidarity on the road west."},
+        {"title": "Of Mice and Men", "year": 1937, "genre": "Fiction", "popularity": 4, "description": "Drifting ranch hands George and Lennie nurse a dream of owning land in a tragedy of friendship and broken hopes."},
+        {"title": "East of Eden", "year": 1952, "genre": "Fiction", "popularity": 4, "description": "Two families reenact Cain and Abel across generations in California's Salinas Valley in Steinbeck's sprawling meditation on choice and inherited sin."},
+        {"title": "Cannery Row", "year": 1945, "genre": "Fiction", "popularity": 2, "description": "Mack and the boys scheme to throw a party for Doc the marine biologist in this affectionate portrait of a Monterey waterfront community."}
+      ]
+    },
+    {
+      "name": "Virginia Woolf",
+      "birth_date": "1882-01-25",
+      "death_date": "1941-03-28",
+      "nationality": "British",
+      "biography": "Modernist pioneer whose stream-of-consciousness novels mapped the texture of inner life. Central figure of the Bloomsbury Group and feminist criticism.",
+      "books": [
+        {"title": "Mrs Dalloway", "year": 1925, "genre": "Fiction", "popularity": 3, "description": "On a single June day in London, Clarissa Dalloway prepares for a party while shell-shocked veteran Septimus Smith spirals, their lives glancingly entwined."},
+        {"title": "To the Lighthouse", "year": 1927, "genre": "Fiction", "popularity": 3, "description": "The Ramsay family's summers on the Isle of Skye frame a luminous elegy for time, art, and the unsaid spaces between people."},
+        {"title": "Orlando", "year": 1928, "genre": "Fantasy", "popularity": 2, "description": "An Elizabethan nobleman lives four centuries and changes sex along the way in Woolf's playful, gender-bending mock biography."}
+      ]
+    },
+    {
+      "name": "James Joyce",
+      "birth_date": "1882-02-02",
+      "death_date": "1941-01-13",
+      "nationality": "Irish",
+      "biography": "Irish modernist whose linguistic invention and encyclopedic ambition redefined what the novel could do.",
+      "books": [
+        {"title": "Ulysses", "year": 1922, "genre": "Fiction", "popularity": 3, "description": "Leopold Bloom wanders Dublin on June 16, 1904, in a single ordinary day rendered with Homeric scope and dazzling stylistic invention."},
+        {"title": "Dubliners", "year": 1914, "genre": "Fiction", "popularity": 2, "description": "Fifteen exacting stories of paralysis and epiphany among the ordinary citizens of turn-of-the-century Dublin."}
+      ]
+    },
+    {
+      "name": "Franz Kafka",
+      "birth_date": "1883-07-03",
+      "death_date": "1924-06-03",
+      "nationality": "Czech",
+      "biography": "Prague insurance clerk who wrote nightmarish fables of bureaucracy, guilt, and alienation that gave the twentieth century its defining adjective: Kafkaesque.",
+      "books": [
+        {"title": "The Metamorphosis", "year": 1915, "genre": "Fiction", "popularity": 4, "description": "Traveling salesman Gregor Samsa wakes one morning transformed into a monstrous insect, and his family's love curdles into shame."},
+        {"title": "The Trial", "year": 1925, "genre": "Fiction", "popularity": 3, "description": "Josef K. is arrested by an inaccessible court for a crime no one will name, and his search for justice becomes a descent into absurdity."},
+        {"title": "The Castle", "year": 1926, "genre": "Fiction", "popularity": 2, "description": "Land surveyor K. struggles endlessly to reach the authorities of a castle that governs a village in Kafka's unfinished parable of unreachable power."}
+      ]
+    },
+    {
+      "name": "Gabriel García Márquez",
+      "birth_date": "1927-03-06",
+      "death_date": "2014-04-17",
+      "nationality": "Colombian",
+      "biography": "Colombian Nobel laureate and master of magical realism, whose imagined town of Macondo became a mirror for Latin America's history.",
+      "books": [
+        {"title": "One Hundred Years of Solitude", "year": 1967, "genre": "Fiction", "popularity": 5, "description": "Seven generations of the Buendía family rise and fall with the mythical town of Macondo in the landmark novel of magical realism."},
+        {"title": "Love in the Time of Cholera", "year": 1985, "genre": "Romance", "popularity": 4, "description": "Florentino Ariza waits more than fifty years for Fermina Daza in a lush meditation on love's persistence in every form."},
+        {"title": "Chronicle of a Death Foretold", "year": 1981, "genre": "Fiction", "popularity": 3, "description": "Everyone in town knows the Vicario brothers intend to kill Santiago Nasar, yet no one stops them, in this compact anatomy of honor and complicity."}
+      ]
+    },
+    {
+      "name": "Jorge Luis Borges",
+      "birth_date": "1899-08-24",
+      "death_date": "1986-06-14",
+      "nationality": "Argentine",
+      "biography": "Argentine poet, essayist, and writer of metaphysical short fictions about labyrinths, mirrors, infinite libraries, and the nature of time.",
+      "books": [
+        {"title": "Ficciones", "year": 1944, "genre": "Fiction", "popularity": 3, "description": "Seventeen dazzling stories — infinite libraries, forking paths, imaginary encyclopedias — that fold philosophy into fiction like origami."},
+        {"title": "The Aleph", "year": 1949, "genre": "Fiction", "popularity": 2, "description": "Stories of points containing all points, immortals weary of immortality, and memory beyond bearing, from literature's great miniaturist."}
+      ]
+    },
+    {
+      "name": "Isabel Allende",
+      "birth_date": "1942-08-02",
+      "death_date": null,
+      "nationality": "Chilean",
+      "biography": "Chilean-American novelist whose sweeping family sagas blend the political and the magical. One of the most widely read Spanish-language authors alive.",
+      "books": [
+        {"title": "The House of the Spirits", "year": 1982, "genre": "Fiction", "popularity": 3, "description": "Three generations of Trueba women — clairvoyant Clara, ethereal Blanca, revolutionary Alba — endure love and tyranny in an unnamed Latin American country."},
+        {"title": "Eva Luna", "year": 1987, "genre": "Fiction", "popularity": 2, "description": "An orphaned storyteller spins her way from servitude to self-invention against a backdrop of revolution and telenovela passion."}
+      ]
+    },
+    {
+      "name": "Italo Calvino",
+      "birth_date": "1923-10-15",
+      "death_date": "1985-09-19",
+      "nationality": "Italian",
+      "biography": "Italian fabulist whose playful, crystalline fictions range from neorealism to postmodern experiment, beloved for their lightness and invention.",
+      "books": [
+        {"title": "Invisible Cities", "year": 1972, "genre": "Fiction", "popularity": 3, "description": "Marco Polo describes fifty-five impossible cities to an aging Kublai Khan in a jeweled meditation on imagination, memory, and desire."},
+        {"title": "If on a winter's night a traveler", "year": 1979, "genre": "Fiction", "popularity": 2, "description": "You, the Reader, begin ten different novels that keep interrupting each other in Calvino's witty labyrinth about the act of reading itself."}
+      ]
+    },
+    {
+      "name": "Umberto Eco",
+      "birth_date": "1932-01-05",
+      "death_date": "2016-02-19",
+      "nationality": "Italian",
+      "biography": "Italian semiotician and novelist who smuggled medieval philosophy, conspiracy, and bibliophilia into international bestsellers.",
+      "books": [
+        {"title": "The Name of the Rose", "year": 1980, "genre": "Mystery", "popularity": 4, "description": "Franciscan friar William of Baskerville investigates a series of murders in a fourteenth-century abbey whose labyrinthine library guards a deadly secret."},
+        {"title": "Foucault's Pendulum", "year": 1988, "genre": "Thriller", "popularity": 2, "description": "Three Milanese editors invent a grand occult conspiracy as a game, until believers decide the Plan is real and want what they know."}
+      ]
+    },
+    {
+      "name": "Albert Camus",
+      "birth_date": "1913-11-07",
+      "death_date": "1960-01-04",
+      "nationality": "French",
+      "biography": "French-Algerian novelist and philosopher of the absurd, Nobel laureate at forty-four, who insisted on lucidity and revolt in a meaningless universe.",
+      "books": [
+        {"title": "The Stranger", "year": 1942, "genre": "Fiction", "popularity": 4, "description": "Indifferent clerk Meursault kills an Arab man on a sun-blinded Algerian beach and is condemned as much for failing to weep at his mother's funeral."},
+        {"title": "The Plague", "year": 1947, "genre": "Fiction", "popularity": 4, "description": "As plague seals the city of Oran, Dr. Rieux and an ensemble of citizens choose decency over despair in an allegory of occupation and solidarity."},
+        {"title": "The Fall", "year": 1956, "genre": "Fiction", "popularity": 2, "description": "In an Amsterdam bar, former Parisian lawyer Clamence delivers a seductive confession that indicts himself — and his listener."}
+      ]
+    },
+    {
+      "name": "Victor Hugo",
+      "birth_date": "1802-02-26",
+      "death_date": "1885-05-22",
+      "nationality": "French",
+      "biography": "Towering French Romantic — poet, dramatist, novelist, and exile — whose epic novels championed the poor and the outcast.",
+      "books": [
+        {"title": "Les Misérables", "year": 1862, "genre": "Historical Fiction", "popularity": 4, "description": "Ex-convict Jean Valjean seeks redemption across decades of French upheaval while the implacable Inspector Javert hunts him."},
+        {"title": "The Hunchback of Notre-Dame", "year": 1831, "genre": "Historical Fiction", "popularity": 3, "description": "The deformed bell-ringer Quasimodo, the dancer Esmeralda, and the tormented archdeacon Frollo collide beneath the towers of medieval Paris."}
+      ]
+    },
+    {
+      "name": "Alexandre Dumas",
+      "birth_date": "1802-07-24",
+      "death_date": "1870-12-05",
+      "nationality": "French",
+      "biography": "Prolific French storyteller whose swashbuckling historical adventures remain among the most entertaining novels ever written.",
+      "books": [
+        {"title": "The Count of Monte Cristo", "year": 1844, "genre": "Adventure", "popularity": 5, "description": "Falsely imprisoned sailor Edmond Dantès escapes, finds a fabulous treasure, and executes an intricate revenge on the men who betrayed him."},
+        {"title": "The Three Musketeers", "year": 1844, "genre": "Adventure", "popularity": 4, "description": "Hot-headed young d'Artagnan joins Athos, Porthos, and Aramis in court intrigue, duels, and derring-do in seventeenth-century France."}
+      ]
+    },
+    {
+      "name": "Vladimir Nabokov",
+      "birth_date": "1899-04-22",
+      "death_date": "1977-07-02",
+      "nationality": "Russian",
+      "biography": "Russian-American stylist and lepidopterist whose virtuosic English prose made him one of the twentieth century's most acclaimed and controversial novelists.",
+      "books": [
+        {"title": "Lolita", "year": 1955, "genre": "Fiction", "popularity": 3, "description": "Unreliable aesthete Humbert Humbert narrates his obsession with twelve-year-old Dolores Haze in a morally harrowing, linguistically dazzling novel."},
+        {"title": "Pale Fire", "year": 1962, "genre": "Fiction", "popularity": 2, "description": "A 999-line poem and its deranged scholarly commentary tell two stories at once in Nabokov's funniest, most intricate puzzle box."}
+      ]
+    },
+    {
+      "name": "George Orwell",
+      "birth_date": "1903-06-25",
+      "death_date": "1950-01-21",
+      "nationality": "British",
+      "biography": "English essayist and novelist whose clear-eyed hatred of totalitarianism and cant produced the century's most influential political fiction.",
+      "books": [
+        {"title": "1984", "year": 1949, "genre": "Dystopian", "popularity": 5, "description": "Winston Smith rewrites history for the Ministry of Truth and dares to fall in love under Big Brother's all-seeing eye in the defining dystopia of surveillance and thought control."},
+        {"title": "Animal Farm", "year": 1945, "genre": "Dystopian", "popularity": 5, "description": "The animals of Manor Farm overthrow their farmer only to watch the pigs become indistinguishable from the masters, in a fable of revolution betrayed."},
+        {"title": "Homage to Catalonia", "year": 1938, "genre": "Memoir", "popularity": 2, "description": "Orwell's firsthand account of fighting with a POUM militia in the Spanish Civil War, and of the revolution devoured by its own side."}
+      ]
+    },
+    {
+      "name": "Aldous Huxley",
+      "birth_date": "1894-07-26",
+      "death_date": "1963-11-22",
+      "nationality": "British",
+      "biography": "English novelist and essayist from a famous scientific family, who imagined a future enslaved not by pain but by pleasure.",
+      "books": [
+        {"title": "Brave New World", "year": 1932, "genre": "Dystopian", "popularity": 5, "description": "In a World State of engineered castes, soma, and manufactured happiness, a 'savage' raised on Shakespeare collides with civilization."},
+        {"title": "The Doors of Perception", "year": 1954, "genre": "Essays", "popularity": 2, "description": "Huxley's famous account of his mescaline experiment, a short, lucid inquiry into perception, art, and the mind at large."}
+      ]
+    },
+    {
+      "name": "Toni Morrison",
+      "birth_date": "1931-02-18",
+      "death_date": "2019-08-05",
+      "nationality": "American",
+      "biography": "Nobel laureate whose novels gave epic, lyric form to Black American memory and survival. The first African American woman to win the Nobel Prize in Literature.",
+      "books": [
+        {"title": "Beloved", "year": 1987, "genre": "Fiction", "popularity": 4, "description": "Escaped slave Sethe is haunted — literally — by the daughter she killed to spare from bondage, in a ghost story about slavery's unhealed wounds."},
+        {"title": "Song of Solomon", "year": 1977, "genre": "Fiction", "popularity": 3, "description": "Macon 'Milkman' Dead journeys south through family legend toward flight and self-discovery in Morrison's mythic coming-of-age novel."},
+        {"title": "The Bluest Eye", "year": 1970, "genre": "Fiction", "popularity": 3, "description": "Young Pecola Breedlove prays for blue eyes in a devastating debut about beauty standards, racism, and a child the world refuses to love."},
+        {"title": "Sula", "year": 1973, "genre": "Fiction", "popularity": 2, "description": "Two girls grow into very different women in the Black hilltop community of Medallion, Ohio, in a fierce novel of friendship and betrayal."}
+      ]
+    },
+    {
+      "name": "James Baldwin",
+      "birth_date": "1924-08-02",
+      "death_date": "1987-12-01",
+      "nationality": "American",
+      "biography": "American novelist and essayist whose prophetic eloquence on race, sexuality, and the American conscience remains urgently contemporary.",
+      "books": [
+        {"title": "Go Tell It on the Mountain", "year": 1953, "genre": "Fiction", "popularity": 3, "description": "On his fourteenth birthday, John Grimes wrestles with faith, family, and his stepfather's church in Baldwin's semi-autobiographical Harlem debut."},
+        {"title": "Giovanni's Room", "year": 1956, "genre": "Fiction", "popularity": 3, "description": "An American in Paris falls in love with an Italian bartender and destroys them both through shame, in a landmark of queer literature."},
+        {"title": "If Beale Street Could Talk", "year": 1974, "genre": "Fiction", "popularity": 3, "description": "Nineteen-year-old Tish fights to free her wrongly imprisoned fiancé Fonny as their families rally, in a love story under the weight of injustice."}
+      ]
+    },
+    {
+      "name": "Zora Neale Hurston",
+      "birth_date": "1891-01-07",
+      "death_date": "1960-01-28",
+      "nationality": "American",
+      "biography": "Anthropologist and central figure of the Harlem Renaissance who captured Black Southern folk life in luminous vernacular prose.",
+      "books": [
+        {"title": "Their Eyes Were Watching God", "year": 1937, "genre": "Fiction", "popularity": 4, "description": "Janie Crawford moves through three marriages toward self-possession and the horizon in a classic of Black womanhood and Florida folk life."}
+      ]
+    },
+    {
+      "name": "Ralph Ellison",
+      "birth_date": "1913-03-01",
+      "death_date": "1994-04-16",
+      "nationality": "American",
+      "biography": "American writer whose single completed novel stands among the great works of the century. Also a penetrating essayist on jazz and democracy.",
+      "books": [
+        {"title": "Invisible Man", "year": 1952, "genre": "Fiction", "popularity": 4, "description": "An unnamed Black man journeys from a Southern college to Harlem's underground, rendered invisible by everyone's refusal to see him."}
+      ]
+    },
+    {
+      "name": "Kurt Vonnegut",
+      "birth_date": "1922-11-11",
+      "death_date": "2007-04-11",
+      "nationality": "American",
+      "biography": "American satirist and humanist who survived the firebombing of Dresden as a POW and turned dark history into darkly funny, deeply moral fiction.",
+      "books": [
+        {"title": "Slaughterhouse-Five", "year": 1969, "genre": "Science Fiction", "popularity": 4, "description": "Billy Pilgrim comes unstuck in time, shuttling between Dresden's firebombing and the planet Tralfamadore. So it goes."},
+        {"title": "Cat's Cradle", "year": 1963, "genre": "Science Fiction", "popularity": 3, "description": "A journalist chasing the atomic bomb's legacy finds ice-nine, a doomsday substance, and Bokononism, a religion of comforting lies."},
+        {"title": "Breakfast of Champions", "year": 1973, "genre": "Fiction", "popularity": 2, "description": "Failing car dealer Dwayne Hoover meets pulp writer Kilgore Trout, whose novel convinces him everyone else is a robot, in Vonnegut's anarchic satire of America."}
+      ]
+    },
+    {
+      "name": "Joseph Heller",
+      "birth_date": "1923-05-01",
+      "death_date": "1999-12-12",
+      "nationality": "American",
+      "biography": "American novelist and WWII bombardier whose first novel added a phrase to the language for absurd, self-defeating logic.",
+      "books": [
+        {"title": "Catch-22", "year": 1961, "genre": "Fiction", "popularity": 4, "description": "Bombardier Yossarian schemes to stay alive against a military bureaucracy whose rules make escape logically impossible, in the great absurdist war novel."}
+      ]
+    },
+    {
+      "name": "Sylvia Plath",
+      "birth_date": "1932-10-27",
+      "death_date": "1963-02-11",
+      "nationality": "American",
+      "biography": "American poet of ferocious precision whose confessional verse and single novel made her an enduring literary icon.",
+      "books": [
+        {"title": "The Bell Jar", "year": 1963, "genre": "Fiction", "popularity": 4, "description": "Brilliant college student Esther Greenwood descends into depression during a New York magazine internship in this acid, semi-autobiographical classic."}
+      ]
+    },
+    {
+      "name": "Chinua Achebe",
+      "birth_date": "1930-11-16",
+      "death_date": "2013-03-21",
+      "nationality": "Nigerian",
+      "biography": "Nigerian novelist called the father of modern African literature, who told colonialism's story from the other side of the river.",
+      "books": [
+        {"title": "Things Fall Apart", "year": 1958, "genre": "Fiction", "popularity": 4, "description": "Proud wrestler and yam farmer Okonkwo watches Igbo society and his own life shatter against the arrival of missionaries and colonial rule."},
+        {"title": "No Longer at Ease", "year": 1960, "genre": "Fiction", "popularity": 2, "description": "Okonkwo's grandson, educated in England, returns to a civil service post in Lagos and is ground down between two value systems."}
+      ]
+    },
+    {
+      "name": "Chimamanda Ngozi Adichie",
+      "birth_date": "1977-09-15",
+      "death_date": null,
+      "nationality": "Nigerian",
+      "biography": "Nigerian novelist and essayist whose fiction spans the Biafran War to Black immigrant life in America, and whose talks reshaped popular feminism.",
+      "books": [
+        {"title": "Half of a Yellow Sun", "year": 2006, "genre": "Historical Fiction", "popularity": 4, "description": "Twin sisters, a houseboy, and an English writer are swept into the Biafran War in a wrenching novel of love and the Nigerian civil war."},
+        {"title": "Americanah", "year": 2013, "genre": "Fiction", "popularity": 4, "description": "Ifemelu leaves Lagos for America and a blogging career about race, while her first love Obinze navigates undocumented life in London."},
+        {"title": "Purple Hibiscus", "year": 2003, "genre": "Fiction", "popularity": 3, "description": "Fifteen-year-old Kambili discovers freedom at her aunt's house, away from her wealthy father's pious tyranny, as Nigeria convulses with a coup."}
+      ]
+    },
+    {
+      "name": "J.M. Coetzee",
+      "birth_date": "1940-02-09",
+      "death_date": null,
+      "nationality": "South African",
+      "biography": "South African-born Nobel laureate whose austere, unsparing novels probe complicity, power, and the limits of sympathy.",
+      "books": [
+        {"title": "Disgrace", "year": 1999, "genre": "Fiction", "popularity": 3, "description": "A disgraced Cape Town professor retreats to his daughter's farm, where a brutal attack forces both to reckon with post-apartheid South Africa."},
+        {"title": "Waiting for the Barbarians", "year": 1980, "genre": "Fiction", "popularity": 2, "description": "A frontier magistrate's conscience awakens as the Empire he serves manufactures a war against the 'barbarians' beyond the wall."}
+      ]
+    },
+    {
+      "name": "Salman Rushdie",
+      "birth_date": "1947-06-19",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "Indian-born British novelist whose exuberant magical realism remade the postcolonial novel, and whose life became a global referendum on free expression.",
+      "books": [
+        {"title": "Midnight's Children", "year": 1981, "genre": "Fiction", "popularity": 4, "description": "Saleem Sinai, born at the exact moment of India's independence, is telepathically linked to a thousand other midnight children in Rushdie's Booker-of-Bookers epic."},
+        {"title": "The Satanic Verses", "year": 1988, "genre": "Fiction", "popularity": 3, "description": "Two Indian actors fall from an exploding airliner and assume angelic and demonic aspects in the phantasmagoric novel that provoked a fatwa."}
+      ]
+    },
+    {
+      "name": "Arundhati Roy",
+      "birth_date": "1961-11-24",
+      "death_date": null,
+      "nationality": "Indian",
+      "biography": "Indian novelist and essayist whose Booker-winning debut took the world by storm; a fearless critic of power in her nonfiction.",
+      "books": [
+        {"title": "The God of Small Things", "year": 1997, "genre": "Fiction", "popularity": 4, "description": "Twins Rahel and Estha circle the forbidden love and small cruelties that destroyed their family in 1960s Kerala, in prose of startling invention."}
+      ]
+    },
+    {
+      "name": "Jhumpa Lahiri",
+      "birth_date": "1967-07-11",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Pulitzer-winning American author of Bengali heritage whose precise, quiet fiction maps immigrant longing across generations and continents.",
+      "books": [
+        {"title": "Interpreter of Maladies", "year": 1999, "genre": "Fiction", "popularity": 3, "description": "Nine stories of Indians and Indian Americans suspended between homelands, including the Pulitzer-winning title story of a tour guide's brief intimacy."},
+        {"title": "The Namesake", "year": 2003, "genre": "Fiction", "popularity": 3, "description": "Gogol Ganguli spends a lifetime negotiating the name his Bengali parents gave him and the American life he wants, in a tender novel of two generations."}
+      ]
+    },
+    {
+      "name": "Haruki Murakami",
+      "birth_date": "1949-01-12",
+      "death_date": null,
+      "nationality": "Japanese",
+      "biography": "Japanese novelist of jazz bars, missing cats, parallel worlds, and profound loneliness — among the most widely read literary authors on earth.",
+      "books": [
+        {"title": "Norwegian Wood", "year": 1987, "genre": "Fiction", "popularity": 4, "description": "College student Toru Watanabe is torn between fragile, beautiful Naoko and vivacious Midori in the nostalgic love story that made Murakami famous in Japan."},
+        {"title": "Kafka on the Shore", "year": 2002, "genre": "Fantasy", "popularity": 4, "description": "A runaway boy named Kafka and an old man who talks to cats follow converging fates through a Japan where fish rain from the sky."},
+        {"title": "The Wind-Up Bird Chronicle", "year": 1994, "genre": "Fiction", "popularity": 3, "description": "Unemployed Toru Okada searches for his missing wife down Tokyo alleys and dry wells, uncovering wartime horrors and psychic battles."},
+        {"title": "1Q84", "year": 2009, "genre": "Fiction", "popularity": 3, "description": "An assassin and a math teacher slip into a world with two moons where a cult's Little People pull threads, in Murakami's gigantic parallel-reality love story."}
+      ]
+    },
+    {
+      "name": "Yasunari Kawabata",
+      "birth_date": "1899-06-14",
+      "death_date": "1972-04-16",
+      "nationality": "Japanese",
+      "biography": "First Japanese winner of the Nobel Prize in Literature, whose spare, melancholy novels distill beauty from transience.",
+      "books": [
+        {"title": "Snow Country", "year": 1948, "genre": "Fiction", "popularity": 2, "description": "A wealthy Tokyo dilettante and a provincial geisha conduct a doomed affair at a remote hot-spring town in Japan's snowbound west."}
+      ]
+    },
+    {
+      "name": "Kazuo Ishiguro",
+      "birth_date": "1954-11-08",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "Japanese-born British Nobel laureate whose deceptively quiet narrators reveal, between the lines, the griefs they cannot face.",
+      "books": [
+        {"title": "The Remains of the Day", "year": 1989, "genre": "Fiction", "popularity": 4, "description": "Aging butler Stevens motors through the English countryside reckoning with decades of perfect service to a Nazi-sympathizing lord, and a love he let pass."},
+        {"title": "Never Let Me Go", "year": 2005, "genre": "Science Fiction", "popularity": 4, "description": "Kathy, Ruth, and Tommy grow up at an idyllic boarding school whose students slowly learn what their bodies are for."},
+        {"title": "Klara and the Sun", "year": 2021, "genre": "Science Fiction", "popularity": 3, "description": "Solar-powered Artificial Friend Klara observes the humans she serves with devoted, alien clarity, hoping to save the sick girl she loves."},
+        {"title": "An Artist of the Floating World", "year": 1986, "genre": "Fiction", "popularity": 2, "description": "A retired painter who once made propaganda for imperial Japan negotiates his daughters' marriages and his own selective memory in postwar Nagasaki."}
+      ]
+    },
+    {
+      "name": "Ian McEwan",
+      "birth_date": "1948-06-21",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "English novelist of moral hinge-points, where a single act or misreading detonates across decades.",
+      "books": [
+        {"title": "Atonement", "year": 2001, "genre": "Historical Fiction", "popularity": 4, "description": "Thirteen-year-old Briony's false accusation destroys two lives, and her lifetime of atonement becomes the novel itself."},
+        {"title": "On Chesil Beach", "year": 2007, "genre": "Fiction", "popularity": 2, "description": "A wedding night in 1962 goes catastrophically wrong for two virgins who love each other but cannot speak, in a novella of devastating restraint."}
+      ]
+    },
+    {
+      "name": "Margaret Atwood",
+      "birth_date": "1939-11-18",
+      "death_date": null,
+      "nationality": "Canadian",
+      "biography": "Canadian poet and novelist whose speculative fictions about power over women's bodies proved uncomfortably predictive.",
+      "books": [
+        {"title": "The Handmaid's Tale", "year": 1985, "genre": "Dystopian", "popularity": 5, "description": "In the theocratic Republic of Gilead, Offred is a Handmaid valued only for her womb, narrating survival under a regime built on women's subjugation."},
+        {"title": "The Testaments", "year": 2019, "genre": "Dystopian", "popularity": 3, "description": "Fifteen years after Offred's story, three women — including the fearsome Aunt Lydia — narrate Gilead's rot from within."},
+        {"title": "Alias Grace", "year": 1996, "genre": "Historical Fiction", "popularity": 3, "description": "Convicted murderess Grace Marks tells her story to a young doctor in 1850s Canada, and the truth stays just out of reach."},
+        {"title": "Oryx and Crake", "year": 2003, "genre": "Science Fiction", "popularity": 3, "description": "Snowman, perhaps the last human, remembers his friend Crake and the gene-spliced apocalypse that ended the world in Atwood's biotech dystopia."}
+      ]
+    },
+    {
+      "name": "Alice Munro",
+      "birth_date": "1931-07-10",
+      "death_date": "2024-05-13",
+      "nationality": "Canadian",
+      "biography": "Canadian Nobel laureate called the master of the contemporary short story, who fit whole lifetimes into thirty pages of small-town Ontario.",
+      "books": [
+        {"title": "Dear Life", "year": 2012, "genre": "Fiction", "popularity": 2, "description": "Fourteen stories of swerves and reckonings in ordinary Canadian lives, closing with four autobiographical pieces Munro called her final words on her own life."}
+      ]
+    },
+    {
+      "name": "Donna Tartt",
+      "birth_date": "1963-12-23",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist who publishes roughly once a decade to enormous acclaim, blending literary density with propulsive plotting.",
+      "books": [
+        {"title": "The Secret History", "year": 1992, "genre": "Thriller", "popularity": 4, "description": "Six classics students at an elite Vermont college murder one of their own, and the narrator explains exactly how it came to that, in the original dark-academia novel."},
+        {"title": "The Goldfinch", "year": 2013, "genre": "Fiction", "popularity": 4, "description": "A boy survives a museum bombing that kills his mother and walks out with a priceless Dutch painting that anchors and warps his life."}
+      ]
+    },
+    {
+      "name": "Anthony Doerr",
+      "birth_date": "1973-10-27",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist whose intricately structured books braid science, history, and wonder. Won the Pulitzer Prize for fiction in 2015.",
+      "books": [
+        {"title": "All the Light We Cannot See", "year": 2014, "genre": "Historical Fiction", "popularity": 5, "description": "A blind French girl and a German radio prodigy converge on occupied Saint-Malo in 1944, in a Pulitzer-winning novel of light in dark times."},
+        {"title": "Cloud Cuckoo Land", "year": 2021, "genre": "Fiction", "popularity": 3, "description": "An ancient Greek tale links five dreamers across six centuries — from the fall of Constantinople to a generation starship — in an ode to libraries and stories."}
+      ]
+    },
+    {
+      "name": "Colson Whitehead",
+      "birth_date": "1969-11-06",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist and two-time Pulitzer winner who reinvents himself with each book, from speculative history to crime caper.",
+      "books": [
+        {"title": "The Underground Railroad", "year": 2016, "genre": "Historical Fiction", "popularity": 4, "description": "Cora flees a Georgia plantation on a literal underground railroad, each state a different experiment in American cruelty, in Whitehead's Pulitzer-winning alternate history."},
+        {"title": "The Nickel Boys", "year": 2019, "genre": "Historical Fiction", "popularity": 3, "description": "Two Black boys endure a brutal Florida reform school in the Jim Crow era, based on the real Dozier School, in a novel of crushing moral force."}
+      ]
+    },
+    {
+      "name": "Emily St. John Mandel",
+      "birth_date": "1979-04-13",
+      "death_date": null,
+      "nationality": "Canadian",
+      "biography": "Canadian novelist whose elegant speculative fictions about collapse and connection became unexpected comfort reading in actual catastrophe.",
+      "books": [
+        {"title": "Station Eleven", "year": 2014, "genre": "Science Fiction", "popularity": 4, "description": "A traveling Shakespeare troupe crosses the Great Lakes region twenty years after a flu pandemic ends civilization, because survival is insufficient."},
+        {"title": "Sea of Tranquility", "year": 2022, "genre": "Science Fiction", "popularity": 3, "description": "A glitch in time links a remittance man in 1912, a novelist on a pandemic book tour, and a moon-colony detective in a tale of simulation and mercy."},
+        {"title": "The Glass Hotel", "year": 2020, "genre": "Fiction", "popularity": 2, "description": "A Ponzi scheme's collapse ripples through the lives of a bartender, her brother, and a financier's 'kingdom of money' in a ghostly novel of counterlives."}
+      ]
+    },
+    {
+      "name": "Ann Patchett",
+      "birth_date": "1963-12-02",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist and bookstore owner whose warm, precise fiction explores improvised families and the long half-life of choices.",
+      "books": [
+        {"title": "Bel Canto", "year": 2001, "genre": "Fiction", "popularity": 3, "description": "Terrorists seize a birthday party at a South American vice-presidential mansion, and over months of siege, captors and hostages fall into music and love."},
+        {"title": "The Dutch House", "year": 2019, "genre": "Fiction", "popularity": 3, "description": "Siblings Danny and Maeve orbit the gaudy mansion their stepmother expelled them from, across five decades of devotion and grievance."}
+      ]
+    },
+    {
+      "name": "Elizabeth Strout",
+      "birth_date": "1956-01-06",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Pulitzer-winning American novelist of small-town Maine interiority, whose linked stories accumulate into devastating portraits.",
+      "books": [
+        {"title": "Olive Kitteridge", "year": 2008, "genre": "Fiction", "popularity": 3, "description": "Thirteen linked stories orbit a blunt, difficult retired math teacher in coastal Maine, in a Pulitzer-winning mosaic of ordinary grief and grace."},
+        {"title": "My Name Is Lucy Barton", "year": 2016, "genre": "Fiction", "popularity": 2, "description": "From a hospital bed, a writer talks with the estranged mother at her bedside, circling the poverty and damage of her childhood."}
+      ]
+    },
+    {
+      "name": "Amor Towles",
+      "birth_date": "1964-10-24",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American investment banker turned novelist, beloved for urbane, beautifully carpentered historical fiction.",
+      "books": [
+        {"title": "A Gentleman in Moscow", "year": 2016, "genre": "Historical Fiction", "popularity": 5, "description": "Count Alexander Rostov is sentenced to house arrest in the Metropol Hotel in 1922 and builds a rich, full life inside its walls across three Soviet decades."},
+        {"title": "Rules of Civility", "year": 2011, "genre": "Historical Fiction", "popularity": 3, "description": "A chance meeting in a Greenwich Village jazz bar on New Year's Eve 1937 vaults secretary Katey Kontent through Manhattan's glittering upper circles."},
+        {"title": "The Lincoln Highway", "year": 2021, "genre": "Historical Fiction", "popularity": 3, "description": "In 1954, four boys set out from Nebraska for California but are hijacked — charmingly, disastrously — toward New York, over ten propulsive days."}
+      ]
+    },
+    {
+      "name": "Gabrielle Zevin",
+      "birth_date": "1977-10-24",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist and screenwriter whose breakout book made the creative partnership its great love story.",
+      "books": [
+        {"title": "Tomorrow, and Tomorrow, and Tomorrow", "year": 2022, "genre": "Fiction", "popularity": 5, "description": "Sam and Sadie build video games and a thirty-year creative partnership marked by genius, betrayal, and the play that makes life bearable."},
+        {"title": "The Storied Life of A.J. Fikry", "year": 2014, "genre": "Fiction", "popularity": 3, "description": "A grumpy widowed bookseller on a small island finds a toddler abandoned in his shop, and his curmudgeonly life reshelves itself around her."}
+      ]
+    },
+    {
+      "name": "Fredrik Backman",
+      "birth_date": "1981-06-02",
+      "death_date": null,
+      "nationality": "Swedish",
+      "biography": "Swedish blogger turned global phenomenon, who writes comedies that ambush readers into weeping about community and grief.",
+      "books": [
+        {"title": "A Man Called Ove", "year": 2012, "genre": "Fiction", "popularity": 5, "description": "A cantankerous widower's meticulously planned suicide keeps getting interrupted by pregnant neighbors, stray cats, and an entire community that needs him."},
+        {"title": "Anxious People", "year": 2019, "genre": "Fiction", "popularity": 4, "description": "A failed bank robber takes an apartment viewing hostage, and everyone turns out to be the worst — and most forgivable — version of themselves."},
+        {"title": "Beartown", "year": 2016, "genre": "Fiction", "popularity": 3, "description": "A fading forest town pins everything on its junior hockey team until a violent act splits the community along lines of loyalty and truth."}
+      ]
+    },
+    {
+      "name": "Sally Rooney",
+      "birth_date": "1991-02-20",
+      "death_date": null,
+      "nationality": "Irish",
+      "biography": "Irish novelist whose flat, exact prose about millennial intimacy and class made her a generational touchstone.",
+      "books": [
+        {"title": "Normal People", "year": 2018, "genre": "Romance", "popularity": 4, "description": "Connell and Marianne fall in and out of each other's lives from small-town Sligo to Trinity College in an anatomy of class, damage, and love."},
+        {"title": "Conversations with Friends", "year": 2017, "genre": "Fiction", "popularity": 3, "description": "Student poet Frances begins an affair with a married actor while her best friend and ex, Bobbi, watches it all unfold in cool, witty detachment."}
+      ]
+    },
+    {
+      "name": "Taylor Jenkins Reid",
+      "birth_date": "1983-12-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist of glamorous, emotionally savvy fictional oral histories of fame from old Hollywood to seventies rock.",
+      "books": [
+        {"title": "The Seven Husbands of Evelyn Hugo", "year": 2017, "genre": "Romance", "popularity": 5, "description": "Reclusive Hollywood legend Evelyn Hugo finally tells the truth about her seven marriages — and the one great love she could never name — to an unknown journalist."},
+        {"title": "Daisy Jones & The Six", "year": 2019, "genre": "Fiction", "popularity": 4, "description": "An oral history of a seventies rock band's meteoric rise and mid-tour implosion, and of the combustible chemistry between its two front people."},
+        {"title": "Malibu Rising", "year": 2021, "genre": "Fiction", "popularity": 3, "description": "Over one August day and night in 1983, the four famous Riva siblings throw the party that burns their family's secrets — and house — to the ground."}
+      ]
+    },
+    {
+      "name": "Celeste Ng",
+      "birth_date": "1980-07-30",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist whose bestsellers dissect family secrets, race, and motherhood in meticulously observed communities.",
+      "books": [
+        {"title": "Little Fires Everywhere", "year": 2017, "genre": "Fiction", "popularity": 4, "description": "An artist and her daughter upend the planned perfection of Shaker Heights, Ohio, igniting a custody battle and the Richardson family itself."},
+        {"title": "Everything I Never Told You", "year": 2014, "genre": "Fiction", "popularity": 3, "description": "Lydia Lee, the favorite child of a Chinese American family in 1970s Ohio, is found drowned, and her family's carefully unspoken hopes surface."}
+      ]
+    },
+    {
+      "name": "Khaled Hosseini",
+      "birth_date": "1965-03-04",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Afghan-American physician turned novelist whose books brought Afghanistan's wars and griefs to tens of millions of readers.",
+      "books": [
+        {"title": "The Kite Runner", "year": 2003, "genre": "Fiction", "popularity": 5, "description": "Wealthy Amir betrays his loyal friend Hassan in 1970s Kabul and spends decades seeking a way to be good again."},
+        {"title": "A Thousand Splendid Suns", "year": 2007, "genre": "Fiction", "popularity": 4, "description": "Mariam and Laila, married to the same brutal man, forge an unbreakable bond through thirty years of Afghan war and loss."}
+      ]
+    },
+    {
+      "name": "Min Jin Lee",
+      "birth_date": "1968-11-11",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Korean American novelist whose immersive sagas chronicle diaspora, dignity, and the cost of belonging.",
+      "books": [
+        {"title": "Pachinko", "year": 2017, "genre": "Historical Fiction", "popularity": 4, "description": "Four generations of a Korean family endure exile and discrimination in twentieth-century Japan, beginning with Sunja's fateful pregnancy in a fishing village."}
+      ]
+    },
+    {
+      "name": "Madeline Miller",
+      "birth_date": "1978-07-24",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American classicist who retells Greek myth with scholarly fidelity and devastating emotional directness.",
+      "books": [
+        {"title": "Circe", "year": 2018, "genre": "Fantasy", "popularity": 5, "description": "The nymph Circe, banished to a deserted island, transforms herself from minor goddess to witch of legend through exile, craft, and defiance of Olympus."},
+        {"title": "The Song of Achilles", "year": 2011, "genre": "Fantasy", "popularity": 5, "description": "Awkward exiled prince Patroclus loves golden Achilles from boyhood to the walls of Troy, where prophecy comes due."}
+      ]
+    },
+    {
+      "name": "Kristin Hannah",
+      "birth_date": "1960-09-25",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Former lawyer and bestselling American author of sweeping historical fiction centered on women's endurance.",
+      "books": [
+        {"title": "The Nightingale", "year": 2015, "genre": "Historical Fiction", "popularity": 5, "description": "Two French sisters resist the Nazi occupation in opposite ways — one sheltering a downed airman network, one surviving at home — in an ode to women's war."},
+        {"title": "The Great Alone", "year": 2018, "genre": "Fiction", "popularity": 3, "description": "A volatile Vietnam POW moves his family off the grid in 1974 Alaska, where the winters are long and the greatest danger is inside the cabin."},
+        {"title": "The Four Winds", "year": 2021, "genre": "Historical Fiction", "popularity": 3, "description": "Dust Bowl Texas drives Elsa Martinelli west to California with her children, into the migrant camps and labor wars of the Depression."}
+      ]
+    },
+    {
+      "name": "Hilary Mantel",
+      "birth_date": "1952-07-06",
+      "death_date": "2022-09-22",
+      "nationality": "British",
+      "biography": "English novelist who won two Booker Prizes for resurrecting Thomas Cromwell, and made the historical novel a modernist instrument.",
+      "books": [
+        {"title": "Wolf Hall", "year": 2009, "genre": "Historical Fiction", "popularity": 4, "description": "Blacksmith's son Thomas Cromwell rises to become Henry VIII's indispensable fixer in a viscerally present-tense Tudor court."},
+        {"title": "Bring Up the Bodies", "year": 2012, "genre": "Historical Fiction", "popularity": 3, "description": "Cromwell engineers the fall of Anne Boleyn in nine months of terrifying statecraft, in the Booker-winning second act of the trilogy."}
+      ]
+    },
+    {
+      "name": "Ken Follett",
+      "birth_date": "1949-06-05",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "Welsh master of the doorstop page-turner, from wartime thrillers to cathedral-building epics spanning centuries.",
+      "books": [
+        {"title": "The Pillars of the Earth", "year": 1989, "genre": "Historical Fiction", "popularity": 4, "description": "Builder Tom, monk Philip, and noblewoman Aliena struggle to raise a cathedral in twelfth-century England through civil war, famine, and ambition."},
+        {"title": "Eye of the Needle", "year": 1978, "genre": "Thriller", "popularity": 3, "description": "A ruthless German spy carrying the secret of D-Day is stranded on a remote Scottish island with a lonely Englishwoman who must stop him."}
+      ]
+    },
+    {
+      "name": "George Saunders",
+      "birth_date": "1958-12-02",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American short-story master of corporate dystopia and radical empathy; his first novel won the Booker Prize.",
+      "books": [
+        {"title": "Lincoln in the Bardo", "year": 2017, "genre": "Historical Fiction", "popularity": 3, "description": "Over one 1862 night, Abraham Lincoln visits his dead son's crypt while a chorus of garrulous ghosts debate their unfinished lives."},
+        {"title": "Tenth of December", "year": 2013, "genre": "Fiction", "popularity": 2, "description": "Ten stories of theme parks, pharmaceutical trials, and ordinary courage that bend dark satire toward unexpected kindness."}
+      ]
+    },
+    {
+      "name": "Ocean Vuong",
+      "birth_date": "1988-10-14",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Vietnamese American poet and novelist whose work transmutes war inheritance, queerness, and a mother's love into incandescent language.",
+      "books": [
+        {"title": "On Earth We're Briefly Gorgeous", "year": 2019, "genre": "Fiction", "popularity": 3, "description": "Little Dog writes a letter his Vietnamese mother cannot read, tracing three generations from Saigon to Hartford and his first love in tobacco fields."}
+      ]
+    },
+    {
+      "name": "Delia Owens",
+      "birth_date": "1949-04-04",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American wildlife scientist whose debut novel, written in her late sixties, became one of the bestselling books of its decade.",
+      "books": [
+        {"title": "Where the Crawdads Sing", "year": 2018, "genre": "Mystery", "popularity": 5, "description": "Abandoned 'Marsh Girl' Kya raises herself in the North Carolina wetlands and stands trial when the town golden boy turns up dead."}
+      ]
+    },
+    {
+      "name": "Bonnie Garmus",
+      "birth_date": "1957-04-18",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American copywriter who debuted at sixty-four with a global bestseller about a chemist who refuses to be underestimated.",
+      "books": [
+        {"title": "Lessons in Chemistry", "year": 2022, "genre": "Fiction", "popularity": 4, "description": "Sidelined 1960s chemist Elizabeth Zott becomes a subversive TV cooking-show star who teaches housewives chemistry — and self-respect."}
+      ]
+    },
+    {
+      "name": "Gail Honeyman",
+      "birth_date": "1972-06-13",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "Scottish novelist whose debut about loneliness and survival became a word-of-mouth phenomenon.",
+      "books": [
+        {"title": "Eleanor Oliphant Is Completely Fine", "year": 2017, "genre": "Fiction", "popularity": 4, "description": "Rigidly routined Eleanor's solitary life cracks open through small kindnesses, revealing the trauma her completely fine facade conceals."}
+      ]
+    },
+    {
+      "name": "Emily Henry",
+      "birth_date": "1991-06-17",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author whose witty, emotionally grounded romances made her the defining romance novelist of her generation.",
+      "books": [
+        {"title": "Beach Read", "year": 2020, "genre": "Romance", "popularity": 4, "description": "A romance writer with writer's block and a literary novelist next door swap genres for a summer, and the research gets personal."},
+        {"title": "Book Lovers", "year": 2022, "genre": "Romance", "popularity": 4, "description": "Cutthroat literary agent Nora keeps colliding with brooding editor Charlie in the small town where her sister dragged her for a Hallmark-style month."},
+        {"title": "People We Meet on Vacation", "year": 2021, "genre": "Romance", "popularity": 3, "description": "Best friends Poppy and Alex take one vacation a year together until the trip that ruined everything — and the one chance to fix it."}
+      ]
+    },
+    {
+      "name": "Nicholas Sparks",
+      "birth_date": "1965-12-31",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author of weepy Carolina love stories, many adapted into hit films.",
+      "books": [
+        {"title": "The Notebook", "year": 1996, "genre": "Romance", "popularity": 3, "description": "Noah reads a worn notebook to a woman in a nursing home, retelling the summer love that war, class, and now memory itself tried to erase."}
+      ]
+    },
+    {
+      "name": "Jojo Moyes",
+      "birth_date": "1969-08-04",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "English journalist turned novelist of big-hearted romantic fiction and historical drama.",
+      "books": [
+        {"title": "Me Before You", "year": 2012, "genre": "Romance", "popularity": 4, "description": "Cheerful small-town Lou becomes caregiver to paralyzed ex-banker Will, and their six months together change both their notions of a life worth living."}
+      ]
+    },
+    {
+      "name": "Daphne du Maurier",
+      "birth_date": "1907-05-13",
+      "death_date": "1989-04-19",
+      "nationality": "British",
+      "biography": "English mistress of brooding romantic suspense, whose Cornwall gothics blur the line between love story and nightmare.",
+      "books": [
+        {"title": "Rebecca", "year": 1938, "genre": "Mystery", "popularity": 4, "description": "An unnamed young bride arrives at Manderley to find her husband's first wife — the dazzling, dead Rebecca — ruling the house through the sinister Mrs. Danvers."},
+        {"title": "My Cousin Rachel", "year": 1951, "genre": "Mystery", "popularity": 2, "description": "Philip is determined to hate the widow who may have poisoned his beloved cousin — until he meets her, in du Maurier's most exquisitely ambiguous novel."}
+      ]
+    },
+    {
+      "name": "Paulo Coelho",
+      "birth_date": "1947-08-24",
+      "death_date": null,
+      "nationality": "Brazilian",
+      "biography": "Brazilian author whose fable of following one's dream became one of the bestselling books in history, translated into more than eighty languages.",
+      "books": [
+        {"title": "The Alchemist", "year": 1988, "genre": "Fiction", "popularity": 5, "description": "Andalusian shepherd Santiago journeys to the Egyptian pyramids in search of treasure and learns the universe conspires to help those who pursue their Personal Legend."}
+      ]
+    },
+    {
+      "name": "Yann Martel",
+      "birth_date": "1963-06-25",
+      "death_date": null,
+      "nationality": "Canadian",
+      "biography": "Spanish-born Canadian writer whose Booker-winning castaway tale asks which story of survival you prefer to believe.",
+      "books": [
+        {"title": "Life of Pi", "year": 2001, "genre": "Adventure", "popularity": 4, "description": "After a shipwreck, sixteen-year-old Pi Patel drifts across the Pacific in a lifeboat shared with a 450-pound Bengal tiger named Richard Parker."}
+      ]
+    },
+    {
+      "name": "Markus Zusak",
+      "birth_date": "1975-06-23",
+      "death_date": null,
+      "nationality": "Australian",
+      "biography": "Australian novelist whose Death-narrated tale of words in wartime became a modern classic for readers of every age.",
+      "books": [
+        {"title": "The Book Thief", "year": 2005, "genre": "Historical Fiction", "popularity": 5, "description": "In Nazi Germany, foster child Liesel steals books and shares them with neighbors and the Jewish man hidden in her basement — narrated by Death itself."}
+      ]
+    },
+    {
+      "name": "Ruta Sepetys",
+      "birth_date": "1967-11-19",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Lithuanian American author of meticulously researched historical novels that surface buried atrocities for young adult readers.",
+      "books": [
+        {"title": "Between Shades of Gray", "year": 2011, "genre": "Young Adult", "popularity": 3, "description": "Fifteen-year-old Lina is deported with her family from Lithuania to a Siberian labor camp in 1941, documenting survival through her drawings."},
+        {"title": "Salt to the Sea", "year": 2016, "genre": "Young Adult", "popularity": 3, "description": "Four refugees converge on the doomed Wilhelm Gustloff in 1945, in a novel of the deadliest maritime disaster in history."}
+      ]
+    },
+    {
+      "name": "John Irving",
+      "birth_date": "1942-03-02",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist of Dickensian plots, New England eccentrics, wrestling, and bears, beloved for narrative generosity.",
+      "books": [
+        {"title": "A Prayer for Owen Meany", "year": 1989, "genre": "Fiction", "popularity": 3, "description": "Tiny, shrill-voiced Owen Meany believes he is God's instrument after a foul ball kills his best friend's mother, in Irving's funny, devastating novel of faith and fate."},
+        {"title": "The World According to Garp", "year": 1978, "genre": "Fiction", "popularity": 3, "description": "The life of novelist T.S. Garp, son of feminist icon Jenny Fields, unspools in a tragicomedy of lust, art, and catastrophe."}
+      ]
+    },
+    {
+      "name": "Barbara Kingsolver",
+      "birth_date": "1955-04-08",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist and biologist whose fiction binds ecology, social justice, and family with a naturalist's eye. Two-time Women's Prize winner.",
+      "books": [
+        {"title": "The Poisonwood Bible", "year": 1998, "genre": "Historical Fiction", "popularity": 4, "description": "An evangelical missionary drags his wife and four daughters to the Belgian Congo in 1959, and Africa undoes every certainty they carried."},
+        {"title": "Demon Copperhead", "year": 2022, "genre": "Fiction", "popularity": 4, "description": "David Copperfield reborn in opioid-era Appalachia: a boy with copper hair and no luck narrates foster care, football, addiction, and survival."}
+      ]
+    },
+    {
+      "name": "Richard Powers",
+      "birth_date": "1957-06-18",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist of science and conscience whose books entangle human lives with code, music, and forests.",
+      "books": [
+        {"title": "The Overstory", "year": 2018, "genre": "Fiction", "popularity": 3, "description": "Nine strangers are summoned by trees to defend a continent's last old-growth forest in a Pulitzer-winning novel that makes the arboreal world a protagonist."}
+      ]
+    },
+    {
+      "name": "Han Kang",
+      "birth_date": "1970-11-27",
+      "death_date": null,
+      "nationality": "South Korean",
+      "biography": "South Korean Nobel laureate whose spare, unsettling novels probe violence, refusal, and the body.",
+      "books": [
+        {"title": "The Vegetarian", "year": 2007, "genre": "Fiction", "popularity": 3, "description": "After violent dreams, Yeong-hye stops eating meat — a quiet refusal that detonates her marriage, her family, and her hold on personhood."},
+        {"title": "Human Acts", "year": 2014, "genre": "Historical Fiction", "popularity": 2, "description": "The 1980 Gwangju massacre radiates through seven linked voices, beginning with a boy searching the morgue for his friend."}
+      ]
+    },
+    {
+      "name": "Olga Tokarczuk",
+      "birth_date": "1962-01-29",
+      "death_date": null,
+      "nationality": "Polish",
+      "biography": "Polish Nobel laureate of restless, constellation-built novels that cross borders of genre, time, and body.",
+      "books": [
+        {"title": "Drive Your Plow Over the Bones of the Dead", "year": 2009, "genre": "Mystery", "popularity": 2, "description": "An eccentric astrology-loving recluse in a Polish border village insists the hunters dying around her are being killed by animals taking revenge."},
+        {"title": "Flights", "year": 2007, "genre": "Fiction", "popularity": 2, "description": "A constellation of stories and essays on travel, anatomy, and motion — airports, preserved hearts, a vanishing wife — that won the International Booker."}
+      ]
+    },
+    {
+      "name": "Elena Ferrante",
+      "birth_date": null,
+      "death_date": null,
+      "nationality": "Italian",
+      "biography": "Pseudonymous Italian novelist whose Neapolitan quartet, an operatic story of a lifelong female friendship, became a global literary event.",
+      "books": [
+        {"title": "My Brilliant Friend", "year": 2011, "genre": "Fiction", "popularity": 4, "description": "Elena and Lila grow up fierce and entangled in a poor, violent Naples neighborhood, their friendship a lifelong contest and lifeline."},
+        {"title": "The Story of a New Name", "year": 2012, "genre": "Fiction", "popularity": 3, "description": "Lila's brutal marriage and Elena's escape into education pull the friends apart and together through their Naples twenties."}
+      ]
+    },
+    {
+      "name": "Ottessa Moshfegh",
+      "birth_date": "1981-05-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist of repellent, magnetic antiheroines, praised for prose as controlled as her characters are not.",
+      "books": [
+        {"title": "My Year of Rest and Relaxation", "year": 2018, "genre": "Fiction", "popularity": 3, "description": "A beautiful, misanthropic young New Yorker decides to hibernate for a year on prescription pills, with the worst psychiatrist in literature."}
+      ]
+    },
+    {
+      "name": "Ernest Cline",
+      "birth_date": "1972-03-29",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American screenwriter and novelist whose debut turned 1980s pop-culture obsession into a worldwide treasure hunt.",
+      "books": [
+        {"title": "Ready Player One", "year": 2011, "genre": "Science Fiction", "popularity": 4, "description": "In a collapsing 2045, teenage gunter Wade Watts races for a dead billionaire's Easter egg hidden inside the OASIS, the virtual world everyone lives in."}
+      ]
+    },
+    {
+      "name": "Hanya Yanagihara",
+      "birth_date": "1974-09-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist and magazine editor whose epic of friendship and trauma divided critics and devastated readers.",
+      "books": [
+        {"title": "A Little Life", "year": 2015, "genre": "Fiction", "popularity": 3, "description": "Four college friends rise through decades of New York success while the brilliant, broken litigator Jude guards a childhood of unspeakable harm."}
+      ]
+    }
+  ]
+}

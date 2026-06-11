@@ -1,43 +1,102 @@
 [
   {
-    "isbn": "978-9-01-234567-8",
-    "title": "The Cloud Architect's Guide",
-    "author_name": "Alexandra Kumar",
-    "genre": "Technology",
-    "publication_year": 2023,
+    "isbn": "9787020994670",
+    "title": "Cloud Atlas",
+    "author_name": "David Mitchell",
+    "genre": "Science Fiction",
+    "publication_year": 2004,
+    "available_copies": 1,
+    "total_copies": 2
+  },
+  {
+    "isbn": "9788421334171",
+    "title": "The Bone Clocks",
+    "author_name": "David Mitchell",
+    "genre": "Fantasy",
+    "publication_year": 2014,
+    "available_copies": 2
+  },
+  {
+    "isbn": "9788491160830",
+    "title": "White Teeth",
+    "author_name": "Zadie Smith",
+    "genre": "Fiction",
+    "publication_year": 2000,
+    "available_copies": 3
+  },
+  {
+    "isbn": "9788585540760",
+    "title": "The Curious Incident of the Dog in the Night-Time",
+    "author_name": "Mark Haddon",
+    "genre": "Mystery",
+    "publication_year": 2003,
     "available_copies": 4,
     "total_copies": 5
   },
   {
-    "isbn": "978-0-98-765432-1",
-    "title": "Midnight in Tokyo",
-    "author_name": "James Nakamura",
-    "genre": "Fiction",
-    "publication_year": 2022,
+    "isbn": "9788575374528",
+    "title": "The Midnight Library",
+    "author_name": "Matt Haig",
+    "genre": "Fantasy",
+    "publication_year": 2020,
+    "available_copies": 1
+  },
+  {
+    "isbn": "9784989296999",
+    "title": "The Shadow of the Wind",
+    "author_name": "Carlos Ruiz Zafon",
+    "genre": "Mystery",
+    "publication_year": 2001,
     "available_copies": 2
   },
   {
-    "isbn": "978-1-11-222333-4",
-    "title": "Machine Learning Essentials",
-    "author_name": "Dr. Sarah Mitchell",
-    "genre": "Technology",
-    "publication_year": 2024,
-    "available_copies": 6
+    "isbn": "9784277221627",
+    "title": "The Unbearable Lightness of Being",
+    "author_name": "Milan Kundera",
+    "genre": "Fiction",
+    "publication_year": 1984,
+    "available_copies": 3,
+    "total_copies": 4
   },
   {
-    "isbn": "978-2-22-333444-5",
-    "title": "The Baker's Secret",
-    "author_name": "Marie Dubois",
-    "genre": "Mystery",
-    "publication_year": 2021,
+    "isbn": "9785493676529",
+    "title": "Blindness",
+    "author_name": "Jose Saramago",
+    "genre": "Dystopian",
+    "publication_year": 1995,
+    "available_copies": 4
+  },
+  {
+    "isbn": "9785504868783",
+    "title": "The Master and Margarita",
+    "author_name": "Mikhail Bulgakov",
+    "genre": "Fantasy",
+    "publication_year": 1967,
+    "available_copies": 1
+  },
+  {
+    "isbn": "9781971141985",
+    "title": "Steppenwolf",
+    "author_name": "Hermann Hesse",
+    "genre": "Fiction",
+    "publication_year": 1927,
+    "available_copies": 2,
+    "total_copies": 3
+  },
+  {
+    "isbn": "9788652178971",
+    "title": "The Magic Mountain",
+    "author_name": "Thomas Mann",
+    "genre": "Fiction",
+    "publication_year": 1924,
     "available_copies": 3
   },
   {
-    "isbn": "978-3-33-444555-6",
-    "title": "Understanding Psychology",
-    "author_name": "Dr. Richard Cohen",
-    "genre": "Science",
-    "publication_year": 2023,
-    "available_copies": 5
+    "isbn": "9789173806879",
+    "title": "All Quiet on the Western Front",
+    "author_name": "Erich Maria Remarque",
+    "genre": "Historical Fiction",
+    "publication_year": 1929,
+    "available_copies": 4
   }
 ]

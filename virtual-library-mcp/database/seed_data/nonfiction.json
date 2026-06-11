@@ -1,0 +1,575 @@
+{
+  "collection": "Nonfiction, Biography, History, Science, Poetry & Drama",
+  "authors": [
+    {
+      "name": "Yuval Noah Harari",
+      "birth_date": "1976-02-24",
+      "death_date": null,
+      "nationality": "Israeli",
+      "biography": "Israeli historian whose sweeping accounts of humanity's past and future made him one of the most read public intellectuals alive.",
+      "books": [
+        {"title": "Sapiens: A Brief History of Humankind", "year": 2011, "genre": "History", "popularity": 5, "description": "From the cognitive revolution to credit cards, a provocative tour of how one ape species came to rule the planet through shared fictions."},
+        {"title": "Homo Deus: A Brief History of Tomorrow", "year": 2015, "genre": "Science", "popularity": 3, "description": "Having beaten famine, plague, and war, humanity turns to immortality and godhood — and may engineer itself out of relevance."}
+      ]
+    },
+    {
+      "name": "Bill Bryson",
+      "birth_date": "1951-12-08",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Iowa-born Anglophile whose travelogues and popular science books make erudition feel like good company.",
+      "books": [
+        {"title": "A Short History of Nearly Everything", "year": 2003, "genre": "Science", "popularity": 4, "description": "How do we know what we know? Bryson tours the whole of science — atoms to asteroids — through the eccentric people who figured it out."},
+        {"title": "A Walk in the Woods", "year": 1998, "genre": "Memoir", "popularity": 3, "description": "Bryson and his hopelessly unfit friend Katz attempt the Appalachian Trail, with bears, blisters, and the funniest trail companionship ever recorded."},
+        {"title": "Notes from a Small Island", "year": 1995, "genre": "Memoir", "popularity": 2, "description": "Before moving back to America, Bryson takes a valedictory ramble around Britain, the country that taught him tea, hedgerows, and queueing."}
+      ]
+    },
+    {
+      "name": "Jon Krakauer",
+      "birth_date": "1954-04-12",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American mountaineer-journalist whose immersive reporting probes obsession, wilderness, and belief at their most lethal.",
+      "books": [
+        {"title": "Into the Wild", "year": 1996, "genre": "Biography", "popularity": 4, "description": "Chris McCandless gave away his savings and walked into the Alaskan bush; Krakauer retraces the idealism and miscalculation that ended in an abandoned bus."},
+        {"title": "Into Thin Air", "year": 1997, "genre": "Adventure", "popularity": 4, "description": "Krakauer's firsthand account of the 1996 Everest disaster, when a storm caught four expeditions high on the mountain and eight climbers died."},
+        {"title": "Under the Banner of Heaven", "year": 2003, "genre": "True Crime", "popularity": 3, "description": "A 1984 double murder committed on God's orders opens an investigation into Mormon fundamentalism and the violence of certainty."}
+      ]
+    },
+    {
+      "name": "Erik Larson",
+      "birth_date": "1954-01-03",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American master of narrative history who builds page-turners entirely from archival fact.",
+      "books": [
+        {"title": "The Devil in the White City", "year": 2003, "genre": "True Crime", "popularity": 4, "description": "The architect of the 1893 Chicago World's Fair and the serial killer H.H. Holmes, who built a murder hotel beside it, share one gilded stage."},
+        {"title": "Dead Wake", "year": 2015, "genre": "History", "popularity": 3, "description": "The last crossing of the Lusitania, told hour by hour from the liner's decks and the U-boat's periscope."},
+        {"title": "The Splendid and the Vile", "year": 2020, "genre": "History", "popularity": 3, "description": "Churchill's first year as PM — the Blitz, the speeches, the family dramas — drawn from diaries of those inside his household."}
+      ]
+    },
+    {
+      "name": "Daniel Kahneman",
+      "birth_date": "1934-03-05",
+      "death_date": "2024-03-27",
+      "nationality": "Israeli",
+      "biography": "Israeli-American psychologist who won the Nobel in economics for showing how predictably irrational human judgment is.",
+      "books": [
+        {"title": "Thinking, Fast and Slow", "year": 2011, "genre": "Psychology", "popularity": 4, "description": "Two systems run your mind — fast intuition and slow reasoning — and knowing how they fail explains everything from bad bets to overconfident experts."}
+      ]
+    },
+    {
+      "name": "Malcolm Gladwell",
+      "birth_date": "1963-09-03",
+      "death_date": null,
+      "nationality": "Canadian",
+      "biography": "Canadian journalist and podcaster who turned social science storytelling into a publishing genre of its own.",
+      "books": [
+        {"title": "Outliers", "year": 2008, "genre": "Psychology", "popularity": 4, "description": "Success is less about talent than timing, culture, and ten thousand hours — why Bill Gates, the Beatles, and Korean pilots are the stories they are."},
+        {"title": "The Tipping Point", "year": 2000, "genre": "Psychology", "popularity": 3, "description": "How ideas, products, and behaviors spread like epidemics, tipped by connectors, mavens, and salesmen."}
+      ]
+    },
+    {
+      "name": "James Clear",
+      "birth_date": "1986-01-22",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American writer on habits and decision-making whose first book became a perennial number-one bestseller.",
+      "books": [
+        {"title": "Atomic Habits", "year": 2018, "genre": "Self-Help", "popularity": 5, "description": "Tiny changes compound: a practical system for building good habits and breaking bad ones through identity, environment, and one percent improvements."}
+      ]
+    },
+    {
+      "name": "Cal Newport",
+      "birth_date": "1982-06-23",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Georgetown computer scientist arguing for concentration and craftsmanship in an economy of distraction.",
+      "books": [
+        {"title": "Deep Work", "year": 2016, "genre": "Self-Help", "popularity": 4, "description": "The ability to focus without distraction is the superpower of the knowledge economy — and a set of rules for cultivating it."},
+        {"title": "Digital Minimalism", "year": 2019, "genre": "Self-Help", "popularity": 3, "description": "A philosophy of technology use: a thirty-day declutter, then reintroduce only the tools that serve what you deeply value."}
+      ]
+    },
+    {
+      "name": "Brené Brown",
+      "birth_date": "1965-11-18",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Texas social work researcher whose studies of shame and vulnerability leapt from academia to global stages.",
+      "books": [
+        {"title": "Daring Greatly", "year": 2012, "genre": "Self-Help", "popularity": 4, "description": "Vulnerability is not weakness but the birthplace of courage, connection, and creativity — research-backed permission to be seen."},
+        {"title": "Atlas of the Heart", "year": 2021, "genre": "Psychology", "popularity": 3, "description": "A map of eighty-seven emotions and experiences, naming the difference between envy and jealousy, shame and guilt, so we can speak our inner lives."}
+      ]
+    },
+    {
+      "name": "Tara Westover",
+      "birth_date": "1986-09-27",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American historian raised by survivalists in the Idaho mountains who first set foot in a classroom at seventeen.",
+      "books": [
+        {"title": "Educated", "year": 2018, "genre": "Memoir", "popularity": 5, "description": "No birth certificate, no school, a junkyard childhood — and the will that carried Westover from her father's mountain to a Cambridge PhD, at the cost of her family."}
+      ]
+    },
+    {
+      "name": "Michelle Obama",
+      "birth_date": "1964-01-17",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Lawyer, public health advocate, and First Lady of the United States from 2009 to 2017.",
+      "books": [
+        {"title": "Becoming", "year": 2018, "genre": "Memoir", "popularity": 5, "description": "From Chicago's South Side to the White House, an intimate account of marriage, motherhood, identity, and eight years under history's brightest lights."}
+      ]
+    },
+    {
+      "name": "Trevor Noah",
+      "birth_date": "1984-02-20",
+      "death_date": null,
+      "nationality": "South African",
+      "biography": "South African comedian and former Daily Show host, born to a union that apartheid law made criminal.",
+      "books": [
+        {"title": "Born a Crime", "year": 2016, "genre": "Memoir", "popularity": 4, "description": "Stories of a mixed-race boyhood in apartheid South Africa, anchored by a fearless, devout mother who threw him from a moving minibus to save his life."}
+      ]
+    },
+    {
+      "name": "Nelson Mandela",
+      "birth_date": "1918-07-18",
+      "death_date": "2013-12-05",
+      "nationality": "South African",
+      "biography": "Anti-apartheid revolutionary who emerged from twenty-seven years in prison to become South Africa's first democratically elected president.",
+      "books": [
+        {"title": "Long Walk to Freedom", "year": 1994, "genre": "Memoir", "popularity": 4, "description": "Mandela's own account of the struggle: rural boyhood, underground resistance, Robben Island, and the negotiated miracle of a free South Africa."}
+      ]
+    },
+    {
+      "name": "Anne Frank",
+      "birth_date": "1929-06-12",
+      "death_date": "1945-02-28",
+      "nationality": "German",
+      "biography": "German-born Jewish diarist who chronicled two years in hiding in Amsterdam before dying at Bergen-Belsen at fifteen.",
+      "books": [
+        {"title": "The Diary of a Young Girl", "year": 1947, "genre": "Memoir", "popularity": 5, "description": "From a secret annex above her father's office, a teenage girl records fear, hope, first love, and an undimmed belief in people, in the most read document of the Holocaust."}
+      ]
+    },
+    {
+      "name": "Elie Wiesel",
+      "birth_date": "1928-09-30",
+      "death_date": "2016-07-02",
+      "nationality": "American",
+      "biography": "Romanian-born survivor of Auschwitz and Buchenwald, Nobel Peace laureate, and lifelong witness against forgetting.",
+      "books": [
+        {"title": "Night", "year": 1956, "genre": "Memoir", "popularity": 4, "description": "A fifteen-year-old's deportation from Sighet to Auschwitz, where faith, family, and childhood are consumed — testimony pared to its unbearable essentials."}
+      ]
+    },
+    {
+      "name": "Laura Hillenbrand",
+      "birth_date": "1967-05-15",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American narrative historian who, writing through severe chronic illness, produced two of the most acclaimed nonfiction sagas of her era.",
+      "books": [
+        {"title": "Unbroken", "year": 2010, "genre": "Biography", "popularity": 4, "description": "Olympic runner Louie Zamperini survives a plane crash, forty-seven days adrift, and Japanese POW camps in an epic of resilience."},
+        {"title": "Seabiscuit", "year": 2001, "genre": "History", "popularity": 3, "description": "An undersized horse, a half-blind jockey, and a silent trainer become Depression America's favorite underdog story."}
+      ]
+    },
+    {
+      "name": "Rebecca Skloot",
+      "birth_date": "1972-09-19",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American science journalist who spent a decade reporting the human story behind biology's most famous cells.",
+      "books": [
+        {"title": "The Immortal Life of Henrietta Lacks", "year": 2010, "genre": "Science", "popularity": 4, "description": "Cells taken without consent from a Black tobacco farmer in 1951 became medicine's immortal HeLa line; her family learned decades later."}
+      ]
+    },
+    {
+      "name": "Siddhartha Mukherjee",
+      "birth_date": "1970-07-21",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Indian-American oncologist whose 'biographies' of cancer and the gene won the Pulitzer and redefined popular medicine writing.",
+      "books": [
+        {"title": "The Emperor of All Maladies", "year": 2010, "genre": "Science", "popularity": 4, "description": "A 4,000-year biography of cancer — from Egyptian papyri to targeted therapy — told through patients, surgeons, and the war on a shape-shifting enemy."},
+        {"title": "The Gene: An Intimate History", "year": 2016, "genre": "Science", "popularity": 3, "description": "From Mendel's peas to CRISPR, the story of heredity braided with the author's own family history of mental illness."}
+      ]
+    },
+    {
+      "name": "Oliver Sacks",
+      "birth_date": "1933-07-09",
+      "death_date": "2015-08-30",
+      "nationality": "British",
+      "biography": "British neurologist whose compassionate case histories turned clinical strangeness into literature.",
+      "books": [
+        {"title": "The Man Who Mistook His Wife for a Hat", "year": 1985, "genre": "Science", "popularity": 4, "description": "Clinical tales of patients who lost faces, bodies, or decades — and what their conditions reveal about the self the brain constructs."},
+        {"title": "Musicophilia", "year": 2007, "genre": "Science", "popularity": 2, "description": "Sudden pianists after lightning strikes, amusia, earworms: case studies of music's strange power over the human brain."}
+      ]
+    },
+    {
+      "name": "Stephen Hawking",
+      "birth_date": "1942-01-08",
+      "death_date": "2018-03-14",
+      "nationality": "British",
+      "biography": "Cambridge cosmologist who probed black holes and the universe's origin while living five decades with ALS.",
+      "books": [
+        {"title": "A Brief History of Time", "year": 1988, "genre": "Science", "popularity": 4, "description": "From the Big Bang to black holes, the bestselling tour of space, time, and the search for a theory of everything."}
+      ]
+    },
+    {
+      "name": "Carl Sagan",
+      "birth_date": "1934-11-09",
+      "death_date": "1996-12-20",
+      "nationality": "American",
+      "biography": "American astronomer and the twentieth century's great evangelist for the scientific worldview and the pale blue dot we share.",
+      "books": [
+        {"title": "Cosmos", "year": 1980, "genre": "Science", "popularity": 4, "description": "Fifteen billion years of cosmic evolution and the human story of discovering it, the companion to the most watched science series of its time."},
+        {"title": "The Demon-Haunted World", "year": 1995, "genre": "Science", "popularity": 3, "description": "Science as a candle in the dark: a defense of skeptical thinking against pseudoscience, superstition, and the dumbing-down of public discourse."},
+        {"title": "Pale Blue Dot", "year": 1994, "genre": "Science", "popularity": 3, "description": "Inspired by Voyager's last photograph of Earth, a vision of humanity's future among the planets."}
+      ]
+    },
+    {
+      "name": "Richard Feynman",
+      "birth_date": "1918-05-11",
+      "death_date": "1988-02-15",
+      "nationality": "American",
+      "biography": "Nobel-winning physicist, bongo player, and safecracker whose curiosity made him science's most entertaining storyteller.",
+      "books": [
+        {"title": "Surely You're Joking, Mr. Feynman!", "year": 1985, "genre": "Memoir", "popularity": 4, "description": "Adventures of a curious character: cracking Los Alamos safes, sketching in strip clubs, and out-thinking everyone while having more fun."}
+      ]
+    },
+    {
+      "name": "Carlo Rovelli",
+      "birth_date": "1956-05-03",
+      "death_date": null,
+      "nationality": "Italian",
+      "biography": "Italian theoretical physicist and founder of loop quantum gravity who writes about time and space like a poet.",
+      "books": [
+        {"title": "Seven Brief Lessons on Physics", "year": 2014, "genre": "Science", "popularity": 3, "description": "Relativity, quanta, black holes, and our place in the cosmos in under a hundred luminous pages."},
+        {"title": "The Order of Time", "year": 2017, "genre": "Science", "popularity": 3, "description": "Time passes faster in the mountains than at sea level, and 'now' means nothing across the universe — what physics actually says about time."}
+      ]
+    },
+    {
+      "name": "Robert M. Sapolsky",
+      "birth_date": "1957-04-06",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Stanford neuroscientist and primatologist who spent decades with Kenyan baboons studying stress, hierarchy, and why we behave.",
+      "books": [
+        {"title": "Behave", "year": 2017, "genre": "Science", "popularity": 3, "description": "Why did that behavior happen? Sapolsky answers across timescales — one second before, in the womb, in evolutionary deep time — in a grand synthesis of human biology."},
+        {"title": "Why Zebras Don't Get Ulcers", "year": 1994, "genre": "Science", "popularity": 2, "description": "Zebras sprint from lions and relax; humans marinate in chronic stress designed for emergencies — what that does to bodies, and what helps."}
+      ]
+    },
+    {
+      "name": "Mary Roach",
+      "birth_date": "1959-03-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "America's funniest science writer, who asks the questions about corpses, space toilets, and digestion that everyone else is too polite to ask.",
+      "books": [
+        {"title": "Stiff: The Curious Lives of Human Cadavers", "year": 2003, "genre": "Science", "popularity": 3, "description": "What happens to donated bodies: crash tests, surgical practice, body farms — a hilarious, respectful tour of mortality's practical side."},
+        {"title": "Packing for Mars", "year": 2010, "genre": "Science", "popularity": 2, "description": "The strange science of keeping squishy, smelly, psychologically fragile humans alive in space, from zero-G toilets to year-long isolation tests."}
+      ]
+    },
+    {
+      "name": "Walter Isaacson",
+      "birth_date": "1952-05-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American biographer of geniuses — from Franklin to Einstein to Jobs — and former editor of Time.",
+      "books": [
+        {"title": "Steve Jobs", "year": 2011, "genre": "Biography", "popularity": 4, "description": "The authorized yet unsparing portrait of Apple's co-founder: visionary, tyrant, perfectionist, drawn from forty interviews with Jobs himself."},
+        {"title": "Einstein: His Life and Universe", "year": 2007, "genre": "Biography", "popularity": 3, "description": "How a rebellious patent clerk imagined riding a light beam and rewrote physics — and how fame, politics, and quantum doubt filled the rest of his life."},
+        {"title": "Leonardo da Vinci", "year": 2017, "genre": "Biography", "popularity": 3, "description": "From 7,200 notebook pages, the most relentlessly curious mind in history: anatomy, flying machines, and the smile of the Mona Lisa."}
+      ]
+    },
+    {
+      "name": "Ron Chernow",
+      "birth_date": "1949-03-03",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American biographer of founders and financiers whose Hamilton biography inspired the musical.",
+      "books": [
+        {"title": "Alexander Hamilton", "year": 2004, "genre": "Biography", "popularity": 4, "description": "The orphan immigrant who built America's financial system, fought its first media wars, and died on a Weehawken ledge."},
+        {"title": "Washington: A Life", "year": 2010, "genre": "Biography", "popularity": 2, "description": "The Pulitzer-winning portrait of the ambitious, passionate man behind the marble myth."}
+      ]
+    },
+    {
+      "name": "David McCullough",
+      "birth_date": "1933-07-07",
+      "death_date": "2022-08-07",
+      "nationality": "American",
+      "biography": "Two-time Pulitzer-winning American historian whose warm narrative voice made the past a bestseller.",
+      "books": [
+        {"title": "John Adams", "year": 2001, "genre": "Biography", "popularity": 3, "description": "The irascible, incorruptible second president and his half-century partnership with Abigail, in McCullough's Pulitzer-winning life."},
+        {"title": "1776", "year": 2005, "genre": "History", "popularity": 3, "description": "One precarious year of the Revolution, when Washington's ragged army lost New York and saved the cause at Trenton."}
+      ]
+    },
+    {
+      "name": "Barbara W. Tuchman",
+      "birth_date": "1912-01-30",
+      "death_date": "1989-02-06",
+      "nationality": "American",
+      "biography": "Two-time Pulitzer-winning historian who proved narrative history could be both rigorous and riveting.",
+      "books": [
+        {"title": "The Guns of August", "year": 1962, "genre": "History", "popularity": 3, "description": "The first month of World War I, when rigid war plans and royal vanities marched Europe into catastrophe."}
+      ]
+    },
+    {
+      "name": "Antony Beevor",
+      "birth_date": "1946-12-14",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "Former British Army officer whose archival histories of WWII's great battles read with novelistic force.",
+      "books": [
+        {"title": "Stalingrad", "year": 1998, "genre": "History", "popularity": 3, "description": "The pitiless five-month battle that broke the Wehrmacht, told from generals' maps and soldiers' letters on both sides of the Volga."}
+      ]
+    },
+    {
+      "name": "Patrick Radden Keefe",
+      "birth_date": "1976-07-04",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "New Yorker staff writer whose investigative epics read like thrillers and hold power precisely to account.",
+      "books": [
+        {"title": "Say Nothing", "year": 2018, "genre": "True Crime", "popularity": 4, "description": "A 1972 Belfast disappearance unspools into the whole tragedy of the Troubles, the IRA's secrets, and the price of silence."},
+        {"title": "Empire of Pain", "year": 2021, "genre": "History", "popularity": 3, "description": "Three generations of the Sackler family, from Valium marketing to OxyContin, and the dynasty behind America's opioid catastrophe."}
+      ]
+    },
+    {
+      "name": "Michelle Zauner",
+      "birth_date": "1989-03-29",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Korean American musician (Japanese Breakfast) whose grief memoir about food, family, and identity became a phenomenon.",
+      "books": [
+        {"title": "Crying in H Mart", "year": 2021, "genre": "Memoir", "popularity": 4, "description": "Losing her Korean mother to cancer at twenty-five, Zauner cooks her way back to her — jjigae by jjigae — in a memoir of appetite and grief."}
+      ]
+    },
+    {
+      "name": "Viktor E. Frankl",
+      "birth_date": "1905-03-26",
+      "death_date": "1997-09-02",
+      "nationality": "Austrian",
+      "biography": "Viennese psychiatrist and Holocaust survivor who founded logotherapy on the conviction that meaning sustains life.",
+      "books": [
+        {"title": "Man's Search for Meaning", "year": 1946, "genre": "Psychology", "popularity": 5, "description": "A psychiatrist's testimony from Auschwitz and the therapy it forged: those who have a why to live can bear almost any how."}
+      ]
+    },
+    {
+      "name": "Marcus Aurelius",
+      "birth_date": null,
+      "death_date": null,
+      "nationality": "Roman",
+      "biography": "Roman emperor from 161 to 180 CE whose private notebooks of Stoic self-instruction became one of philosophy's most consulted works. Lived 121–180 CE; exact dates predate the calendar fields used here.",
+      "books": [
+        {"title": "Meditations", "year": 1559, "genre": "Philosophy", "popularity": 4, "description": "An emperor's private reminders on mortality, duty, and tranquility — Stoicism practiced at the height of absolute power. (Year reflects first printed edition.)"}
+      ]
+    },
+    {
+      "name": "Sun Tzu",
+      "birth_date": null,
+      "death_date": null,
+      "nationality": "Chinese",
+      "biography": "Ancient Chinese strategist traditionally credited with the most influential treatise on conflict ever written. Lived c. 544–496 BCE; exact dates predate the calendar fields used here.",
+      "books": [
+        {"title": "The Art of War", "year": 1772, "genre": "Philosophy", "popularity": 4, "description": "Thirteen chapters on winning without fighting, deception, and terrain, applied for centuries from battlefields to boardrooms. (Year reflects first Western edition.)"}
+      ]
+    },
+    {
+      "name": "Robert Greene",
+      "birth_date": "1959-05-14",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author of amoral, historically armed handbooks on power, seduction, and mastery.",
+      "books": [
+        {"title": "The 48 Laws of Power", "year": 1998, "genre": "Self-Help", "popularity": 4, "description": "Machiavelli for the modern cubicle: forty-eight laws of influence drawn from courtiers, con artists, and kings."}
+      ]
+    },
+    {
+      "name": "Stephen R. Covey",
+      "birth_date": "1932-10-24",
+      "death_date": "2012-07-16",
+      "nationality": "American",
+      "biography": "American leadership educator whose principle-centered framework became the canonical business self-help book.",
+      "books": [
+        {"title": "The 7 Habits of Highly Effective People", "year": 1989, "genre": "Self-Help", "popularity": 4, "description": "Begin with the end in mind, seek first to understand: a character-based architecture for personal and professional effectiveness."}
+      ]
+    },
+    {
+      "name": "Dale Carnegie",
+      "birth_date": "1888-11-24",
+      "death_date": "1955-11-01",
+      "nationality": "American",
+      "biography": "Missouri farm boy turned public-speaking teacher whose 1936 course on human relations never left print.",
+      "books": [
+        {"title": "How to Win Friends and Influence People", "year": 1936, "genre": "Self-Help", "popularity": 4, "description": "Remember names, avoid arguments, give honest appreciation: the original handbook of getting along, still selling by the millions."}
+      ]
+    },
+    {
+      "name": "Eric Ries",
+      "birth_date": "1978-09-22",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Silicon Valley entrepreneur whose build-measure-learn loop became the operating manual for modern startups.",
+      "books": [
+        {"title": "The Lean Startup", "year": 2011, "genre": "Business", "popularity": 3, "description": "Treat a startup as a series of experiments: minimum viable products, validated learning, and the discipline to pivot or persevere."}
+      ]
+    },
+    {
+      "name": "Daniel H. Pink",
+      "birth_date": "1964-07-23",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author on work and behavior, former White House speechwriter, translator of research into management practice.",
+      "books": [
+        {"title": "Drive", "year": 2009, "genre": "Business", "popularity": 3, "description": "Carrots and sticks backfire for creative work; autonomy, mastery, and purpose are what actually motivate."}
+      ]
+    },
+    {
+      "name": "Michael Lewis",
+      "birth_date": "1960-10-15",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Former bond salesman who became the great explainer of money's absurdities through irresistible characters.",
+      "books": [
+        {"title": "The Big Short", "year": 2010, "genre": "Business", "popularity": 4, "description": "The misfits who saw the subprime collapse coming and bet against the global financial system — and won as it burned."},
+        {"title": "Moneyball", "year": 2003, "genre": "Business", "popularity": 3, "description": "How the broke Oakland A's used undervalued statistics to beat teams spending three times more, and started a revolution beyond baseball."}
+      ]
+    },
+    {
+      "name": "Morgan Housel",
+      "birth_date": "1983-10-21",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American financial writer whose essays on money psychology became one of the bestselling finance books ever.",
+      "books": [
+        {"title": "The Psychology of Money", "year": 2020, "genre": "Business", "popularity": 4, "description": "Nineteen short lessons on why doing well with money has little to do with intelligence and everything to do with behavior."}
+      ]
+    },
+    {
+      "name": "William Shakespeare",
+      "birth_date": "1564-04-23",
+      "death_date": "1616-04-23",
+      "nationality": "British",
+      "biography": "Stratford glover's son whose thirty-eight plays and 154 sonnets remain the centerpiece of English literature and the world's stages.",
+      "books": [
+        {"title": "Hamlet", "year": 1603, "genre": "Drama", "popularity": 4, "description": "The Prince of Denmark, commanded by his father's ghost to revenge, thinks his way through madness, mortality, and the readiness that is all."},
+        {"title": "Macbeth", "year": 1623, "genre": "Drama", "popularity": 4, "description": "Three witches promise a Scottish thane the crown, and ambition does the rest, in the bloodiest and swiftest of the tragedies."},
+        {"title": "Romeo and Juliet", "year": 1597, "genre": "Drama", "popularity": 4, "description": "Two teenagers from feuding Verona houses marry in secret and die in error, in the defining tragedy of young love."},
+        {"title": "A Midsummer Night's Dream", "year": 1600, "genre": "Drama", "popularity": 3, "description": "Four lovers, a troupe of amateur actors, and a quarreling fairy court tangle for one enchanted night in the woods outside Athens."}
+      ]
+    },
+    {
+      "name": "Homer",
+      "birth_date": null,
+      "death_date": null,
+      "nationality": "Greek",
+      "biography": "The traditional poet of archaic Greece credited with the two epics at the foundation of Western literature. Flourished c. 8th century BCE; exact dates predate the calendar fields used here.",
+      "books": [
+        {"title": "The Iliad", "year": 1598, "genre": "Poetry", "popularity": 3, "description": "The wrath of Achilles in the tenth year of the Trojan War: honor, grief, and the terrible glory of battle. (Year reflects Chapman's first English edition.)"},
+        {"title": "The Odyssey", "year": 1614, "genre": "Poetry", "popularity": 4, "description": "Ten years after Troy, Odysseus contends with cyclopes, sorceresses, and the sea god's grudge to reach Ithaca and the wife who waits. (Year reflects Chapman's English edition.)"}
+      ]
+    },
+    {
+      "name": "Walt Whitman",
+      "birth_date": "1819-05-31",
+      "death_date": "1892-03-26",
+      "nationality": "American",
+      "biography": "Brooklyn printer and Civil War nurse whose free-verse celebration of the democratic self founded American poetry.",
+      "books": [
+        {"title": "Leaves of Grass", "year": 1855, "genre": "Poetry", "popularity": 3, "description": "'I am large, I contain multitudes': Whitman's lifelong, ever-expanding song of the body, the road, and America itself."}
+      ]
+    },
+    {
+      "name": "Emily Dickinson",
+      "birth_date": "1830-12-10",
+      "death_date": "1886-05-15",
+      "nationality": "American",
+      "biography": "The recluse of Amherst, who published almost nothing in life and left nearly eighteen hundred poems that remade the art.",
+      "books": [
+        {"title": "The Complete Poems of Emily Dickinson", "year": 1955, "genre": "Poetry", "popularity": 3, "description": "Death, bees, eternity, and dashes: the full restored poems of America's most original poet, as she actually wrote them."}
+      ]
+    },
+    {
+      "name": "Robert Frost",
+      "birth_date": "1874-03-26",
+      "death_date": "1963-01-29",
+      "nationality": "American",
+      "biography": "Four-time Pulitzer-winning poet of New England's stone walls and dark woods, deceptively plainspoken and endlessly quoted.",
+      "books": [
+        {"title": "The Poetry of Robert Frost", "year": 1969, "genre": "Poetry", "popularity": 3, "description": "The collected poems: roads not taken, woods on snowy evenings, and fences that may or may not make good neighbors."}
+      ]
+    },
+    {
+      "name": "Pablo Neruda",
+      "birth_date": "1904-07-12",
+      "death_date": "1973-09-23",
+      "nationality": "Chilean",
+      "biography": "Chilean poet, diplomat, and Nobel laureate whose odes and love songs made him the most read poet of the twentieth century.",
+      "books": [
+        {"title": "Twenty Love Poems and a Song of Despair", "year": 1924, "genre": "Poetry", "popularity": 3, "description": "Written at nineteen, the sensuous, melancholy cycle that made Neruda the voice of love in Spanish."}
+      ]
+    },
+    {
+      "name": "Mary Oliver",
+      "birth_date": "1935-09-10",
+      "death_date": "2019-01-17",
+      "nationality": "American",
+      "biography": "Pulitzer-winning American poet of attention, whose walks in the Provincetown woods produced the era's most shared lines about how to live.",
+      "books": [
+        {"title": "Devotions", "year": 2017, "genre": "Poetry", "popularity": 3, "description": "Oliver's own selection from five decades: grasshoppers, wild geese, and the one wild and precious life her readers keep asking about."}
+      ]
+    },
+    {
+      "name": "Amanda Gorman",
+      "birth_date": "1998-03-07",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Youngest inaugural poet in U.S. history, whose 2021 recitation made poetry a live national event.",
+      "books": [
+        {"title": "The Hill We Climb", "year": 2021, "genre": "Poetry", "popularity": 3, "description": "The inaugural poem of January 2021 in a standalone edition: a country bruised but whole, and the dawn that blooms as we free it."}
+      ]
+    },
+    {
+      "name": "Lorraine Hansberry",
+      "birth_date": "1930-05-19",
+      "death_date": "1965-01-12",
+      "nationality": "American",
+      "biography": "First Black woman to have a play produced on Broadway, dead at thirty-four, whose work still anchors the American stage.",
+      "books": [
+        {"title": "A Raisin in the Sun", "year": 1959, "genre": "Drama", "popularity": 3, "description": "An insurance check could move the Younger family out of their Chicago kitchenette — if they can agree on a dream deferred no longer."}
+      ]
+    },
+    {
+      "name": "Arthur Miller",
+      "birth_date": "1915-10-17",
+      "death_date": "2005-02-10",
+      "nationality": "American",
+      "biography": "American playwright who put the common man at the center of tragedy and the McCarthy era on trial.",
+      "books": [
+        {"title": "Death of a Salesman", "year": 1949, "genre": "Drama", "popularity": 4, "description": "Willy Loman, sixty-three and worn through, collides with the gap between the American Dream he sold and the life he lived."},
+        {"title": "The Crucible", "year": 1953, "genre": "Drama", "popularity": 4, "description": "The Salem witch trials as anatomy of hysteria: vengeance dressed as piety, and John Proctor's name as the last thing he owns."}
+      ]
+    },
+    {
+      "name": "Tennessee Williams",
+      "birth_date": "1911-03-26",
+      "death_date": "1983-02-25",
+      "nationality": "American",
+      "biography": "Mississippi-born playwright of desire and its casualties, whose Southern poetics transformed Broadway.",
+      "books": [
+        {"title": "A Streetcar Named Desire", "year": 1947, "genre": "Drama", "popularity": 4, "description": "Faded belle Blanche DuBois arrives at her sister's New Orleans flat, where Stanley Kowalski's brute reality awaits her illusions."}
+      ]
+    },
+    {
+      "name": "Maya Angelou",
+      "birth_date": "1928-04-04",
+      "death_date": "2014-05-28",
+      "nationality": "American",
+      "biography": "Poet, memoirist, and civil rights worker whose account of a Black girlhood in the Jim Crow South opened American autobiography.",
+      "books": [
+        {"title": "I Know Why the Caged Bird Sings", "year": 1969, "genre": "Memoir", "popularity": 4, "description": "From Stamps, Arkansas, to San Francisco, the first volume of Angelou's autobiography: trauma, silence, and the voice that broke it."},
+        {"title": "And Still I Rise", "year": 1978, "genre": "Poetry", "popularity": 3, "description": "Angelou's third collection, anchored by the title anthem of defiance and dust that rises."}
+      ]
+    }
+  ]
+}
