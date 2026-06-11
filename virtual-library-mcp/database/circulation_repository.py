@@ -266,7 +266,11 @@ class CirculationRepository:
         if not checkout:
             raise NotFoundError(f"Checkout {return_data.checkout_id} not found")
 
-        if checkout.status != CirculationStatusEnum.ACTIVE:
+        # ACTIVE and OVERDUE loans are both returnable — OVERDUE is precisely
+        # the state where a return assesses fines. Anything else (completed,
+        # cancelled, lost) has already left circulation.
+        returnable = (CirculationStatusEnum.ACTIVE, CirculationStatusEnum.OVERDUE)
+        if checkout.status not in returnable:
             raise RepositoryException(
                 f"Return failed - checkout is not active (current status: {checkout.status})"
             )

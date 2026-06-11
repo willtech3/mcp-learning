@@ -1,95 +1,99 @@
 """
-Book Insights Tool - Educational Demonstration of MCP Sampling
+Book Insights Tool - MCP Sampling in Practice
 
-This tool demonstrates how to integrate MCP sampling into a practical feature.
-It generates AI-powered insights about books in the library catalog, showing
-how sampling can enhance existing functionality with dynamic content.
+Generates AI-powered insights about catalog books by asking the CLIENT's
+LLM to write them (MCP sampling). Demonstrates:
+
+1. ctx.sample() — server-initiated completions with model preferences
+2. Tool-enabled sampling (SEP-1577, MCP 2025-11-25): for similar-book
+   recommendations, the client's LLM is handed a search tool so its
+   suggestions are grounded in what this library actually owns
+3. Graceful fallback when the client doesn't support sampling
 """
 
 import logging
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastmcp import Context
+from fastmcp.exceptions import ToolError
 from pydantic import Field
 
 from database.author_repository import AuthorRepository
-from database.book_repository import BookRepository
+from database.book_repository import BookRepository, BookSearchParams
+from database.repository import PaginationParams
 from database.session import session_scope
 from models.book import Book
-
-# Observability is handled by middleware, not decorators
 from sampling import request_ai_generation
 
 logger = logging.getLogger(__name__)
 
-# Type for different insight types
 InsightType = Literal["summary", "themes", "discussion_questions", "similar_books"]
 
 
-async def generate_book_insights_handler(
-    context: Context,
-    isbn: str = Field(description="ISBN of the book to generate insights for"),
-    insight_type: InsightType = Field(
-        default="summary",
-        description="Type of insight to generate: summary, themes, discussion_questions, or similar_books",
-    ),
-) -> str:
-    """
-    Generate AI-powered insights about a book using MCP sampling.
+def search_library_catalog(genre: str, limit: int = 8) -> list[dict]:
+    """Search this library's catalog for available books in a genre.
 
-    This tool demonstrates:
-    1. Integration with existing database/repository pattern
-    2. Different types of AI-generated content
-    3. Graceful fallback when sampling is unavailable
-    4. Context-aware prompt construction
-
-    The tool will attempt to use sampling if available, but provides
-    meaningful fallback behavior for clients without sampling support.
+    Exposed to the *client's* LLM during tool-enabled sampling so that
+    similar-book recommendations only mention titles we actually hold.
     """
-    # Get the book from the database
     with session_scope() as session:
-        book_repo = BookRepository(session)
-        book_model = book_repo.get_by_isbn(isbn)
+        repo = BookRepository(session)
+        result = repo.search(
+            search_params=BookSearchParams(genre=genre.strip().title(), available_only=False),
+            pagination=PaginationParams(page=1, page_size=max(1, min(limit, 20))),
+        )
+        return [
+            {
+                "title": b.title,
+                "isbn": b.isbn,
+                "genre": b.genre,
+                "year": b.publication_year,
+                "available": b.is_available,
+            }
+            for b in result.items
+        ]
 
-        if not book_model:
-            return f"Error: Book with ISBN {isbn} not found in the library catalog."
 
-        # Get author name using author repository
-        author_repo = AuthorRepository(session)
-        author = author_repo.get_by_id(book_model.author_id)
+async def generate_book_insights(
+    isbn: Annotated[
+        str, Field(description="ISBN-13 of the book to generate insights for", pattern=r"^\d{13}$")
+    ],
+    ctx: Context,
+    insight_type: Annotated[
+        InsightType,
+        Field(
+            description="Kind of insight: summary, themes, discussion_questions, or similar_books"
+        ),
+    ] = "summary",
+) -> str:
+    """Generate AI-powered insights about a book using MCP sampling.
+
+    Falls back to genre-based static content when the connected client
+    doesn't support sampling, so the tool is useful everywhere.
+    """
+    with session_scope() as session:
+        book = BookRepository(session).get_by_isbn(isbn)
+        if not book:
+            raise ToolError(f"Book with ISBN {isbn} not found in the catalog.")
+        author = AuthorRepository(session).get_by_id(book.author_id)
         author_name = author.name if author else "Unknown Author"
 
-    # Check if sampling is available
-    if not context.request_context.session.client_capabilities.sampling:
-        # Fallback behavior when sampling is not available
-        return _generate_fallback_response(book_model, author_name, insight_type)
+    generators = {
+        "summary": _generate_summary,
+        "themes": _generate_themes,
+        "discussion_questions": _generate_discussion_questions,
+        "similar_books": _generate_similar_books,
+    }
+    result = await generators[insight_type](ctx, book, author_name)
 
-    # Generate different prompts based on insight type
-    try:
-        if insight_type == "summary":
-            result = await _generate_summary(context, book_model, author_name)
-        elif insight_type == "themes":
-            result = await _generate_themes(context, book_model, author_name)
-        elif insight_type == "discussion_questions":
-            result = await _generate_discussion_questions(context, book_model, author_name)
-        elif insight_type == "similar_books":
-            result = await _generate_similar_books(context, book_model, author_name)
-        else:
-            result = None
-
-        if result:
-            return f"**AI-Generated {insight_type.replace('_', ' ').title()} for '{book_model.title}'**\n\n{result}"
-        # Sampling failed, use fallback
-        logger.warning(f"Sampling failed for {insight_type}, using fallback")
-        return _generate_fallback_response(book_model, author_name, insight_type)
-
-    except Exception:
-        logger.exception("Error generating insights")
-        return _generate_fallback_response(book_model, author_name, insight_type)
+    if result:
+        title = insight_type.replace("_", " ").title()
+        return f"**AI-Generated {title} for '{book.title}'**\n\n{result}"
+    logger.info("Sampling unavailable for %s; serving fallback content", insight_type)
+    return _generate_fallback_response(book, author_name, insight_type)
 
 
-async def _generate_summary(context, book: Book, author_name: str) -> str | None:
-    """Generate an enhanced book summary using sampling."""
+async def _generate_summary(ctx: Context, book: Book, author_name: str) -> str | None:
     prompt = f"""Create an engaging summary for this library book:
 
 Title: {book.title}
@@ -98,24 +102,21 @@ Genre: {book.genre}
 Published: {book.publication_year}
 Current description: {book.description or "No description available"}
 
-Generate a compelling 2-3 paragraph summary that would help library patrons decide if they want to read this book.
-Focus on the main themes, writing style, and what makes it unique."""
-
-    system_prompt = "You are a knowledgeable librarian creating book summaries. Be informative and engaging without spoilers."
+Generate a compelling 2-3 paragraph summary that would help library patrons
+decide if they want to read this book. Focus on themes, style, and what makes it unique."""
 
     return await request_ai_generation(
-        context=context,
-        prompt=prompt,
-        system_prompt=system_prompt,
+        ctx,
+        prompt,
+        system_prompt=(
+            "You are a knowledgeable librarian creating book summaries. "
+            "Be informative and engaging without spoilers."
+        ),
         max_tokens=400,
-        temperature=0.7,
-        intelligence_priority=0.8,
-        speed_priority=0.4,
     )
 
 
-async def _generate_themes(context, book: Book, author_name: str) -> str | None:
-    """Generate analysis of book themes using sampling."""
+async def _generate_themes(ctx: Context, book: Book, author_name: str) -> str | None:
     prompt = f"""Analyze the major themes in this book:
 
 Title: {book.title}
@@ -123,78 +124,81 @@ Author: {author_name}
 Genre: {book.genre}
 Description: {book.description or "No description available"}
 
-Identify and explain 3-5 major themes in this book. For each theme, provide a brief explanation of how it's explored in the story."""
-
-    system_prompt = "You are a literature expert analyzing book themes for library patrons. Be insightful but avoid major spoilers."
+Identify and explain 3-5 major themes, each with a brief explanation of how
+the story explores it."""
 
     return await request_ai_generation(
-        context=context,
-        prompt=prompt,
-        system_prompt=system_prompt,
+        ctx,
+        prompt,
+        system_prompt=(
+            "You are a literature expert analyzing book themes for library patrons. "
+            "Be insightful but avoid major spoilers."
+        ),
         max_tokens=500,
         temperature=0.6,
-        intelligence_priority=0.9,  # High intelligence for literary analysis
-        speed_priority=0.3,
     )
 
 
-async def _generate_discussion_questions(context, book: Book, author_name: str) -> str | None:
-    """Generate book club discussion questions using sampling."""
+async def _generate_discussion_questions(ctx: Context, book: Book, author_name: str) -> str | None:
     prompt = f"""Create thoughtful discussion questions for a book club reading:
 
 Title: {book.title}
 Author: {author_name}
 Genre: {book.genre}
 
-Generate 5-7 open-ended discussion questions that would promote engaging conversation in a book club setting.
-Include questions about themes, characters, and the reader's personal connection to the story."""
-
-    system_prompt = "You are a book club facilitator creating discussion questions. Make them thought-provoking and open to interpretation."
+Generate 5-7 open-ended questions covering themes, characters, and the
+reader's personal connection to the story."""
 
     return await request_ai_generation(
-        context=context,
-        prompt=prompt,
-        system_prompt=system_prompt,
+        ctx,
+        prompt,
+        system_prompt=(
+            "You are a book club facilitator. Make questions thought-provoking "
+            "and open to interpretation."
+        ),
         max_tokens=600,
-        temperature=0.8,  # More creativity for varied questions
-        intelligence_priority=0.7,
-        speed_priority=0.5,
+        temperature=0.8,
     )
 
 
-async def _generate_similar_books(context, book: Book, author_name: str) -> str | None:
-    """Generate recommendations for similar books using sampling."""
-    prompt = f"""Recommend books similar to:
+async def _generate_similar_books(ctx: Context, book: Book, author_name: str) -> str | None:
+    """Tool-enabled sampling (SEP-1577): the client's LLM can call our
+    search_library_catalog() tool mid-completion, so every recommendation
+    can cite real holdings and availability."""
+    prompt = f"""Recommend books from THIS library similar to:
 
 Title: {book.title}
 Author: {author_name}
 Genre: {book.genre}
 Description: {book.description or "No description available"}
 
-Suggest 4-5 books that readers who enjoyed this book might also like.
-For each recommendation, explain what makes it similar (themes, style, genre) and what makes it unique."""
+Use the search_library_catalog tool to check what the library holds in
+relevant genres, then suggest 3-5 of those titles. For each, explain what
+makes it similar and note whether it is currently available."""
 
-    system_prompt = "You are a library recommendation expert. Focus on books that share themes or style while offering something new."
-
-    return await request_ai_generation(
-        context=context,
-        prompt=prompt,
-        system_prompt=system_prompt,
-        max_tokens=700,
-        temperature=0.8,
-        intelligence_priority=0.7,
-        speed_priority=0.6,  # Faster for interactive recommendations
-    )
+    try:
+        result = await ctx.sample(
+            messages=prompt,
+            system_prompt=(
+                "You are a library recommendation expert. Ground every "
+                "recommendation in actual catalog holdings via the provided tool."
+            ),
+            max_tokens=700,
+            temperature=0.8,
+            tools=[search_library_catalog],
+        )
+    except Exception as e:
+        logger.info("Tool-enabled sampling unavailable: %s", e)
+        return None
+    return result.text or None
 
 
 def _generate_fallback_response(book: Book, author_name: str, insight_type: InsightType) -> str:
-    """
-    Generate a meaningful response when sampling is not available.
-
-    This demonstrates how to gracefully degrade functionality while
-    still providing value to the user.
-    """
-    base_info = f"**Book Information**\n\nTitle: {book.title}\nAuthor: {author_name}\nGenre: {book.genre}\nYear: {book.publication_year}\n\n"
+    """Meaningful degradation when the client has no sampling support."""
+    base_info = (
+        f"**Book Information**\n\nTitle: {book.title}\nAuthor: {author_name}\n"
+        f"Genre: {book.genre}\nYear: {book.publication_year}\n\n"
+    )
 
     if insight_type == "summary":
         return base_info + (
@@ -205,7 +209,6 @@ def _generate_fallback_response(book: Book, author_name: str, insight_type: Insi
     if insight_type == "themes":
         fallback_themes = {
             "Fiction": "Common themes might include: human nature, relationships, conflict, and personal growth.",
-            "Non-Fiction": "Key topics might include: main arguments, supporting evidence, and practical applications.",
             "Mystery": "Typical themes include: justice, deception, truth, and moral ambiguity.",
             "Science Fiction": "Common themes: technology's impact, human identity, social commentary, and future possibilities.",
             "Fantasy": "Often explores: good vs evil, power and corruption, coming of age, and destiny.",
@@ -213,7 +216,8 @@ def _generate_fallback_response(book: Book, author_name: str, insight_type: Insi
         genre_themes = fallback_themes.get(book.genre, "Themes vary by genre and author style.")
         return (
             base_info
-            + f"**Genre-Typical Themes**\n\n{genre_themes}\n\n*Note: AI-generated theme analysis requires a client with sampling support.*"
+            + f"**Genre-Typical Themes**\n\n{genre_themes}\n\n"
+            + "*Note: AI-generated theme analysis requires a client with sampling support.*"
         )
 
     if insight_type == "discussion_questions":
@@ -230,30 +234,14 @@ def _generate_fallback_response(book: Book, author_name: str, insight_type: Insi
 *Note: AI-generated discussion questions tailored to this specific book require a client with sampling support.*"""
         )
 
-    if insight_type == "similar_books":
-        return (
-            base_info
-            + f"""**Finding Similar Books**
+    return (
+        base_info
+        + f"""**Finding Similar Books**
 
 To find books similar to this one, consider:
 - Other books by {author_name}
 - Other {book.genre} books in our catalog
-- Books from the same time period ({book.publication_year}s)
-- Books with similar themes or settings
+- Books from the same era ({book.publication_year}s)
 
 *Note: AI-generated personalized recommendations require a client with sampling support.*"""
-        )
-
-    return base_info + "Invalid insight type requested."
-
-
-# Export as dictionary for server registration
-generate_book_insights_tool = {
-    "name": "generate_book_insights",
-    "description": (
-        "Generate AI-powered insights about a book including summaries, themes, "
-        "discussion questions, or similar book recommendations. Demonstrates MCP "
-        "sampling integration for dynamic content generation."
-    ),
-    "handler": generate_book_insights_handler,
-}
+    )
