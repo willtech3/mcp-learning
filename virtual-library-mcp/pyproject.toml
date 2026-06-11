@@ -22,51 +22,33 @@ classifiers = [
 
 # Core dependencies for MCP server functionality
 dependencies = [
-    # MCP framework - provides the server foundation
-    "fastmcp>=2.0.0",
-    
-    # Data validation and serialization - critical for MCP protocol compliance
-    "pydantic>=2.0.0",
-    
-    # Database ORM for persistent data storage
-    "sqlalchemy>=2.0.0",
-    
-    # Test data generation for realistic library catalog
-    "faker>=24.0.0",
-    
-    # Environment variable management for configuration
-    "python-dotenv>=1.0.0",
-    
-    # HTTP client for external API integrations (future use)
-    "httpx>=0.26.0",
-    
-    # Observability and monitoring with Pydantic Logfire
-    "logfire>=2.0.0",
-]
+    # MCP framework (v3, targets protocol revision 2025-11-25)
+    "fastmcp>=3.4,<4",
 
-[project.optional-dependencies]
-# Development tools - separate from runtime dependencies
-dev = [
-    # Testing framework
-    "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-asyncio>=0.23.0",
-    
-    # Code formatting and linting
-    "ruff>=0.3.0",
-    
-    # Type checking - crucial for MCP protocol implementation
-    "pyright>=1.1.350",
-    
-    # Development server utilities
-    "watchdog>=4.0.0",
+    # Data validation and serialization - critical for MCP protocol compliance
+    "pydantic>=2.13",
+    "pydantic-settings>=2.10",
+
+    # Database ORM for persistent data storage
+    "sqlalchemy>=2.0.50",
+
+    # Test data generation for realistic library data (patrons, circulation)
+    "faker>=40",
+
+    # Environment variable management for configuration
+    "python-dotenv>=1.1",
+
+    # HTTP client for external API integrations (future use)
+    "httpx>=0.28",
+
+    # Observability and monitoring with Pydantic Logfire
+    "logfire>=4",
 ]
 
 [project.urls]
-Homepage = "https://github.com/example/virtual-library-mcp"
-Repository = "https://github.com/example/virtual-library-mcp"
-Documentation = "https://github.com/example/virtual-library-mcp/docs"
-Issues = "https://github.com/example/virtual-library-mcp/issues"
+Homepage = "https://github.com/willtech3/mcp-learning"
+Repository = "https://github.com/willtech3/mcp-learning"
+Issues = "https://github.com/willtech3/mcp-learning/issues"
 
 [project.scripts]
 # Entry point for running the MCP server
@@ -163,6 +145,10 @@ ignore = [
 ]
 "tools/*" = [
     "B008",  # Field() in function defaults is the FastMCP pattern for tool parameters
+]
+"scripts/*" = [
+    "ASYNC250", # Interactive demo client intentionally blocks on input()
+    "ASYNC240", # Demo scripts may use pathlib in async flows
 ]
 
 [tool.ruff.format]
@@ -278,6 +264,11 @@ reportUnknownArgumentType = "none"  # Test data often has flexible types
 reportCallIssue = "none"  # Optional parameters in model constructors
 reportOptionalOperand = "none"  # Date comparisons in tests
 
+[tool.logfire]
+# Tests and local runs without a Logfire token shouldn't warn —
+# observability is optional and degrades gracefully.
+ignore_no_config = true
+
 [tool.pytest.ini_options]
 # Testing configuration for MCP server
 testpaths = ["tests"]
@@ -323,10 +314,10 @@ exclude_lines = [
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.403",
-    "pytest>=8.4.1",
-    "pytest-asyncio>=1.1.0",
-    "pytest-cov>=6.2.1",
-    "ruff>=0.12.5",
+    "pyright>=1.1.410",
+    "pytest>=9",
+    "pytest-asyncio>=1.3",
+    "pytest-cov>=7",
+    "ruff>=0.15",
     "watchdog>=6.0.0",
 ]

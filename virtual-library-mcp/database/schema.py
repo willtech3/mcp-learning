@@ -40,7 +40,7 @@ Base = declarative_base()
 
 
 # Python Enums for use with SQLAlchemy
-class PatronStatusEnum(str, enum.Enum):
+class PatronStatusEnum(enum.StrEnum):
     """Database enum for patron status."""
 
     ACTIVE = "active"
@@ -49,7 +49,7 @@ class PatronStatusEnum(str, enum.Enum):
     PENDING = "pending"
 
 
-class CirculationStatusEnum(str, enum.Enum):
+class CirculationStatusEnum(enum.StrEnum):
     """Database enum for circulation status."""
 
     ACTIVE = "active"
@@ -59,7 +59,7 @@ class CirculationStatusEnum(str, enum.Enum):
     LOST = "lost"
 
 
-class ReservationStatusEnum(str, enum.Enum):
+class ReservationStatusEnum(enum.StrEnum):
     """Database enum for reservation status."""
 
     PENDING = "pending"

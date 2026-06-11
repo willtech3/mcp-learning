@@ -8,7 +8,7 @@ the MCP server architecture.
 from datetime import date, timedelta
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from database import (
@@ -37,6 +37,7 @@ from database.patron_repository import (
     PatronCreateSchema,
     PatronSearchParams,
 )
+from database.schema import CheckoutRecord as CheckoutDB
 
 
 @pytest.fixture
@@ -292,7 +293,7 @@ def test_circulation_edge_cases(repositories: dict[str, object]) -> None:
     circulation_repo.checkout_book(CheckoutCreateSchema(patron_id=patron1.id, book_isbn=book.isbn))
 
     # Test checkout when no copies available
-    with pytest.raises(Exception, match="(No copies|available)"):
+    with pytest.raises(Exception, match=r"(No copies|available)"):
         circulation_repo.checkout_book(
             CheckoutCreateSchema(patron_id=patron2.id, book_isbn=book.isbn)
         )
@@ -352,13 +353,14 @@ def test_return_with_fines(repositories: dict[str, object]) -> None:
         CheckoutCreateSchema(patron_id=patron.id, book_isbn=book.isbn)
     )
 
-    # Manually update the due date in the database to simulate an overdue book
-    # This is a test-only operation to simulate time passing
-    repositories["circulation"].session.execute(
-        text("UPDATE checkout_records SET due_date = :due_date WHERE id = :id"),
-        {"due_date": date.today() - timedelta(days=5), "id": checkout.id},
-    )
-    repositories["circulation"].session.commit()
+    # Manually update the due date in the database to simulate an overdue book.
+    # Updating through the ORM keeps SQLAlchemy's Date type binding in play
+    # (raw text() params would fall back to sqlite3's deprecated date adapter).
+    session = repositories["circulation"].session
+    db_checkout = session.get(CheckoutDB, checkout.id)
+    assert db_checkout is not None
+    db_checkout.due_date = date.today() - timedelta(days=5)
+    session.commit()
 
     # Process return
     return_record, updated_checkout = circulation_repo.return_book(
