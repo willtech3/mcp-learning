@@ -9,7 +9,7 @@ This module demonstrates MCP best practices for configuration:
 
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -72,16 +72,14 @@ class ServerConfig(BaseSettings):
 
     transport: str = Field(
         default="stdio",
-        description="Primary transport mechanism",
-        # We start with stdio, but design for extensibility to Streamable HTTP
-        pattern=r"^(stdio|streamable_http)$",
+        description="Transport: 'stdio' for local development, 'http' for Streamable HTTP",
+        pattern=r"^(stdio|http|streamable_http)$",
     )
 
-    # Streamable HTTP configuration (for future use)
-    # Demonstrates forward-thinking design
+    # Streamable HTTP configuration
     http_host: str = Field(
-        default="127.0.0.1",
-        description="HTTP server host for Streamable HTTP transport",
+        default="127.0.0.1",  # localhost-only by default; 0.0.0.0 only in containers
+        description="HTTP server bind host for Streamable HTTP transport",
     )
 
     http_port: int = Field(
@@ -89,6 +87,65 @@ class ServerConfig(BaseSettings):
         description="HTTP server port for Streamable HTTP transport",
         ge=1024,  # Avoid privileged ports
         le=65535,
+    )
+
+    http_path: str = Field(
+        default="/mcp",
+        description="URL path where the MCP endpoint is mounted",
+        pattern=r"^/[a-zA-Z0-9/_-]*$",
+    )
+
+    # === Authentication (OAuth 2.1, MCP 2025-11-25 authorization spec) ===
+    # The server acts as an OAuth Protected Resource. FastMCP's GoogleProvider
+    # implements the OAuth Proxy pattern: spec-compliant PRM metadata, dynamic
+    # client registration, and PKCE toward MCP clients, bridged to Google's
+    # fixed-credential OAuth upstream.
+
+    auth_enabled: bool = Field(
+        default=False,
+        description="Require OAuth 2.1 bearer tokens on the HTTP transport",
+    )
+
+    base_url: str | None = Field(
+        default=None,
+        description=(
+            "Public URL of this server (e.g. https://library.example.run.app). "
+            "Required when auth is enabled; used for OAuth metadata and callbacks."
+        ),
+    )
+
+    google_client_id: str | None = Field(
+        default=None,
+        description="Google OAuth client ID (from Google Cloud Console)",
+    )
+
+    google_client_secret: str | None = Field(
+        default=None,
+        description="Google OAuth client secret",
+        repr=False,  # never appears in logs or repr
+    )
+
+    auth_required_scopes: list[str] = Field(
+        default=["openid", "https://www.googleapis.com/auth/userinfo.email"],
+        description="OAuth scopes every client token must carry",
+    )
+
+    auth_allowed_emails: list[str] = Field(
+        default=[],
+        description=(
+            "Authorization allowlist: Google account emails permitted to use "
+            "this server. Empty list = any authenticated Google account "
+            "(authentication only, no authorization). For personal deployments, "
+            "set this to your own address(es)."
+        ),
+    )
+
+    allow_insecure_http: bool = Field(
+        default=False,
+        description=(
+            "Explicitly allow running the HTTP transport WITHOUT authentication. "
+            "Local development only - never enable in production."
+        ),
     )
 
     # === Security Configuration ===
@@ -197,6 +254,47 @@ class ServerConfig(BaseSettings):
         if v in reserved_ports:
             raise ValueError(f"Port {v} is commonly reserved, choose another")
         return v
+
+    @field_validator("transport")
+    @classmethod
+    def normalize_transport(cls, v: str) -> str:
+        """Accept the legacy 'streamable_http' spelling but store 'http'."""
+        return "http" if v == "streamable_http" else v
+
+    @field_validator("base_url")
+    @classmethod
+    def validate_base_url(cls, v: str | None) -> str | None:
+        """OAuth metadata URLs must be HTTPS except for local development.
+
+        OAuth 2.1 requires TLS for every endpoint involved in the flow;
+        the localhost exception exists only for development loops.
+        """
+        if v is None:
+            return v
+        v = v.rstrip("/")
+        is_local = v.startswith(("http://localhost", "http://127.0.0.1"))
+        if not v.startswith("https://") and not is_local:
+            raise ValueError("base_url must use https:// (http:// allowed only for localhost)")
+        return v
+
+    @model_validator(mode="after")
+    def validate_auth_configuration(self) -> "ServerConfig":
+        """Auth requires complete OAuth configuration before startup."""
+        if self.auth_enabled:
+            missing = [
+                name
+                for name, value in (
+                    ("VIRTUAL_LIBRARY_BASE_URL", self.base_url),
+                    ("VIRTUAL_LIBRARY_GOOGLE_CLIENT_ID", self.google_client_id),
+                    ("VIRTUAL_LIBRARY_GOOGLE_CLIENT_SECRET", self.google_client_secret),
+                )
+                if not value
+            ]
+            if missing:
+                raise ValueError(
+                    f"auth_enabled=true but missing required settings: {', '.join(missing)}"
+                )
+        return self
 
     # === Computed Properties ===
 
