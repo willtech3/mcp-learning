@@ -1,206 +1,99 @@
 # Virtual Library MCP Server
 
-A comprehensive MCP (Model Context Protocol) server implementation that simulates a complete library management system. This server serves as both a learning tool and a reference implementation for MCP concepts.
+A complete MCP (Model Context Protocol) server simulating a library
+management system — built as a learning tool and a reference for the
+**full protocol surface, revision 2025-11-25**, on FastMCP 3.
 
-## 🚀 Quick Start
+Pairs with [mcp-client-learning](https://github.com/willtech3/mcp-client-learning),
+a from-scratch client that exercises everything below (including the
+OAuth 2.1 flow against the deployed server).
+
+## What it demonstrates
+
+| MCP feature | Where to see it |
+|---|---|
+| Resources + RFC 6570 templates | `library://books/list`, `library://books/{isbn}`, stats and recommendations |
+| Tools with real input/output schemas | all 8 tools — typed signatures, structured content |
+| Tool annotations + icons (SEP-973) | read-only/idempotent hints, data-URI SVG icons |
+| **Elicitation** (approval + enum select) | `checkout_book` (fines confirmation), `renew_membership` (term choice) |
+| **Sampling** (server-initiated LLM calls) | `generate_book_insights` |
+| **Tool-enabled sampling** (SEP-1577) | `similar_books` insight — the client's LLM searches our catalog |
+| **Background tasks** (SEP-1686) | `regenerate_catalog` (`task=optional`) |
+| Progress notifications | `bulk_import_books`, `regenerate_catalog` |
+| `resources/list_changed` notifications | maintenance mode hides/restores the recommendations resource |
+| Prompts | `book_recommendation_prompt`, `reading_plan_prompt`, `review_generator_prompt` |
+| **OAuth 2.1 + PKCE** (authorization spec) | Streamable HTTP transport, Google identity, email allowlist |
+| Logging + observability | server log notifications; Logfire middleware tracing |
+
+The catalog is real: 201 authors, 393 actual books with accurate
+metadata, and 24 months of simulated circulation where every statistic
+derives from the underlying records (see `database/seed_data/`).
+
+## Quick start
 
 ```bash
-# Install dependencies
-just install
-
-# Initialize database with sample data
-just db-init
-
-# Run the MCP server
-just dev
+just install     # dependencies (uv)
+just db-seed     # build the catalog (201 authors, 393 books, full history)
+just dev         # stdio transport - for Claude Desktop / local clients
+just dev-http    # Streamable HTTP on http://127.0.0.1:8080/mcp (no auth, local only)
 ```
 
-## 📋 Current Status
+Then, from the sibling client repo:
 
-### ✅ Implemented
+```bash
+mcp-client demo --server http://127.0.0.1:8080/mcp --anonymous
+```
 
-- **Phase 1**: Project setup and configuration ✅
-- **Phase 2**: Data models and database layer ✅
-  - Author, Book, Patron, and Circulation models
-  - Repository pattern with pagination
-  - 1200+ books, 120+ authors, 60+ patrons in seed data
-- **Phase 3**: Core MCP Implementation ✅ **COMPLETED**
-  - FastMCP 2.0 server initialization
-  - Basic Resources:
-    - `/books/list` - Browse catalog with pagination
-    - `/books/{isbn}` - Get book details by ISBN
-  - Advanced Resources with URI templates:
-    - `/books/by-author/{author_id}` - Books by specific author
-    - `/books/by-genre/{genre}` - Books in a genre
-    - `/patrons/{id}/history` - Patron borrowing history
-    - `/stats/popular` - Most borrowed books
-    - `/stats/genres` - Genre distribution
-    - `/stats/circulation` - Current circulation stats
-    - `/recommendations/{patron_id}` - Personalized recommendations
-  - Tools with validation:
-    - `search_catalog` - Full-text search with filters
-    - `checkout_book` - Create loan transactions
-    - `return_book` - Process returns with fine calculation
-    - `reserve_book` - Queue management for unavailable books
+…or see [docs/DEMO.md](docs/DEMO.md) for the guided live-demo script.
 
-### 🚧 Coming Next
+## Transports & security
 
-- **Phase 4**: Advanced MCP Features
-  - **Step 16**: Subscriptions (real-time availability updates)
-  - **Step 18**: Prompts (AI-powered book recommendations)
-  - **Step 20**: Progress notifications for long operations
+- **stdio** (default): local development, Claude Desktop integration.
+- **Streamable HTTP**: stateful sessions (sampling/elicitation/notifications
+  ride a per-session SSE stream). OAuth 2.1 with PKCE via Google identity,
+  plus an email allowlist for authorization. The server **fails closed**:
+  HTTP without auth requires an explicit local-dev opt-out.
 
-## 🏗️ Architecture
+Deployment to Google Cloud Run (Terraform, Secret Manager, least-privilege
+service account, session affinity) is covered in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+## Architecture
 
 ```text
 virtual-library-mcp/
-├── server.py               # MCP server entry point
-├── config.py               # Configuration management
-├── models/                 # Pydantic data models
-│   ├── author.py           # Author model with validation
-│   ├── book.py             # Book model with ISBN validation
-│   ├── patron.py           # Library patron model
-│   └── circulation.py      # Checkout/return/reservation models
-├── database/               # Data access layer
-│   ├── schema.py           # SQLAlchemy models
-│   ├── session.py          # Database session management
-│   └── *_repository.py     # Repository implementations
-├── resources/              # MCP resource implementations
-├── tools/                  # MCP tool implementations
-├── prompts/                # MCP prompt implementations
-├── data/                   # Data files and utilities
-├── tests/                  # Comprehensive test suite
-├── docs/                   # Project documentation
-└── justfile               # Task automation
+├── server.py               # FastMCP 3 server, transport selection, health route
+├── auth.py                 # OAuth 2.1 provider + email-allowlist middleware
+├── config.py               # pydantic-settings; fail-closed auth validation
+├── icons.py                # SEP-973 icons (inline SVG data URIs)
+├── models/                 # Pydantic domain models
+├── database/               # SQLAlchemy schema, repositories, seed simulator
+│   └── seed_data/          # curated real-book catalog (JSON)
+├── resources/              # MCP resources (register(mcp) per package)
+├── tools/                  # MCP tools - typed functions
+├── prompts/                # MCP prompts
+├── observability/          # Logfire middleware + metrics
+├── terraform/              # Cloud Run deployment (see docs/DEPLOYMENT.md)
+└── tests/                  # protocol-path tests via the in-memory client
 ```
 
-## 🛠️ Development
-
-### Prerequisites
-
-- Python 3.12+
-- uv (package manager)
-- just (task runner)
-
-### Common Tasks
+## Development
 
 ```bash
-just test         # Run test suite
-just lint         # Check code style
-just typecheck    # Run type checking
-just format       # Format code
-just dev-debug    # Run with debug logging
+just test         # pytest (in-memory MCP client tests)
+just lint         # ruff
+just typecheck    # pyright
+just check        # all gates
+just samples      # regenerate bulk-import sample files
 ```
 
-### Testing the Server
+Tests run against the real server through FastMCP's in-memory client, so
+they exercise actual protocol behavior: schema validation, elicitation
+round-trips, sampling handlers, progress, and notifications.
 
-The server uses stdio transport and expects JSON-RPC messages:
+## Spec version note
 
-```bash
-# Send an initialization request
-echo '{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "1.0"}, "id": 1}' | just dev
-```
-
-## 📚 MCP Features Demonstrated
-
-1. **Resources** ✅
-   - Browse library catalog with pagination and filtering
-   - View book details by ISBN  
-   - Dynamic URI templates for author/genre filtering
-   - Patron history and circulation statistics
-   - Personalized book recommendations
-   - Popular books and genre distribution stats
-
-2. **Tools** ✅
-   - `search_catalog` - Full-text search with genre/author filters
-   - `checkout_book` - Create loans with validation
-   - `return_book` - Process returns and calculate fines
-   - `reserve_book` - Manage reservation queues
-
-3. **Prompts** (Phase 4 - Coming Soon)
-   - Get personalized recommendations
-   - Generate reading plans
-
-4. **Subscriptions** (Phase 4 - Coming Soon)
-   - Real-time availability updates
-   - Reservation notifications
-
-## 🔍 Code Highlights
-
-- **Type Safety**: Comprehensive type annotations with Pydantic
-- **Error Handling**: MCP-compliant error responses
-- **Testing**: 100+ tests with fixtures
-- **Documentation**: Extensive inline documentation explaining MCP concepts
-
-## 🔄 Async/Sync Architecture Pattern
-
-### Understanding the Mixed Async/Sync Approach
-
-This MCP server uses a specific pattern that might seem unusual at first: **async handlers with synchronous database operations**. This is intentional and correct for our use case.
-
-#### Why Async Handlers?
-
-MCP protocol and FastMCP require async handlers because:
-- The protocol layer needs non-blocking I/O for handling multiple concurrent requests
-- Long-running operations shouldn't block other requests
-- Future operations might need async capabilities (external APIs, etc.)
-
-#### Why Sync Database Operations?
-
-We use synchronous SQLAlchemy with SQLite because:
-- SQLite is a local, file-based database with fast operations
-- Async SQLite provides no performance benefit (still single-threaded)
-- Synchronous code is simpler to understand and debug
-- SQLAlchemy's sync API is more mature and well-documented
-
-#### The Pattern in Practice
-
-```python
-# MCP requires async handlers
-async def list_books_handler(
-    uri: str,
-    context: Context,
-    params: BookListParams | None = None,
-) -> dict[str, Any]:
-    # But we can use sync operations inside
-    with session_scope() as session:  # Sync context manager
-        repo = BookRepository(session)
-        result = repo.search(...)     # Sync database query
-        return result.model_dump()    # Return sync result from async function
-```
-
-#### Key Points
-
-1. **This is not a mistake** - Async functions can contain sync code
-2. **Performance is fine** - SQLite operations are fast enough to not block
-3. **Future flexibility** - Easy to add async operations later if needed
-4. **Best of both worlds** - Protocol compliance + implementation simplicity
-
-#### When to Use Full Async
-
-You would use async all the way down when:
-- Using PostgreSQL/MySQL with async drivers (asyncpg, aiomysql)
-- Making external HTTP API calls
-- Dealing with slow I/O operations
-- Handling many concurrent database connections
-
-For a learning project with SQLite, the mixed approach provides the best balance of correctness and simplicity.
-
-## 📖 Learning Resources
-
-- See `src/server.py` for detailed MCP protocol explanations
-- Check `docs/DEVELOPMENT.md` for development workflow
-- Review test files for usage examples
-
-## 🤝 Contributing
-
-This is a learning project. Feel free to:
-
-- Report issues
-- Suggest improvements
-- Add new MCP features
-- Improve documentation
-
-## 📄 License
-
-Part of the MCP Learning Repository - see parent directory for license details.
+This server targets MCP revision **2025-11-25** (current). The 2026-07-28
+release candidate deprecates sampling/roots/logging and removes the
+initialize handshake; this repo intentionally stays on the current
+revision — those features are core learning material here.
