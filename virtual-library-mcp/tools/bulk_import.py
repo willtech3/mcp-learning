@@ -2,6 +2,11 @@
 
 This module demonstrates MCP progress notifications by providing real-time
 updates during large-scale import operations.
+
+Security note: imports are confined to the server's data/ directory. A
+remote MCP client must never be able to point a file-reading tool at an
+arbitrary filesystem path (path traversal), so every requested path is
+resolved and checked against the allowed root before opening.
 """
 
 import csv
@@ -9,20 +14,42 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import anyio
 from fastmcp import Context
-from pydantic import BaseModel, Field
+from fastmcp.exceptions import ToolError
+from pydantic import Field
 from sqlalchemy.exc import IntegrityError
 
 from database.schema import Author as AuthorDB
 from database.schema import Book as BookDB
 from database.session import session_scope
 
-# Observability is handled by middleware, not decorators
-
 logger = logging.getLogger(__name__)
+
+# Only files under the project's data/ directory may be imported.
+ALLOWED_IMPORT_ROOT = (Path(__file__).parent.parent / "data").resolve()
+
+
+def _confine_to_import_root(file_path: str) -> Path:
+    """Resolve a user-supplied path and require it to live under data/.
+
+    Rejects absolute paths outside the root and ../ traversal. Relative
+    paths are interpreted relative to the import root for convenience.
+    """
+    candidate = Path(file_path)
+    resolved = (
+        candidate.resolve()
+        if candidate.is_absolute()
+        else (ALLOWED_IMPORT_ROOT / candidate).resolve()
+    )
+    if not resolved.is_relative_to(ALLOWED_IMPORT_ROOT):
+        raise ToolError(
+            f"Import files must live under the server's data directory "
+            f"({ALLOWED_IMPORT_ROOT}). Got: {file_path}"
+        )
+    return resolved
 
 
 def _format_eta(seconds: float) -> str:
@@ -38,47 +65,35 @@ def _format_eta(seconds: float) -> str:
     return f"{hours}h {minutes}m"
 
 
-class BulkImportInput(BaseModel):
-    """Input schema for the bulk_import_books tool."""
-
-    file_path: str = Field(
-        description="Path to the CSV or JSON file containing books to import",
-        min_length=1,
-        examples=["/tmp/books.csv", "/data/import/catalog.json"],
-    )
-
-    batch_size: int = Field(
-        default=50, description="Number of books to process in each batch", ge=1, le=1000
-    )
-
-
-async def import_books_from_file(
-    file_path: str, ctx: Context, batch_size: int = 50
+async def bulk_import_books(
+    file_path: Annotated[
+        str,
+        Field(
+            description=(
+                "Path to a CSV or JSON file under the server's data/ directory, "
+                "e.g. 'samples/books_sample.csv'"
+            ),
+            min_length=1,
+        ),
+    ],
+    ctx: Context,
+    batch_size: Annotated[int, Field(description="Books to process per batch", ge=1, le=1000)] = 50,
 ) -> dict[str, Any]:
-    """Import books from a CSV or JSON file with progress reporting.
+    """Import books in bulk from a CSV or JSON file, with live progress.
 
-    Supports CSV files with headers:
-    - isbn, title, author_name, genre, publication_year, available_copies
-
-    Or JSON files with an array of book objects.
-
-    Args:
-        file_path: Path to the import file
-        batch_size: Number of books to process in each batch
-        ctx: MCP context for progress reporting
-
-    Returns:
-        Import summary with counts and any errors
+    CSV headers: isbn, title, author_name, genre, publication_year,
+    available_copies. JSON: an array of objects with the same fields.
+    Progress notifications stream batch-by-batch with an ETA.
     """
-    # Validate file exists and determine type.
+    path = _confine_to_import_root(file_path)
+
     # anyio.Path performs the stat in a worker thread, keeping the event loop free.
-    path = Path(file_path)
     if not await anyio.Path(path).exists():
-        raise FileNotFoundError(f"Import file not found: {file_path}")
+        raise ToolError(f"Import file not found: {file_path}")
 
     file_type = path.suffix.lower()
     if file_type not in [".csv", ".json"]:
-        raise ValueError(f"Unsupported file type: {file_type}. Use .csv or .json")
+        raise ToolError(f"Unsupported file type: {file_type}. Use .csv or .json")
 
     await ctx.info(f"Starting import from {path.name}")
 
@@ -123,8 +138,10 @@ async def import_books_from_file(
                 )
 
                 try:
-                    # Validate and create book
-                    _create_book_in_db(session, book_data)
+                    # Each book gets its own SAVEPOINT so one bad row
+                    # (e.g. duplicate ISBN) can't poison the whole batch.
+                    with session.begin_nested():
+                        _create_book_in_db(session, book_data)
                     successful += 1
 
                 except ValueError as e:
@@ -138,14 +155,12 @@ async def import_books_from_file(
                     error_msg = f"Book {current_book}: Database error - Book may already exist"
                     errors.append(error_msg)
                     await ctx.warning(error_msg)
-                    session.rollback()
 
                 except Exception as e:
                     failed += 1
                     error_msg = f"Book {current_book}: Unexpected error - {e!s}"
                     errors.append(error_msg)
                     await ctx.error(error_msg)
-                    session.rollback()
 
             # Commit batch
             try:
@@ -265,76 +280,3 @@ def _create_book_in_db(session, data: dict[str, Any]) -> None:
         description=data.get("description"),
     )
     session.add(book)
-
-
-async def bulk_import_books_handler(arguments: dict[str, Any], ctx: Context) -> dict[str, Any]:
-    """Handler for the bulk_import_books tool.
-
-    Accepts file path and batch size, performs import with progress notifications.
-    """
-    try:
-        # Validate input
-        try:
-            params = BulkImportInput.model_validate(arguments)
-        except Exception as e:
-            logger.warning("Invalid import parameters: %s", e)
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": f"Invalid import parameters: {e}"}],
-            }
-
-        # Execute import
-        try:
-            result = await import_books_from_file(
-                file_path=params.file_path, ctx=ctx, batch_size=params.batch_size
-            )
-
-            # Format successful response
-            summary_text = (
-                f"Import completed: {result['successful_imports']}/{result['total_books']} "
-                f"books imported successfully ({result['success_rate']})"
-            )
-
-            if result["failed_imports"] > 0:
-                summary_text += f"\n{result['failed_imports']} imports failed."
-                if result["errors"]:
-                    summary_text += "\nFirst few errors:\n" + "\n".join(result["errors"][:5])
-
-            return {"content": [{"type": "text", "text": summary_text}], "data": result}
-
-        except FileNotFoundError as e:
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": str(e)}],
-            }
-        except ValueError as e:
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": str(e)}],
-            }
-        except Exception as e:
-            logger.exception("Import execution failed")
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": f"Import failed: {e!s}"}],
-            }
-
-    except Exception as e:
-        logger.exception("Unexpected error in bulk_import_books tool")
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": f"An unexpected error occurred: {e!s}"}],
-        }
-
-
-bulk_import_books = {
-    "name": "bulk_import_books",
-    "description": (
-        "Import books from a CSV or JSON file with real-time progress updates. "
-        "CSV files should have headers: isbn, title, author_name, genre, "
-        "publication_year, available_copies. JSON files should contain an array "
-        "of book objects. Validates data, processes in batches, and reports errors."
-    ),
-    "inputSchema": BulkImportInput.model_json_schema(),
-    "handler": bulk_import_books_handler,
-}

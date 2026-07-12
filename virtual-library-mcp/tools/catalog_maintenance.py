@@ -9,10 +9,12 @@ import logging
 from typing import Any
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from sqlalchemy import func
 
 from database.circulation_repository import CirculationRepository
 from database.patron_repository import PatronRepository
+from database.repository import PaginationParams
 from database.schema import Author as AuthorDB
 from database.schema import Book as BookDB
 from database.schema import CheckoutRecord
@@ -23,44 +25,52 @@ from database.session import session_scope
 logger = logging.getLogger(__name__)
 
 
-async def regenerate_catalog(ctx: Context) -> dict[str, Any]:
-    """Regenerate catalog indexes and statistics with progress reporting.
+# The resource taken offline while its cache rebuilds (maintenance mode).
+RECOMMENDATIONS_RESOURCE = "Personalized Book Recommendations"
 
-    This simulates a multi-stage maintenance operation:
-    1. Verify data integrity (0-20%)
-    2. Rebuild search indexes (20-50%)
-    3. Update circulation statistics (50-80%)
-    4. Generate recommendations cache (80-100%)
 
-    Args:
-        ctx: MCP context for progress reporting
+async def regenerate_catalog(ctx: Context) -> ToolResult:
+    """Perform full catalog maintenance with live progress reporting.
 
-    Returns:
-        Maintenance summary with statistics
+    Four stages, each reporting progress: data integrity (0-20%), search
+    indexes (20-50%), circulation statistics (50-80%), and the
+    recommendations cache (80-100%).
+
+    MCP concepts on display:
+    - Progress notifications across a long-running operation
+    - notifications/resources/list_changed: the recommendations resource is
+      disabled during the rebuild and re-enabled after, and FastMCP
+      notifies connected clients of both visibility changes automatically
+    - ToolResult: human-readable summary AND machine-readable structure
+    - Background tasks (SEP-1686): registered with task support, so task-aware
+      clients can run it asynchronously and poll for the result
     """
     await ctx.info("Starting catalog regeneration")
 
-    # Stage 1: Verify data integrity (0-20%)
-    await ctx.info("Stage 1: Verifying data integrity")
-    integrity_results = await _verify_data_integrity(ctx, 0, 20)
+    # MAINTENANCE MODE: hide the recommendations template from this session
+    # while its cache is being rebuilt. ctx.disable_components() and the
+    # closing reset_visibility() each push a resources/list_changed
+    # notification to the client, demonstrating live visibility changes.
+    await ctx.disable_components(names={RECOMMENDATIONS_RESOURCE}, components={"template"})
+    try:
+        await ctx.info("Stage 1: Verifying data integrity")
+        integrity_results = await _verify_data_integrity(ctx, 0, 20)
 
-    # Stage 2: Rebuild search indexes (20-50%)
-    await ctx.info("Stage 2: Rebuilding search indexes")
-    index_results = await _rebuild_search_indexes(ctx, 20, 50)
+        await ctx.info("Stage 2: Rebuilding search indexes")
+        index_results = await _rebuild_search_indexes(ctx, 20, 50)
 
-    # Stage 3: Update circulation statistics (50-80%)
-    await ctx.info("Stage 3: Updating circulation statistics")
-    stats_results = await _update_circulation_stats(ctx, 50, 80)
+        await ctx.info("Stage 3: Updating circulation statistics")
+        stats_results = await _update_circulation_stats(ctx, 50, 80)
 
-    # Stage 4: Generate recommendations cache (80-100%)
-    await ctx.info("Stage 4: Generating recommendations cache")
-    cache_results = await _generate_recommendations_cache(ctx, 80, 100)
+        await ctx.info("Stage 4: Generating recommendations cache")
+        cache_results = await _generate_recommendations_cache(ctx, 80, 100)
+    finally:
+        await ctx.reset_visibility()
 
-    # Final completion
     await ctx.report_progress(progress=100, total=100, message="Catalog regeneration complete")
     await ctx.info("Catalog regeneration completed successfully")
 
-    return {
+    result = {
         "status": "completed",
         "integrity_check": integrity_results,
         "search_indexes": index_results,
@@ -68,6 +78,30 @@ async def regenerate_catalog(ctx: Context) -> dict[str, Any]:
         "recommendations_cache": cache_results,
         "message": "Catalog regeneration completed successfully",
     }
+    return ToolResult(content=_format_summary(result), structured_content=result)
+
+
+def _format_summary(result: dict[str, Any]) -> str:
+    """Human-readable maintenance report for the text content block."""
+    lines = [
+        "Catalog regeneration completed successfully!",
+        "",
+        f"- Data integrity: {result['integrity_check']['books_checked']} books checked",
+        f"- Search indexes: {result['search_indexes']['books_indexed']} books, "
+        f"{result['search_indexes']['authors_indexed']} authors, "
+        f"{result['search_indexes']['genres_indexed']} genres indexed",
+        f"- Circulation: {result['circulation_stats']['active_loans']} active loans, "
+        f"{result['circulation_stats']['overdue_loans']} overdue",
+        f"- Recommendations: {result['recommendations_cache']['patrons_processed']} patrons, "
+        f"{result['recommendations_cache']['recommendations_generated']} recommendations",
+    ]
+    if result["integrity_check"]["orphaned_books"]:
+        lines.append(f"- WARNING: {result['integrity_check']['orphaned_books']} orphaned books")
+    if result["integrity_check"]["invalid_circulations"]:
+        lines.append(
+            f"- WARNING: {result['integrity_check']['invalid_circulations']} invalid circulations"
+        )
+    return "\n".join(lines)
 
 
 async def _verify_data_integrity(
@@ -198,21 +232,19 @@ async def _update_circulation_stats(
     with session_scope() as session:
         repo = CirculationRepository(session)
 
-        # Count active loans
+        # Count active and overdue loans from circulation statistics
         await ctx.report_progress(
             progress=start_progress + 5, total=100, message="Counting active loans"
         )
 
-        active_loans = repo.get_active_loans()
-        results["active_loans"] = len(active_loans)
+        stats = repo.get_circulation_stats()
+        results["active_loans"] = stats.active_checkouts
 
-        # Count overdue loans
         await ctx.report_progress(
             progress=start_progress + 10, total=100, message="Checking for overdue loans"
         )
 
-        overdue_loans = repo.get_overdue_loans()
-        results["overdue_loans"] = len(overdue_loans)
+        results["overdue_loans"] = stats.overdue_checkouts
 
         if results["overdue_loans"] > 0:
             await ctx.warning(f"Found {results['overdue_loans']} overdue loans")
@@ -250,8 +282,8 @@ async def _generate_recommendations_cache(
     with session_scope() as session:
         patron_repo = PatronRepository(session)
 
-        # Get all active patrons
-        all_patrons = patron_repo.list(limit=1000)
+        # Get all patrons (paged API; one page is plenty for this library)
+        all_patrons = patron_repo.get_all(pagination=PaginationParams(page=1, page_size=100))
         total_patrons = len(all_patrons.items)
 
         # Process patrons in batches
@@ -291,66 +323,3 @@ async def _generate_recommendations_cache(
         )
 
     return results
-
-
-async def regenerate_catalog_handler(_: dict[str, Any], ctx: Context) -> dict[str, Any]:
-    """Handler for the regenerate_catalog tool.
-
-    No input parameters needed - performs full catalog maintenance.
-    """
-    try:
-        # Execute catalog regeneration
-        result = await regenerate_catalog(ctx)
-
-        # Format response
-        summary_lines = [
-            "Catalog regeneration completed successfully!",
-            "",
-            f"✓ Data Integrity: {result['integrity_check']['books_checked']} books checked",
-        ]
-
-        if result["integrity_check"]["orphaned_books"] > 0:
-            summary_lines.append(
-                f"  ⚠ {result['integrity_check']['orphaned_books']} orphaned books found"
-            )
-        if result["integrity_check"]["invalid_circulations"] > 0:
-            summary_lines.append(
-                f"  ⚠ {result['integrity_check']['invalid_circulations']} invalid circulations found"
-            )
-
-        summary_lines.extend(
-            [
-                "",
-                f"✓ Search Indexes: {result['search_indexes']['books_indexed']} books, "
-                f"{result['search_indexes']['authors_indexed']} authors, "
-                f"{result['search_indexes']['genres_indexed']} genres indexed",
-                "",
-                f"✓ Circulation Stats: {result['circulation_stats']['active_loans']} active loans, "
-                f"{result['circulation_stats']['overdue_loans']} overdue",
-                "",
-                f"✓ Recommendations: Generated for {result['recommendations_cache']['patrons_processed']} patrons "
-                f"({result['recommendations_cache']['recommendations_generated']} total recommendations)",
-            ]
-        )
-
-        return {"content": [{"type": "text", "text": "\n".join(summary_lines)}], "data": result}
-
-    except Exception as e:
-        logger.exception("Unexpected error in regenerate_catalog tool")
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": f"Catalog regeneration failed: {e!s}"}],
-        }
-
-
-regenerate_catalog_tool = {
-    "name": "regenerate_catalog",
-    "description": (
-        "Perform comprehensive catalog maintenance with progress tracking. "
-        "This includes: data integrity checks, search index rebuilding, "
-        "circulation statistics updates, and recommendation cache generation. "
-        "Progress is reported in real-time through multiple stages."
-    ),
-    "inputSchema": {"type": "object", "properties": {}, "required": []},
-    "handler": regenerate_catalog_handler,
-}

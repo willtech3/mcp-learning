@@ -1,217 +1,94 @@
-"""Virtual Library MCP Server - FastMCP Implementation
+"""Virtual Library MCP Server - FastMCP 3 Implementation
 
-Demonstrates a complete MCP server with resources, tools, and prompts.
-Clients connect via stdio transport for library management operations.
+A complete MCP server targeting protocol revision 2025-11-25, demonstrating:
 
-Features exposed:
-- Resources: Book catalog, patron records, library statistics
-- Tools: Checkout, return, and reservation operations
-- Prompts: Book recommendations, reading plans, review generation
+- Resources & templates: catalog browsing (library://...) with icons/tags
+- Tools: typed signatures -> rich input schemas, structured output,
+  annotations, elicitation, tool-enabled sampling, background tasks
+- Prompts: user-invoked templates for recommendations and reading plans
+- Notifications: resources/list_changed fired on visibility changes
+- Observability: Logfire middleware tracing every protocol message
+
+Transport is selected via config: stdio for local development (default).
+Streamable HTTP with OAuth 2.1 arrives with the deployment work.
 """
 
 import logging
-import signal
 import sys
-from typing import Any
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
+import prompts
+import resources
+import tools
 from config import get_config
 from observability import LOGFIRE_AVAILABLE, initialize_observability
 from observability import get_config as get_obs_config
 from observability.middleware import MCPInstrumentationMiddleware
-from prompts import all_prompts
-from resources import all_resources
-from tools import all_tools
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Initialize logging - stderr for logs, stdout for MCP protocol
+# stderr for logs — stdout belongs to the MCP protocol when using stdio.
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stderr)],
 )
-
 logger = logging.getLogger(__name__)
 
-# Load configuration
 config = get_config()
-
-# Initialize observability
 initialize_observability()
 
-# Create the FastMCP server instance
 mcp = FastMCP(
     name=config.server_name,
     version=config.server_version,
     instructions=(
         "Virtual Library MCP Server - A comprehensive library management system "
-        "demonstrating all MCP protocol features. Manages books, authors, patrons, "
-        "and circulation with real-time updates. Use resources to browse the catalog, "
-        "tools to perform actions, and prompts for AI-assisted recommendations."
+        "demonstrating the full MCP feature surface. Browse the catalog through "
+        "resources, perform circulation actions through tools, and use prompts "
+        "for AI-assisted recommendations. Some tools ask follow-up questions "
+        "(elicitation) or generate content via your LLM (sampling)."
     ),
 )
 
-# Add observability middleware if enabled
+# Observability middleware traces every MCP message when Logfire is available.
 obs_config = get_obs_config()
 if obs_config.enabled and LOGFIRE_AVAILABLE:
     logger.info("Enabling observability middleware for MCP protocol tracing")
     mcp.add_middleware(MCPInstrumentationMiddleware())
-elif not obs_config.enabled:
-    logger.debug("Observability middleware disabled via configuration")
-elif not LOGFIRE_AVAILABLE:
-    logger.debug("Observability middleware unavailable (Logfire not installed)")
 
-# Register all resources with the MCP server
-
-for resource in all_resources:
-    uri = resource.get("uri_template", resource.get("uri"))
-    if not uri:
-        logger.error("Resource missing URI: %s", resource)
-        continue
-
-    logger.debug("Registering resource: %s with URI: %s", resource["name"], uri)
-    try:
-        mcp.resource(
-            uri=uri,
-            name=resource["name"],
-            description=resource["description"],
-            mime_type=resource["mime_type"],
-        )(resource["handler"])
-    except Exception:
-        logger.exception("Failed to register resource %s", resource["name"])
-        raise
-
-logger.info("Registered %d resources", len(all_resources))
-
-# Register all tools with the MCP server
-for tool_def in all_tools:
-    logger.debug("Registering tool: %s", tool_def["name"])
-    try:
-        # FastMCP requires the handler to be decorated directly
-        # We'll use the add_tool method with Tool.from_function
-        from fastmcp.tools import Tool
-
-        tool_instance = Tool.from_function(
-            fn=tool_def["handler"],
-            name=tool_def["name"],
-            description=tool_def["description"],
-        )
-        mcp.add_tool(tool_instance)
-    except Exception:
-        logger.exception("Failed to register tool %s", tool_def["name"])
-        raise
-
-logger.info("Registered %d tools", len(all_tools))
-
-# Register all prompts with the MCP server
-# FastMCP expects prompts to be decorated functions
-for prompt_fn in all_prompts:
-    logger.debug("Registering prompt: %s", prompt_fn.__name__)
-    try:
-        # Use the prompt decorator to register the function
-        mcp.prompt()(prompt_fn)
-    except Exception:
-        logger.exception("Failed to register prompt %s", prompt_fn.__name__)
-        raise
-
-logger.info("Registered %d prompts", len(all_prompts))
-
-
-async def handle_initialization(params: dict[str, Any]) -> None:
-    """Handle MCP client initialization.
-
-    Logs client info and capabilities for debugging.
-    Client sends 'initialize', server responds with capabilities.
-    """
-    client_info = params.get("clientInfo", {})
-    client_capabilities = params.get("capabilities", {})
-    protocol_version = params.get("protocolVersion", "unknown")
-
-    logger.info(
-        "MCP Client connecting: %s v%s (Protocol: %s)",
-        client_info.get("name", "Unknown"),
-        client_info.get("version", "Unknown"),
-        protocol_version,
-    )
-
-    if client_capabilities:
-        logger.debug("Client capabilities: %s", client_capabilities)
-
-
-async def handle_shutdown() -> None:
-    """Handle graceful server shutdown.
-
-    Logs shutdown and cleans up resources.
-    """
-    logger.info("MCP Server shutting down gracefully...")
-    logger.info("Shutdown complete")
-
-
-async def handle_error(error: Exception) -> None:
-    """Handle server-level errors.
-
-    Logs errors for debugging. MCP uses standard JSON-RPC error codes.
-    """
-    logger.error("MCP Server error: %s: %s", type(error).__name__, error)
-
-
-def run_stdio_server() -> None:
-    """Run the MCP server using stdio transport.
-
-    Stdin receives JSON-RPC requests, stdout sends responses.
-    Ideal for local development and subprocess architectures.
-    """
-    logger.info("Starting %s v%s on stdio transport", config.server_name, config.server_version)
-
-    if config.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
-        logger.debug("Debug mode enabled - verbose protocol logging active")
-    else:
-        logging.getLogger("fastmcp").setLevel(logging.WARNING)
-
-    # Set up signal handlers for graceful shutdown
-    def signal_handler(signum: int, _frame: Any) -> None:
-        logger.info("Received signal %s, initiating shutdown...", signum)
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    try:
-        logger.info("MCP Server ready and waiting for connections...")
-        mcp.run(transport="stdio")
-    except Exception:
-        logger.exception("Fatal error in MCP server")
-        sys.exit(1)
+# Each package registers its own components (see <package>/__init__.py).
+resources.register(mcp)
+tools.register(mcp)
+prompts.register(mcp)
 
 
 def main() -> None:
-    """Main entry point for the MCP server.
+    """Entry point: run the server on the configured transport."""
+    logger.info(
+        "%s v%s starting (transport=%s, debug=%s)",
+        config.server_name,
+        config.server_version,
+        config.transport,
+        config.debug,
+    )
 
-    Starts the server via command line or entry point.
-    """
+    if config.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger("fastmcp").setLevel(logging.WARNING)
+
     try:
-        logger.info("=" * 60)
-        logger.info("Virtual Library MCP Server")
-        logger.info("Version: %s", config.server_version)
-        logger.info("Transport: %s", config.transport)
-        logger.info("Debug Mode: %s", config.debug)
-        logger.info("=" * 60)
-
         if config.transport == "stdio":
-            run_stdio_server()
+            mcp.run(transport="stdio")
         else:
             logger.error("Unsupported transport: %s", config.transport)
             sys.exit(1)
-
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
     except Exception:
-        logger.exception("Failed to start MCP server")
+        logger.exception("Fatal error in MCP server")
         sys.exit(1)
 
 

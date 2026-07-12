@@ -23,24 +23,18 @@ classifiers = [
 # Core dependencies for MCP server functionality
 dependencies = [
     # MCP framework (v3, targets protocol revision 2025-11-25)
-    "fastmcp>=3.4,<4",
-
+    "fastmcp[tasks]>=3.4,<4",
     # Data validation and serialization - critical for MCP protocol compliance
     "pydantic>=2.13",
     "pydantic-settings>=2.10",
-
     # Database ORM for persistent data storage
     "sqlalchemy>=2.0.50",
-
     # Test data generation for realistic library data (patrons, circulation)
     "faker>=40",
-
     # Environment variable management for configuration
     "python-dotenv>=1.1",
-
     # HTTP client for external API integrations (future use)
     "httpx>=0.28",
-
     # Observability and monitoring with Pydantic Logfire
     "logfire>=4",
 ]

@@ -1,50 +1,152 @@
 """
 MCP Tools for the Virtual Library Server.
 
-This module implements MCP tools - actions with side effects that allow
-LLMs to interact with the library system. Unlike resources (read-only),
-tools can modify state, perform searches, and execute operations.
+Tools are the MCP primitive for actions with side effects — the "POST"
+half of the protocol, where resources are the "GET" half. Each tool here
+is a plain typed Python function; FastMCP derives the JSON Schema the
+client sees from the signature (names, types, constraints, docs).
 
-MCP TOOLS ARCHITECTURE:
-Tools in the Model Context Protocol are:
-1. Actions that can have side effects (create, update, delete)
-2. Defined with JSON Schema for input validation
-3. Invoked by clients via tools/call requests
-4. Return results or errors in a structured format
+Registration happens in register(), which attaches per-tool protocol
+metadata from the MCP 2025-11-25 revision:
 
-The tools module follows MCP best practices:
-- Clear separation between read (resources) and write (tools) operations
-- Comprehensive input validation using Pydantic schemas
-- Proper error handling with meaningful messages
-- Atomic operations with rollback on failure
+- ToolAnnotations: behavioral hints (readOnlyHint, destructiveHint,
+  idempotentHint, openWorldHint) that let clients build better UX —
+  e.g. skipping confirmation prompts for read-only tools
+- Icons (SEP-973): visual identity for client UIs
+- Tags: server-side grouping for visibility control
+- Background tasks (SEP-1686): regenerate_catalog can run as a pollable
+  task for clients that request it
 """
 
-from .book_insights import generate_book_insights_tool
+from fastmcp import FastMCP
+from fastmcp.server.tasks import TaskConfig
+from mcp.types import ToolAnnotations
+
+from icons import BOOK_ICON, CARD_ICON, MAINTENANCE_ICON, SEARCH_ICON, SPARKLE_ICON
+
+from .book_insights import generate_book_insights
 from .bulk_import import bulk_import_books
-from .catalog_maintenance import regenerate_catalog_tool
+from .catalog_maintenance import regenerate_catalog
 from .circulation import checkout_book, reserve_book, return_book
+from .membership import renew_membership
 from .search import search_catalog
 
-# Export all tools for server registration
-# WHY: The server needs a single list of all available tools
-# HOW: Each tool is a dictionary with metadata and handler
-# WHAT: This list is used during server initialization
-all_tools = [
-    search_catalog,
-    checkout_book,
-    return_book,
-    reserve_book,
-    bulk_import_books,
-    regenerate_catalog_tool,
-    generate_book_insights_tool,
-]
+
+def register(mcp: FastMCP) -> None:
+    """Register every library tool with protocol metadata."""
+    mcp.tool(
+        search_catalog,
+        annotations=ToolAnnotations(
+            title="Search Catalog",
+            readOnlyHint=True,  # never mutates state -> clients may skip confirmation
+            idempotentHint=True,
+            openWorldHint=False,  # operates only on this library's data
+        ),
+        icons=[SEARCH_ICON],
+        tags={"catalog"},
+    )
+
+    mcp.tool(
+        checkout_book,
+        annotations=ToolAnnotations(
+            title="Check Out Book",
+            readOnlyHint=False,
+            destructiveHint=False,  # additive: creates a loan, destroys nothing
+            idempotentHint=False,  # same call twice = two loans
+            openWorldHint=False,
+        ),
+        icons=[CARD_ICON],
+        tags={"circulation"},
+    )
+
+    mcp.tool(
+        return_book,
+        annotations=ToolAnnotations(
+            title="Return Book",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+        icons=[CARD_ICON],
+        tags={"circulation"},
+    )
+
+    mcp.tool(
+        reserve_book,
+        annotations=ToolAnnotations(
+            title="Reserve Book",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+        icons=[CARD_ICON],
+        tags={"circulation"},
+    )
+
+    mcp.tool(
+        renew_membership,
+        annotations=ToolAnnotations(
+            title="Renew Membership",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+        icons=[CARD_ICON],
+        tags={"membership", "elicitation-demo"},
+    )
+
+    mcp.tool(
+        bulk_import_books,
+        annotations=ToolAnnotations(
+            title="Bulk Import Books",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+        icons=[BOOK_ICON],
+        tags={"catalog", "admin"},
+    )
+
+    mcp.tool(
+        regenerate_catalog,
+        # SEP-1686: task-aware clients may run this in the background and
+        # poll for completion; others get a normal (slow) synchronous call.
+        task=TaskConfig(mode="optional"),
+        annotations=ToolAnnotations(
+            title="Regenerate Catalog",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,  # safe to re-run; rebuilds the same caches
+            openWorldHint=False,
+        ),
+        icons=[MAINTENANCE_ICON],
+        tags={"admin"},
+    )
+
+    mcp.tool(
+        generate_book_insights,
+        annotations=ToolAnnotations(
+            title="Generate Book Insights",
+            readOnlyHint=True,
+            idempotentHint=False,  # sampling output varies run to run
+            openWorldHint=False,
+        ),
+        icons=[SPARKLE_ICON],
+        tags={"ai", "sampling-demo"},
+    )
+
 
 __all__ = [
-    "all_tools",
     "bulk_import_books",
     "checkout_book",
-    "generate_book_insights_tool",
-    "regenerate_catalog_tool",
+    "generate_book_insights",
+    "regenerate_catalog",
+    "register",
+    "renew_membership",
     "reserve_book",
     "return_book",
     "search_catalog",
