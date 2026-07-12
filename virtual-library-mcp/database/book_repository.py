@@ -76,7 +76,7 @@ class BookSearchParams(BaseModel):
     publication_year_to: int | None = None
 
 
-class BookSortOptions(str, enum.Enum):
+class BookSortOptions(enum.StrEnum):
     """Sorting options for book queries."""
 
     TITLE = "title"

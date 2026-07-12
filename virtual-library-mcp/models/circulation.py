@@ -14,12 +14,12 @@ that modify the library state, such as:
 """
 
 from datetime import date, datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-class CirculationStatus(str, Enum):
+class CirculationStatus(StrEnum):
     """Status of a circulation record."""
 
     ACTIVE = "active"
@@ -29,7 +29,7 @@ class CirculationStatus(str, Enum):
     LOST = "lost"
 
 
-class ReservationStatus(str, Enum):
+class ReservationStatus(StrEnum):
     """Status of a reservation."""
 
     PENDING = "pending"

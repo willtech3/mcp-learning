@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+import anyio
 from fastmcp import Context
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
@@ -69,9 +70,10 @@ async def import_books_from_file(
     Returns:
         Import summary with counts and any errors
     """
-    # Validate file exists and determine type
+    # Validate file exists and determine type.
+    # anyio.Path performs the stat in a worker thread, keeping the event loop free.
     path = Path(file_path)
-    if not path.exists():
+    if not await anyio.Path(path).exists():
         raise FileNotFoundError(f"Import file not found: {file_path}")
 
     file_type = path.suffix.lower()

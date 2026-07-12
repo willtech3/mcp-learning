@@ -11,12 +11,12 @@ Patron resources can be accessed via:
 """
 
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
-class PatronStatus(str, Enum):
+class PatronStatus(StrEnum):
     """Enumeration of possible patron statuses."""
 
     ACTIVE = "active"

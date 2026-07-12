@@ -87,7 +87,7 @@ class PatronSearchParams(BaseModel):
     membership_expired: bool | None = None  # Membership is expired
 
 
-class PatronSortOptions(str, enum.Enum):
+class PatronSortOptions(enum.StrEnum):
     """Sorting options for patron queries."""
 
     NAME = "name"

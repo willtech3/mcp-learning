@@ -93,7 +93,7 @@ class ReservationQueueInfo(BaseModel):
     estimated_wait_days: int | None
 
 
-class CirculationSortOptions(str, enum.Enum):
+class CirculationSortOptions(enum.StrEnum):
     """Sorting options for circulation queries."""
 
     CHECKOUT_DATE = "checkout_date"
@@ -251,13 +251,15 @@ class CirculationRepository:
         # Get checkout with relationships
         checkout = mcp_safe_query(
             self.session,
-            lambda s: s.execute(
-                select(CheckoutDB)
-                .where(CheckoutDB.id == return_data.checkout_id)
-                .options(joinedload(CheckoutDB.patron), joinedload(CheckoutDB.book))
-            )
-            .unique()
-            .scalar_one_or_none(),
+            lambda s: (
+                s.execute(
+                    select(CheckoutDB)
+                    .where(CheckoutDB.id == return_data.checkout_id)
+                    .options(joinedload(CheckoutDB.patron), joinedload(CheckoutDB.book))
+                )
+                .unique()
+                .scalar_one_or_none()
+            ),
             "Failed to get checkout for return",
         )
 
