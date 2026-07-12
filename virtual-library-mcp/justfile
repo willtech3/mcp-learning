@@ -253,6 +253,50 @@ docs-serve:
     @echo "🌐 Serving documentation locally..."
     @echo "📝 Documentation serving will be implemented in Phase 5"
 
+# === DEPLOYMENT (Google Cloud Run) ===
+# Full walkthrough: docs/DEPLOYMENT.md
+
+# Build the container image locally
+docker-build:
+    @echo "🐳 Building container image..."
+    docker build -t virtual-library-mcp:local .
+
+# Run the container locally (no auth, localhost only)
+docker-run: docker-build
+    @echo "🐳 Running on http://127.0.0.1:8080/mcp (insecure local mode)"
+    docker run --rm -p 8080:8080 \
+        -e VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true \
+        virtual-library-mcp:local
+
+# Build and push the image to Artifact Registry (uses terraform outputs)
+docker-push:
+    @echo "🚀 Building and pushing $(terraform -chdir=terraform output -raw image)"
+    gcloud auth configure-docker $(terraform -chdir=terraform output -raw image | cut -d/ -f1) --quiet
+    docker build --platform linux/amd64 -t $(terraform -chdir=terraform output -raw image) .
+    docker push $(terraform -chdir=terraform output -raw image)
+
+# Store the Google OAuth client secret in Secret Manager (prompts; no shell history)
+secret-set:
+    @echo "🔐 Paste the Google OAuth client secret (input hidden):"
+    @stty -echo; read SECRET; stty echo; echo; \
+        printf '%s' "$$SECRET" | gcloud secrets versions add \
+        $(terraform -chdir=terraform output -raw oauth_secret_name) --data-file=-
+    @echo "✅ Secret version added"
+
+# Terraform shortcuts
+tf-init:
+    terraform -chdir=terraform init
+
+tf-plan:
+    terraform -chdir=terraform plan
+
+tf-apply:
+    terraform -chdir=terraform apply
+
+# Bootstrap apply: everything except the Cloud Run service itself
+tf-bootstrap:
+    terraform -chdir=terraform apply -var deploy_service=false
+
 # === PRODUCTION ===
 
 # Build distribution package
