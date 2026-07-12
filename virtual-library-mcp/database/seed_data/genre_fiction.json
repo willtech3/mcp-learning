@@ -1,0 +1,713 @@
+{
+  "collection": "Science Fiction, Fantasy, Mystery, Thriller, Horror, Young Adult & Children",
+  "authors": [
+    {
+      "name": "Isaac Asimov",
+      "birth_date": "1920-01-02",
+      "death_date": "1992-04-06",
+      "nationality": "American",
+      "biography": "Russian-born American biochemist and one of science fiction's Big Three, author or editor of more than five hundred books spanning robots, galactic empires, and popular science.",
+      "books": [
+        {"title": "Foundation", "year": 1951, "genre": "Science Fiction", "popularity": 4, "description": "Psychohistorian Hari Seldon foresees the Galactic Empire's fall and seeds a Foundation to shorten the coming dark age from thirty millennia to one."},
+        {"title": "I, Robot", "year": 1950, "genre": "Science Fiction", "popularity": 4, "description": "Nine linked stories introduce the Three Laws of Robotics and the tangled logic puzzles they create for robopsychologist Susan Calvin."},
+        {"title": "The Caves of Steel", "year": 1954, "genre": "Science Fiction", "popularity": 2, "description": "Agoraphobic Earth detective Elijah Baley partners with humanoid robot R. Daneel Olivaw to solve a Spacer's murder in the enclosed cities of future Earth."},
+        {"title": "The Gods Themselves", "year": 1972, "genre": "Science Fiction", "popularity": 2, "description": "A free-energy exchange with a parallel universe threatens both worlds, and only beings on each side who question it can act, in Asimov's Hugo and Nebula winner."}
+      ]
+    },
+    {
+      "name": "Arthur C. Clarke",
+      "birth_date": "1917-12-16",
+      "death_date": "2008-03-19",
+      "nationality": "British",
+      "biography": "English futurist and science fiction grandmaster who proposed the communications satellite and co-created the most famous film in the genre.",
+      "books": [
+        {"title": "2001: A Space Odyssey", "year": 1968, "genre": "Science Fiction", "popularity": 4, "description": "From a bone tossed skyward to the enigmatic monolith orbiting Jupiter, humanity is shepherded toward transcendence — if HAL 9000 doesn't end the trip first."},
+        {"title": "Childhood's End", "year": 1953, "genre": "Science Fiction", "popularity": 3, "description": "Benevolent alien Overlords end war and want on Earth, at the price of a destiny that no human parent can follow."},
+        {"title": "Rendezvous with Rama", "year": 1973, "genre": "Science Fiction", "popularity": 3, "description": "A fifty-kilometer alien cylinder coasts through the solar system, and the crew of Endeavour has weeks to explore its silent, purposeful interior."}
+      ]
+    },
+    {
+      "name": "Frank Herbert",
+      "birth_date": "1920-10-08",
+      "death_date": "1986-02-11",
+      "nationality": "American",
+      "biography": "American journalist and ecological visionary whose desert-planet epic became the bestselling science fiction novel of all time.",
+      "books": [
+        {"title": "Dune", "year": 1965, "genre": "Science Fiction", "popularity": 5, "description": "Young Paul Atreides survives betrayal on the desert planet Arrakis, source of the spice that binds an empire, and rises among the Fremen toward a terrible destiny."},
+        {"title": "Dune Messiah", "year": 1969, "genre": "Science Fiction", "popularity": 3, "description": "Twelve years into Paul's jihad-stained reign, conspirators close in on the Emperor who can see the future but not escape it."}
+      ]
+    },
+    {
+      "name": "Ursula K. Le Guin",
+      "birth_date": "1929-10-21",
+      "death_date": "2018-01-22",
+      "nationality": "American",
+      "biography": "American writer who brought anthropological depth and moral imagination to science fiction and fantasy, mapping anarchist moons and dragon-haunted archipelagos.",
+      "books": [
+        {"title": "The Left Hand of Darkness", "year": 1969, "genre": "Science Fiction", "popularity": 4, "description": "Envoy Genly Ai must win over the ambisexual people of ice-bound Gethen, where his only ally is a politician he cannot bring himself to trust."},
+        {"title": "The Dispossessed", "year": 1974, "genre": "Science Fiction", "popularity": 3, "description": "Physicist Shevek travels from his anarchist moon to the capitalist mother planet to finish a theory that could unite the stars — or be owned by one world."},
+        {"title": "A Wizard of Earthsea", "year": 1968, "genre": "Fantasy", "popularity": 4, "description": "Proud young mage Ged unleashes a nameless shadow in a moment of arrogance and must pursue it to the edge of the world to learn its true name."},
+        {"title": "The Lathe of Heaven", "year": 1971, "genre": "Science Fiction", "popularity": 2, "description": "George Orr's dreams literally rewrite reality, and the psychiatrist who controls them keeps improving the world into stranger catastrophes."}
+      ]
+    },
+    {
+      "name": "Ray Bradbury",
+      "birth_date": "1920-08-22",
+      "death_date": "2012-06-05",
+      "nationality": "American",
+      "biography": "American fantasist of carnivals, rockets, and small-town Octobers, whose lyric short stories carried science fiction into the literary mainstream.",
+      "books": [
+        {"title": "Fahrenheit 451", "year": 1953, "genre": "Dystopian", "popularity": 5, "description": "Fireman Guy Montag burns books for a living until a curious neighbor and a hidden Bible turn him against the state of enforced amusement."},
+        {"title": "The Martian Chronicles", "year": 1950, "genre": "Science Fiction", "popularity": 3, "description": "Linked stories chart humanity's colonization of Mars — the ghosts displaced, the towns rebuilt, the Earth left burning behind."},
+        {"title": "Something Wicked This Way Comes", "year": 1962, "genre": "Horror", "popularity": 3, "description": "Cooger & Dark's Pandemonium Shadow Show rolls into Green Town offering everyone their dearest wish, and two boys see the price tag."}
+      ]
+    },
+    {
+      "name": "Philip K. Dick",
+      "birth_date": "1928-12-16",
+      "death_date": "1982-03-02",
+      "nationality": "American",
+      "biography": "American visionary of unstable realities and counterfeit humans, scarcely solvent in life, now the most adapted science fiction writer in Hollywood.",
+      "books": [
+        {"title": "Do Androids Dream of Electric Sheep?", "year": 1968, "genre": "Science Fiction", "popularity": 4, "description": "Bounty hunter Rick Deckard retires six escaped androids in a dust-choked San Francisco while wondering what, if anything, separates him from them."},
+        {"title": "The Man in the High Castle", "year": 1962, "genre": "Science Fiction", "popularity": 3, "description": "In an America divided between victorious Japan and Germany, a banned novel describes a world where the Allies won — and may be more than fiction."},
+        {"title": "Ubik", "year": 1969, "genre": "Science Fiction", "popularity": 2, "description": "After an ambush on the moon, Joe Chip's reality begins decaying backward through time, held together only by a spray can of Ubik."}
+      ]
+    },
+    {
+      "name": "William Gibson",
+      "birth_date": "1948-03-17",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American-Canadian writer who coined 'cyberspace' and founded cyberpunk, then turned his pattern-recognition eye on the present.",
+      "books": [
+        {"title": "Neuromancer", "year": 1984, "genre": "Science Fiction", "popularity": 4, "description": "Burned-out hacker Case is hired for one last run against an AI's prison, jacked into the consensual hallucination of cyberspace, in the novel that invented a genre."},
+        {"title": "Pattern Recognition", "year": 2003, "genre": "Thriller", "popularity": 2, "description": "Brand-allergic coolhunter Cayce Pollard chases anonymous film fragments across a post-9/11 world where marketing and meaning blur."}
+      ]
+    },
+    {
+      "name": "Neal Stephenson",
+      "birth_date": "1959-10-31",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author of maximalist speculative epics on code, money, language viruses, and civilizational reboot.",
+      "books": [
+        {"title": "Snow Crash", "year": 1992, "genre": "Science Fiction", "popularity": 4, "description": "Pizza-delivery hacker Hiro Protagonist and skateboard courier Y.T. chase a mind-crashing drug-religion through a franchised America and the Metaverse."},
+        {"title": "Cryptonomicon", "year": 1999, "genre": "Fiction", "popularity": 3, "description": "WWII codebreakers and 1990s crypto-entrepreneurs braid into one saga of secrecy, gold, and the mathematics of information."}
+      ]
+    },
+    {
+      "name": "Octavia E. Butler",
+      "birth_date": "1947-06-22",
+      "death_date": "2006-02-24",
+      "nationality": "American",
+      "biography": "Pioneering Black science fiction writer and MacArthur fellow whose unflinching novels of power, survival, and symbiosis grow only more prophetic.",
+      "books": [
+        {"title": "Kindred", "year": 1979, "genre": "Science Fiction", "popularity": 4, "description": "Dana, a Black writer in 1976 Los Angeles, is repeatedly yanked back to an antebellum Maryland plantation to save the white ancestor who enslaves her family."},
+        {"title": "Parable of the Sower", "year": 1993, "genre": "Dystopian", "popularity": 4, "description": "As 2020s California burns, hyperempathic teenager Lauren Olamina walks north with a new scripture: God is Change."},
+        {"title": "Dawn", "year": 1987, "genre": "Science Fiction", "popularity": 2, "description": "Lilith wakes centuries after nuclear war aboard a living alien ship whose owners offer humanity survival — at the price of becoming something else."}
+      ]
+    },
+    {
+      "name": "N.K. Jemisin",
+      "birth_date": "1972-09-19",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author who won an unprecedented three consecutive Hugo Awards for a trilogy about a world that ends over and over.",
+      "books": [
+        {"title": "The Fifth Season", "year": 2015, "genre": "Fantasy", "popularity": 4, "description": "On a continent wracked by apocalyptic Seasons, a woman whose earth-moving powers mark her for slavery hunts the husband who murdered their son."},
+        {"title": "The Obelisk Gate", "year": 2016, "genre": "Fantasy", "popularity": 3, "description": "Essun learns the moon can be caught and the Seasons ended, while her daughter Nassun learns the world might not deserve saving."},
+        {"title": "The Stone Sky", "year": 2017, "genre": "Fantasy", "popularity": 3, "description": "Mother and daughter converge at the world's wound with opposite intentions for the moon's return, in the trilogy's shattering conclusion."}
+      ]
+    },
+    {
+      "name": "Liu Cixin",
+      "birth_date": "1963-06-23",
+      "death_date": null,
+      "nationality": "Chinese",
+      "biography": "Chinese engineer and science fiction giant whose cosmic trilogy brought Chinese SF to world prominence and won the Hugo Award.",
+      "books": [
+        {"title": "The Three-Body Problem", "year": 2008, "genre": "Science Fiction", "popularity": 5, "description": "A secret signal sent during the Cultural Revolution draws an alien civilization from a dying triple-star system toward Earth — and some humans welcome them."},
+        {"title": "The Dark Forest", "year": 2008, "genre": "Science Fiction", "popularity": 4, "description": "With Trisolaran fleets en route and human thought transparent to alien sophons, Earth's only hope lies with four Wallfacers whose plans must stay inside their heads."},
+        {"title": "Death's End", "year": 2010, "genre": "Science Fiction", "popularity": 3, "description": "Engineer Cheng Xin inherits the deterrence that holds two civilizations at bay, in a finale that swallows dimensions and epochs whole."}
+      ]
+    },
+    {
+      "name": "Andy Weir",
+      "birth_date": "1972-06-16",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Former software engineer whose self-published castaway-on-Mars story became a publishing and Hollywood phenomenon built on duct tape and arithmetic.",
+      "books": [
+        {"title": "The Martian", "year": 2014, "genre": "Science Fiction", "popularity": 5, "description": "Stranded astronaut Mark Watney sciences his way through potatoes, hexadecimal, and explosive decompression to survive alone on Mars."},
+        {"title": "Project Hail Mary", "year": 2021, "genre": "Science Fiction", "popularity": 5, "description": "Ryland Grace wakes alone on a starship with amnesia, a dead crew, and a mission to save Earth's sun — and finds an unforgettable ally named Rocky."},
+        {"title": "Artemis", "year": 2017, "genre": "Science Fiction", "popularity": 2, "description": "Smuggler Jazz Bashara takes one lucrative sabotage job in the moon's only city and ends up owning its biggest crisis."}
+      ]
+    },
+    {
+      "name": "Martha Wells",
+      "birth_date": "1964-09-01",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American SFF veteran whose socially anxious, soap-opera-loving security android made her a multiple Hugo winner decades into her career.",
+      "books": [
+        {"title": "All Systems Red", "year": 2017, "genre": "Science Fiction", "popularity": 4, "description": "A self-hacked SecUnit that calls itself Murderbot would rather watch serials than protect its human clients — until someone starts killing them."},
+        {"title": "Network Effect", "year": 2020, "genre": "Science Fiction", "popularity": 3, "description": "Murderbot's first full-length adventure: kidnapped clients, a hijacked research transport, and alien contamination it absolutely did not sign up for."}
+      ]
+    },
+    {
+      "name": "J.R.R. Tolkien",
+      "birth_date": "1892-01-03",
+      "death_date": "1973-09-02",
+      "nationality": "British",
+      "biography": "Oxford philologist who built languages first and worlds to hold them, founding modern fantasy with Middle-earth.",
+      "books": [
+        {"title": "The Hobbit", "year": 1937, "genre": "Fantasy", "popularity": 5, "description": "Comfort-loving Bilbo Baggins is swept out his round door by thirteen dwarves and a wizard to burgle a dragon's mountain hoard."},
+        {"title": "The Fellowship of the Ring", "year": 1954, "genre": "Fantasy", "popularity": 5, "description": "Frodo inherits a ring that must be destroyed in the fire where it was forged, and nine walkers set out from Rivendell against the Shadow."},
+        {"title": "The Two Towers", "year": 1954, "genre": "Fantasy", "popularity": 4, "description": "The broken Fellowship fights on two fronts as Frodo and Sam follow the creature Gollum toward Mordor's back door."},
+        {"title": "The Return of the King", "year": 1955, "genre": "Fantasy", "popularity": 4, "description": "Armies converge on Minas Tirith and two small hobbits crawl up Mount Doom carrying the fate of Middle-earth."}
+      ]
+    },
+    {
+      "name": "C.S. Lewis",
+      "birth_date": "1898-11-29",
+      "death_date": "1963-11-22",
+      "nationality": "British",
+      "biography": "Belfast-born Oxford don, Christian apologist, and Tolkien's friend, whose wardrobe opened twentieth-century childhood onto Narnia.",
+      "books": [
+        {"title": "The Lion, the Witch and the Wardrobe", "year": 1950, "genre": "Children", "popularity": 5, "description": "Four evacuee children step through a wardrobe into Narnia, where it is always winter under the White Witch — until Aslan moves."},
+        {"title": "The Screwtape Letters", "year": 1942, "genre": "Fiction", "popularity": 2, "description": "Senior demon Screwtape coaches his nephew Wormwood in the fine art of damning one ordinary man, in Lewis's wickedly inverted moral classic."}
+      ]
+    },
+    {
+      "name": "George R.R. Martin",
+      "birth_date": "1948-09-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author whose unsentimental epic of thrones and winter redefined fantasy's relationship to history and mortality.",
+      "books": [
+        {"title": "A Game of Thrones", "year": 1996, "genre": "Fantasy", "popularity": 5, "description": "Ned Stark goes south to serve a king he loves among nobles who play the game of thrones, where you win or you die — and winter is coming."},
+        {"title": "A Clash of Kings", "year": 1998, "genre": "Fantasy", "popularity": 4, "description": "Four kings claim the Iron Throne as a red comet rises, and across the sea the last dragons wake."}
+      ]
+    },
+    {
+      "name": "Patrick Rothfuss",
+      "birth_date": "1973-06-06",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American fantasist whose lyrical first novel about a legendary musician-arcanist set a generation of readers waiting for book three.",
+      "books": [
+        {"title": "The Name of the Wind", "year": 2007, "genre": "Fantasy", "popularity": 4, "description": "In a wayside inn, the legend Kvothe tells the true story of his rise from orphaned trouper to youngest student of the University's hidden magic."}
+      ]
+    },
+    {
+      "name": "Brandon Sanderson",
+      "birth_date": "1975-12-19",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Prolific American fantasist famed for rigorous magic systems, interconnected worlds, and finishing things — including Robert Jordan's Wheel of Time.",
+      "books": [
+        {"title": "Mistborn: The Final Empire", "year": 2006, "genre": "Fantasy", "popularity": 4, "description": "Street thief Vin joins a crew of metal-burning Allomancers plotting to overthrow an immortal emperor who already won the prophecy a thousand years ago."},
+        {"title": "The Way of Kings", "year": 2010, "genre": "Fantasy", "popularity": 4, "description": "On storm-scoured Roshar, a broken soldier, a scholarly thief, and a doomed highprince converge on oaths that could rebind the world."},
+        {"title": "Elantris", "year": 2005, "genre": "Fantasy", "popularity": 2, "description": "The god-city Elantris has rotted, and its newest cursed resident, Prince Raoden, organizes the damned while his bride investigates above."}
+      ]
+    },
+    {
+      "name": "Neil Gaiman",
+      "birth_date": "1960-11-10",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "English author of dark contemporary myth across novels, comics, and film, where old gods ride buses and graveyards raise children.",
+      "books": [
+        {"title": "American Gods", "year": 2001, "genre": "Fantasy", "popularity": 4, "description": "Ex-convict Shadow takes a job with the grifter god Wednesday as the old deities immigrants carried to America prepare for war with the new gods of media and tech."},
+        {"title": "The Graveyard Book", "year": 2008, "genre": "Children", "popularity": 4, "description": "A toddler escapes his family's murderer and is raised by ghosts in a cemetery, where being dead is safer than the world of the living."},
+        {"title": "Coraline", "year": 2002, "genre": "Children", "popularity": 4, "description": "Through a bricked-up door, Coraline finds an Other Mother with button eyes who wants her to stay forever."},
+        {"title": "Good Omens", "year": 1990, "genre": "Fantasy", "popularity": 4, "description": "An angel and a demon who rather like Earth team up to misplace the Antichrist and derail Armageddon, in Gaiman and Pratchett's beloved collaboration."}
+      ]
+    },
+    {
+      "name": "Terry Pratchett",
+      "birth_date": "1948-04-28",
+      "death_date": "2015-03-12",
+      "nationality": "British",
+      "biography": "English satirist whose forty-one Discworld novels carried a flat world on four elephants and a turtle, and the sharpest moral comedy in fantasy.",
+      "books": [
+        {"title": "Guards! Guards!", "year": 1989, "genre": "Fantasy", "popularity": 3, "description": "A dragon is summoned over Ankh-Morpork and the despised Night Watch — a drunk captain, a fraud, and a six-foot dwarf — must rise to the occasion."},
+        {"title": "Mort", "year": 1987, "genre": "Fantasy", "popularity": 3, "description": "Death takes an apprentice, and gangly farm boy Mort discovers that compassion plus a scythe equals catastrophic timeline damage."},
+        {"title": "Small Gods", "year": 1992, "genre": "Fantasy", "popularity": 2, "description": "The Great God Om manifests as a one-eyed tortoise to find only one true believer left, a novice with a perfect memory, in Pratchett's slyest book on belief."}
+      ]
+    },
+    {
+      "name": "Robin Hobb",
+      "birth_date": "1952-03-05",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American fantasy author whose intimate first-person epics about the royal bastard FitzChivalry redefined character-driven fantasy.",
+      "books": [
+        {"title": "Assassin's Apprentice", "year": 1995, "genre": "Fantasy", "popularity": 3, "description": "Royal bastard Fitz is trained in the quiet arts of the king's assassin while his forbidden bond with animals marks him for contempt."}
+      ]
+    },
+    {
+      "name": "Naomi Novik",
+      "birth_date": "1973-04-30",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author who moved from Napoleonic dragons to Eastern European fairy-tale retellings and a homicidal magic school.",
+      "books": [
+        {"title": "Uprooted", "year": 2015, "genre": "Fantasy", "popularity": 3, "description": "Every ten years the wizard called the Dragon takes a village girl; this time he takes clumsy Agnieszka, whose untrained power may match the malevolent Wood."},
+        {"title": "A Deadly Education", "year": 2020, "genre": "Fantasy", "popularity": 3, "description": "At the Scholomance, where monsters eat students and there are no teachers, dark-affinity El must survive senior year without becoming the villain she's prophesied to be."}
+      ]
+    },
+    {
+      "name": "V.E. Schwab",
+      "birth_date": "1987-07-07",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author of inventive fantasy across adult and YA, from parallel Londons to a girl cursed to be forgotten.",
+      "books": [
+        {"title": "The Invisible Life of Addie LaRue", "year": 2020, "genre": "Fantasy", "popularity": 4, "description": "In 1714 Addie trades her soul for freedom and is cursed to be forgotten by everyone she meets — until, three centuries later, a bookseller remembers her."},
+        {"title": "A Darker Shade of Magic", "year": 2015, "genre": "Fantasy", "popularity": 3, "description": "Kell, one of the last blood magicians who can walk between parallel Londons, smuggles a forbidden artifact that could wake the dead London no one names."}
+      ]
+    },
+    {
+      "name": "Nnedi Okorafor",
+      "birth_date": "1974-04-08",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Nigerian American author of Africanfuturist fiction where ancient tradition and far-future technology share the same desert.",
+      "books": [
+        {"title": "Binti", "year": 2015, "genre": "Science Fiction", "popularity": 3, "description": "The first Himba girl admitted to a galactic university survives a massacre aboard her transport by becoming the bridge between species at war."},
+        {"title": "Who Fears Death", "year": 2010, "genre": "Fantasy", "popularity": 2, "description": "In post-apocalyptic Saharan Africa, sorceress Onyesonwu — 'who fears death' — is born of violence and prophesied to rewrite her people's fate."}
+      ]
+    },
+    {
+      "name": "Agatha Christie",
+      "birth_date": "1890-09-15",
+      "death_date": "1976-01-12",
+      "nationality": "British",
+      "biography": "The bestselling novelist in history, creator of Hercule Poirot and Miss Marple, whose ingenious puzzles defined the golden age of detective fiction.",
+      "books": [
+        {"title": "And Then There Were None", "year": 1939, "genre": "Mystery", "popularity": 5, "description": "Ten strangers lured to an island are accused of murder by a gramophone record and then die, one by one, according to a nursery rhyme."},
+        {"title": "Murder on the Orient Express", "year": 1934, "genre": "Mystery", "popularity": 5, "description": "A snowbound luxury train, a stabbed American tycoon, and twelve suspects give Hercule Poirot his most famous — and most morally vexing — case."},
+        {"title": "The Murder of Roger Ackroyd", "year": 1926, "genre": "Mystery", "popularity": 4, "description": "Poirot comes out of retirement in a quiet village where everyone has secrets, in the mystery whose solution scandalized the genre."},
+        {"title": "Death on the Nile", "year": 1937, "genre": "Mystery", "popularity": 4, "description": "A honeymoon cruise up the Nile turns deadly when the radiant heiress everyone envied is found shot, and Poirot is aboard."},
+        {"title": "The A.B.C. Murders", "year": 1936, "genre": "Mystery", "popularity": 3, "description": "A killer working through the alphabet taunts Poirot by letter before each murder, leaving an ABC railway guide beside every body."}
+      ]
+    },
+    {
+      "name": "Arthur Conan Doyle",
+      "birth_date": "1859-05-22",
+      "death_date": "1930-07-07",
+      "nationality": "British",
+      "biography": "Scottish physician who created the world's most famous detective and tried, unsuccessfully, to kill him.",
+      "books": [
+        {"title": "The Adventures of Sherlock Holmes", "year": 1892, "genre": "Mystery", "popularity": 4, "description": "Twelve cases from Baker Street, including 'A Scandal in Bohemia' and 'The Speckled Band,' that fixed the detective story's form forever."},
+        {"title": "The Hound of the Baskervilles", "year": 1902, "genre": "Mystery", "popularity": 4, "description": "A spectral hound stalks the Baskerville heirs across fog-bound Dartmoor, and Holmes must separate family curse from earthly murder."},
+        {"title": "A Study in Scarlet", "year": 1887, "genre": "Mystery", "popularity": 3, "description": "Invalided army doctor John Watson takes rooms with an eccentric consulting detective, and a corpse in an empty Brixton house begins the legend."}
+      ]
+    },
+    {
+      "name": "Raymond Chandler",
+      "birth_date": "1888-07-23",
+      "death_date": "1959-03-26",
+      "nationality": "American",
+      "biography": "Oil executive turned crime writer who gave hardboiled detective fiction its knight-errant and its style: wisecracks polished like ball bearings.",
+      "books": [
+        {"title": "The Big Sleep", "year": 1939, "genre": "Mystery", "popularity": 3, "description": "PI Philip Marlowe takes a blackmail case for a dying general and descends through Los Angeles's pornographers, gamblers, and killers."},
+        {"title": "The Long Goodbye", "year": 1953, "genre": "Mystery", "popularity": 3, "description": "Marlowe's friendship with a polite drunk named Terry Lennox costs him jail time, beatings, and his illusions, in Chandler's most personal novel."}
+      ]
+    },
+    {
+      "name": "Dashiell Hammett",
+      "birth_date": "1894-05-27",
+      "death_date": "1961-01-10",
+      "nationality": "American",
+      "biography": "Former Pinkerton operative who invented the hardboiled detective novel from the inside.",
+      "books": [
+        {"title": "The Maltese Falcon", "year": 1930, "genre": "Mystery", "popularity": 3, "description": "Sam Spade's partner is murdered chasing a jeweled bird worth killing for, and everyone who wants it lies — especially the lady."}
+      ]
+    },
+    {
+      "name": "Patricia Highsmith",
+      "birth_date": "1921-01-19",
+      "death_date": "1995-02-04",
+      "nationality": "American",
+      "biography": "American novelist of elegant unease whose charming sociopaths made readers complicit in murder.",
+      "books": [
+        {"title": "The Talented Mr. Ripley", "year": 1955, "genre": "Thriller", "popularity": 4, "description": "Sent to Italy to retrieve a rich man's son, Tom Ripley decides he'd rather become Dickie Greenleaf than fetch him."},
+        {"title": "Strangers on a Train", "year": 1950, "genre": "Thriller", "popularity": 3, "description": "Two men meet on a train and one proposes swapping murders — a perfect crime that only works if both are mad enough to follow through."}
+      ]
+    },
+    {
+      "name": "Stephen King",
+      "birth_date": "1947-09-21",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Maine's master of horror and the modern American gothic, author of more than sixty novels that made the bestseller list a haunted house.",
+      "books": [
+        {"title": "The Shining", "year": 1977, "genre": "Horror", "popularity": 5, "description": "Recovering alcoholic Jack Torrance takes his family to winter-caretake the isolated Overlook Hotel, which has plans for his telepathic son — and for him."},
+        {"title": "It", "year": 1986, "genre": "Horror", "popularity": 5, "description": "Seven friends who defeated the shape-shifting evil beneath Derry as children are called home twenty-seven years later when It wakes hungry again."},
+        {"title": "Misery", "year": 1987, "genre": "Horror", "popularity": 4, "description": "Romance novelist Paul Sheldon wakes from a car crash in the remote home of his number-one fan, who has opinions about how his series should end."},
+        {"title": "11/22/63", "year": 2011, "genre": "Science Fiction", "popularity": 4, "description": "A Maine teacher steps through a diner pantry into 1958 and spends five years preparing to stop the Kennedy assassination, while the past pushes back."},
+        {"title": "The Stand", "year": 1978, "genre": "Horror", "popularity": 4, "description": "A weaponized flu kills nearly everyone, and the survivors dream their way toward Mother Abagail in Boulder or the dark man in Las Vegas."},
+        {"title": "Pet Sematary", "year": 1983, "genre": "Horror", "popularity": 3, "description": "Behind the Creed family's new house lies a burial ground that brings things back — wrong — and grief makes Louis use it anyway."}
+      ]
+    },
+    {
+      "name": "Shirley Jackson",
+      "birth_date": "1916-12-14",
+      "death_date": "1965-08-08",
+      "nationality": "American",
+      "biography": "American author of immaculate domestic dread, whose most famous story drew the angriest mail The New Yorker ever received.",
+      "books": [
+        {"title": "The Haunting of Hill House", "year": 1959, "genre": "Horror", "popularity": 4, "description": "Four investigators move into a house that is not sane, and lonely Eleanor finds Hill House wants her most of all."},
+        {"title": "We Have Always Lived in the Castle", "year": 1962, "genre": "Horror", "popularity": 3, "description": "Merricat Blackwood guards her sister and their poisoned family's estate against a hostile village, until cousin Charles comes for the money."}
+      ]
+    },
+    {
+      "name": "Bram Stoker",
+      "birth_date": "1847-11-08",
+      "death_date": "1912-04-20",
+      "nationality": "Irish",
+      "biography": "Irish theater manager whose epistolary vampire novel fixed the modern image of the undead aristocrat.",
+      "books": [
+        {"title": "Dracula", "year": 1897, "genre": "Horror", "popularity": 4, "description": "Told in letters, diaries, and phonograph records, the Count's move from Transylvania to London is opposed by a band of friends led by Van Helsing."}
+      ]
+    },
+    {
+      "name": "Mary Shelley",
+      "birth_date": "1797-08-30",
+      "death_date": "1851-02-01",
+      "nationality": "British",
+      "biography": "English Romantic who, at eighteen, invented science fiction during a wet summer on Lake Geneva.",
+      "books": [
+        {"title": "Frankenstein", "year": 1818, "genre": "Horror", "popularity": 5, "description": "Victor Frankenstein animates a creature from dead matter and abandons it; the articulate, suffering being exacts a terrible education in responsibility."}
+      ]
+    },
+    {
+      "name": "Oscar Wilde",
+      "birth_date": "1854-10-16",
+      "death_date": "1900-11-30",
+      "nationality": "Irish",
+      "biography": "Irish wit, playwright, and martyr to Victorian hypocrisy, whose epigrams outlived the society that jailed him.",
+      "books": [
+        {"title": "The Picture of Dorian Gray", "year": 1890, "genre": "Fiction", "popularity": 4, "description": "Beautiful Dorian stays young while his portrait ages and corrupts, recording every sin his face refuses to show."},
+        {"title": "The Importance of Being Earnest", "year": 1895, "genre": "Drama", "popularity": 3, "description": "Two bachelors invent fictitious identities to escape social duty, and the truth unravels over cucumber sandwiches, in the funniest play in English."}
+      ]
+    },
+    {
+      "name": "Gillian Flynn",
+      "birth_date": "1971-02-24",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American crime writer and screenwriter whose unreliable narrators and 'cool girl' takedown reshaped the psychological thriller.",
+      "books": [
+        {"title": "Gone Girl", "year": 2012, "genre": "Thriller", "popularity": 5, "description": "Amy Dunne vanishes on her fifth wedding anniversary and her diary points to husband Nick — but neither spouse's story is what it seems."},
+        {"title": "Sharp Objects", "year": 2006, "genre": "Thriller", "popularity": 3, "description": "Reporter Camille Preaker returns to her Missouri hometown to cover murdered girls and must excavate her own poisonous family to find the killer."}
+      ]
+    },
+    {
+      "name": "Stieg Larsson",
+      "birth_date": "1954-08-15",
+      "death_date": "2004-11-09",
+      "nationality": "Swedish",
+      "biography": "Swedish journalist and anti-fascist investigator whose posthumously published Millennium trilogy became a global publishing event.",
+      "books": [
+        {"title": "The Girl with the Dragon Tattoo", "year": 2005, "genre": "Thriller", "popularity": 4, "description": "Disgraced journalist Mikael Blomkvist and brilliant, damaged hacker Lisbeth Salander hunt a forty-year-old disappearance through a wealthy family's rot."},
+        {"title": "The Girl Who Played with Fire", "year": 2006, "genre": "Thriller", "popularity": 3, "description": "Salander is framed for three murders tied to a sex-trafficking exposé, and the secret that explains her past begins to surface."}
+      ]
+    },
+    {
+      "name": "Tana French",
+      "birth_date": "1973-05-10",
+      "death_date": null,
+      "nationality": "Irish",
+      "biography": "American-born Irish writer whose Dublin Murder Squad novels turned the police procedural into psychological literature.",
+      "books": [
+        {"title": "In the Woods", "year": 2007, "genre": "Mystery", "popularity": 3, "description": "Detective Rob Ryan investigates a child's murder in the same woods where his own childhood friends vanished — a case he survived but cannot remember."},
+        {"title": "The Likeness", "year": 2008, "genre": "Mystery", "popularity": 2, "description": "Detective Cassie Maddox goes undercover as a murdered woman who was living under Cassie's own abandoned alias, inside the dead girl's strange household."}
+      ]
+    },
+    {
+      "name": "John le Carré",
+      "birth_date": "1931-10-19",
+      "death_date": "2020-12-12",
+      "nationality": "British",
+      "biography": "Former British intelligence officer who elevated the spy novel into moral literature about betrayal, bureaucracy, and the Cold War's human cost.",
+      "books": [
+        {"title": "Tinker Tailor Soldier Spy", "year": 1974, "genre": "Thriller", "popularity": 4, "description": "Forced-out spymaster George Smiley is recalled to find the Soviet mole at the very top of the Circus, sifting decades of friendship for the lie."},
+        {"title": "The Spy Who Came in from the Cold", "year": 1963, "genre": "Thriller", "popularity": 4, "description": "Burned-out agent Alec Leamas plays one last double game in East Germany, where the line between his side and theirs dissolves."}
+      ]
+    },
+    {
+      "name": "Frederick Forsyth",
+      "birth_date": "1938-08-25",
+      "death_date": "2025-06-09",
+      "nationality": "British",
+      "biography": "RAF pilot and foreign correspondent who invented the modern documentary thriller with journalistic precision.",
+      "books": [
+        {"title": "The Day of the Jackal", "year": 1971, "genre": "Thriller", "popularity": 3, "description": "An anonymous English assassin codenamed Jackal is hired to kill Charles de Gaulle, and a French detective has weeks to find a man who doesn't exist."}
+      ]
+    },
+    {
+      "name": "Lee Child",
+      "birth_date": "1954-10-29",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "British television director who, laid off at forty, created the wandering ex-MP giant Jack Reacher and one of thriller fiction's great franchises.",
+      "books": [
+        {"title": "Killing Floor", "year": 1997, "genre": "Thriller", "popularity": 3, "description": "Drifter Jack Reacher steps off a bus in Margrave, Georgia, and is arrested for murder within hours — and the victim turns out to be family."}
+      ]
+    },
+    {
+      "name": "Michael Connelly",
+      "birth_date": "1956-07-21",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Former crime-beat reporter whose LAPD detective Harry Bosch carries the motto: everybody counts or nobody counts.",
+      "books": [
+        {"title": "The Lincoln Lawyer", "year": 2005, "genre": "Thriller", "popularity": 3, "description": "Defense attorney Mickey Haller works LA from the back of a Lincoln until a rich client's case turns out to connect to the one innocent man he failed."}
+      ]
+    },
+    {
+      "name": "James Patterson",
+      "birth_date": "1947-03-22",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Former ad executive and the world's most commercially successful living author, famed for propulsive chapters and the Alex Cross series.",
+      "books": [
+        {"title": "Along Came a Spider", "year": 1993, "genre": "Thriller", "popularity": 3, "description": "DC detective-psychologist Alex Cross hunts a schoolteacher kidnapper who wants to commit the crime of the century."}
+      ]
+    },
+    {
+      "name": "Dan Brown",
+      "birth_date": "1964-06-22",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American thriller writer whose symbologist hero turned art history and conspiracy into airport-conquering blockbusters.",
+      "books": [
+        {"title": "The Da Vinci Code", "year": 2003, "genre": "Thriller", "popularity": 4, "description": "A murder in the Louvre plunges Robert Langdon into a cipher-strewn hunt for the Holy Grail and a secret the Church spent centuries guarding."},
+        {"title": "Angels & Demons", "year": 2000, "genre": "Thriller", "popularity": 3, "description": "Langdon races an Illuminati plot through Rome's churches as antimatter stolen from CERN counts down beneath the Vatican."}
+      ]
+    },
+    {
+      "name": "Paula Hawkins",
+      "birth_date": "1972-08-26",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "Zimbabwe-born British journalist whose commuter-window thriller became one of the fastest-selling adult novels in history.",
+      "books": [
+        {"title": "The Girl on the Train", "year": 2015, "genre": "Thriller", "popularity": 4, "description": "Blackout drinker Rachel watches a perfect couple from her commuter train until the wife vanishes — during a night Rachel can't remember."}
+      ]
+    },
+    {
+      "name": "Alex Michaelides",
+      "birth_date": "1977-09-04",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "Cypriot-British screenwriter whose debut psychological thriller, built on a Greek tragedy, sold copies in the millions.",
+      "books": [
+        {"title": "The Silent Patient", "year": 2019, "genre": "Thriller", "popularity": 4, "description": "Painter Alicia Berenson shoots her husband and never speaks again; psychotherapist Theo Faber is determined to make her talk."}
+      ]
+    },
+    {
+      "name": "J.K. Rowling",
+      "birth_date": "1965-07-31",
+      "death_date": null,
+      "nationality": "British",
+      "biography": "British author whose boy wizard, conceived on a delayed train, became the bestselling book series in history.",
+      "books": [
+        {"title": "Harry Potter and the Sorcerer's Stone", "year": 1997, "genre": "Children", "popularity": 5, "description": "Orphan Harry Potter learns on his eleventh birthday that he is a wizard, famous for surviving the dark lord who killed his parents."},
+        {"title": "Harry Potter and the Chamber of Secrets", "year": 1998, "genre": "Children", "popularity": 4, "description": "Something is petrifying students at Hogwarts, a voice whispers in the walls, and a fifty-year-old diary remembers things differently."},
+        {"title": "Harry Potter and the Prisoner of Azkaban", "year": 1999, "genre": "Children", "popularity": 5, "description": "Escaped convict Sirius Black is coming for Harry — say the headlines — while dementors drain joy from Hogwarts and a time-turner waits."}
+      ]
+    },
+    {
+      "name": "Suzanne Collins",
+      "birth_date": "1962-08-10",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American television writer whose televised-death-match trilogy ignited the YA dystopia boom.",
+      "books": [
+        {"title": "The Hunger Games", "year": 2008, "genre": "Young Adult", "popularity": 5, "description": "Katniss Everdeen volunteers for her sister in the Capitol's annual fight-to-the-death broadcast and becomes a spark the regime can't control."},
+        {"title": "Catching Fire", "year": 2009, "genre": "Young Adult", "popularity": 4, "description": "Katniss's victory tour fans rebellion, and the seventy-fifth Games reap their tributes from the surviving victors themselves."}
+      ]
+    },
+    {
+      "name": "John Green",
+      "birth_date": "1977-08-24",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American YA author and video blogger whose articulate teenagers face mortality, anxiety, and first love with quotable grace.",
+      "books": [
+        {"title": "The Fault in Our Stars", "year": 2012, "genre": "Young Adult", "popularity": 4, "description": "Hazel and Augustus meet in a cancer support group and fall in love over a novel with no ending, traveling to Amsterdam to demand one."},
+        {"title": "Looking for Alaska", "year": 2005, "genre": "Young Adult", "popularity": 3, "description": "Miles 'Pudge' Halter goes to boarding school seeking a Great Perhaps and finds it in brilliant, self-destructing Alaska Young."}
+      ]
+    },
+    {
+      "name": "Angie Thomas",
+      "birth_date": "1988-09-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American YA novelist from Jackson, Mississippi, whose debut about police violence became a defining book for a generation.",
+      "books": [
+        {"title": "The Hate U Give", "year": 2017, "genre": "Young Adult", "popularity": 4, "description": "Starr Carter is the only witness when a cop kills her unarmed friend Khalil, and her two worlds — prep school and her neighborhood — collide."}
+      ]
+    },
+    {
+      "name": "Rick Riordan",
+      "birth_date": "1964-06-05",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Former middle-school teacher who turned Greek mythology into bedtime contraband for millions of kids.",
+      "books": [
+        {"title": "The Lightning Thief", "year": 2005, "genre": "Children", "popularity": 4, "description": "ADHD sixth-grader Percy Jackson learns he's Poseidon's son and has ten days to find Zeus's stolen lightning bolt before the gods go to war."},
+        {"title": "The Sea of Monsters", "year": 2006, "genre": "Children", "popularity": 3, "description": "Percy sails the monster-filled Sea of Monsters to rescue his friend Grover and the poisoned camp's only hope, the Golden Fleece."}
+      ]
+    },
+    {
+      "name": "Roald Dahl",
+      "birth_date": "1916-09-13",
+      "death_date": "1990-11-23",
+      "nationality": "British",
+      "biography": "Welsh-born RAF pilot turned beloved children's author of gleefully wicked tales where horrid adults get exactly what they deserve.",
+      "books": [
+        {"title": "Charlie and the Chocolate Factory", "year": 1964, "genre": "Children", "popularity": 4, "description": "Poor Charlie Bucket finds the last Golden Ticket and tours Willy Wonka's factory as the other winners are eliminated by their own vices."},
+        {"title": "Matilda", "year": 1988, "genre": "Children", "popularity": 4, "description": "A genius five-year-old with telekinetic powers and terrible parents takes on the child-hurling headmistress Miss Trunchbull."},
+        {"title": "James and the Giant Peach", "year": 1961, "genre": "Children", "popularity": 3, "description": "Orphan James escapes his dreadful aunts inside an enormous peach, crewed by human-sized insects, across the Atlantic."},
+        {"title": "The BFG", "year": 1982, "genre": "Children", "popularity": 3, "description": "Sophie is snatched from her orphanage by the Big Friendly Giant, the only giant who doesn't eat children, and together they plot to stop the ones who do."}
+      ]
+    },
+    {
+      "name": "E.B. White",
+      "birth_date": "1899-07-11",
+      "death_date": "1985-10-01",
+      "nationality": "American",
+      "biography": "New Yorker essayist and prose stylist who wrote three of the most loved children's books in American literature.",
+      "books": [
+        {"title": "Charlotte's Web", "year": 1952, "genre": "Children", "popularity": 5, "description": "A spider named Charlotte spins words into her web to save the runt pig Wilbur from slaughter, in the great American story of friendship and loss."}
+      ]
+    },
+    {
+      "name": "Madeleine L'Engle",
+      "birth_date": "1918-11-29",
+      "death_date": "2007-09-06",
+      "nationality": "American",
+      "biography": "American writer who folded quantum physics and theology into children's fiction, rejected twenty-six times before winning the Newbery Medal.",
+      "books": [
+        {"title": "A Wrinkle in Time", "year": 1962, "genre": "Children", "popularity": 4, "description": "Meg Murry, her uncanny little brother, and three celestial ladies tesser across space to rescue her father from a planet ruled by a disembodied brain."}
+      ]
+    },
+    {
+      "name": "Lois Lowry",
+      "birth_date": "1937-03-20",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Two-time Newbery medalist whose quiet dystopia about a community without pain or color became required reading.",
+      "books": [
+        {"title": "The Giver", "year": 1993, "genre": "Young Adult", "popularity": 4, "description": "In a community that has traded memory and feeling for sameness, twelve-year-old Jonas is chosen to receive everything that was given up."},
+        {"title": "Number the Stars", "year": 1989, "genre": "Children", "popularity": 3, "description": "Ten-year-old Annemarie helps smuggle her Jewish best friend's family from occupied Copenhagen to Sweden in 1943."}
+      ]
+    },
+    {
+      "name": "Antoine de Saint-Exupéry",
+      "birth_date": "1900-06-29",
+      "death_date": "1944-07-31",
+      "nationality": "French",
+      "biography": "French aviator-author lost over the Mediterranean in WWII, whose desert fable remains among the most translated books ever written.",
+      "books": [
+        {"title": "The Little Prince", "year": 1943, "genre": "Children", "popularity": 5, "description": "A pilot downed in the Sahara meets a golden-haired prince from asteroid B-612, who reports what grown-ups have forgotten: what is essential is invisible to the eye."}
+      ]
+    },
+    {
+      "name": "Lewis Carroll",
+      "birth_date": "1832-01-27",
+      "death_date": "1898-01-14",
+      "nationality": "British",
+      "biography": "Oxford mathematician Charles Dodgson, whose boat-trip story for a young friend became the masterpiece of literary nonsense.",
+      "books": [
+        {"title": "Alice's Adventures in Wonderland", "year": 1865, "genre": "Children", "popularity": 4, "description": "Alice follows a waistcoated White Rabbit down a hole into a world of mad tea parties, croquet-playing queens, and logic turned inside out."}
+      ]
+    },
+    {
+      "name": "L.M. Montgomery",
+      "birth_date": "1874-11-30",
+      "death_date": "1942-04-24",
+      "nationality": "Canadian",
+      "biography": "Canadian novelist whose red-haired orphan put Prince Edward Island on the world's literary map.",
+      "books": [
+        {"title": "Anne of Green Gables", "year": 1908, "genre": "Children", "popularity": 4, "description": "Elderly siblings send for an orphan boy to help on the farm and receive instead Anne Shirley — talkative, dramatic, and impossible not to love."}
+      ]
+    },
+    {
+      "name": "Louisa May Alcott",
+      "birth_date": "1832-11-29",
+      "death_date": "1888-03-06",
+      "nationality": "American",
+      "biography": "Massachusetts transcendentalist's daughter who wrote her family into the most enduring American girlhood story.",
+      "books": [
+        {"title": "Little Women", "year": 1868, "genre": "Fiction", "popularity": 4, "description": "Meg, Jo, Beth, and Amy March grow up genteel-poor in Civil War New England, anchored by their mother and Jo's stubborn ambition to write."}
+      ]
+    },
+    {
+      "name": "Frances Hodgson Burnett",
+      "birth_date": "1849-11-24",
+      "death_date": "1924-10-29",
+      "nationality": "British",
+      "biography": "English-American author whose tales of transformed, transplanted children became nursery-shelf immortals.",
+      "books": [
+        {"title": "The Secret Garden", "year": 1911, "genre": "Children", "popularity": 4, "description": "Sour orphan Mary Lennox discovers a locked garden on a Yorkshire moor estate, and bringing it back to life heals more than the roses."}
+      ]
+    },
+    {
+      "name": "A.A. Milne",
+      "birth_date": "1882-01-18",
+      "death_date": "1956-01-31",
+      "nationality": "British",
+      "biography": "English playwright whose stories for his son Christopher Robin gave the world its most beloved bear.",
+      "books": [
+        {"title": "Winnie-the-Pooh", "year": 1926, "genre": "Children", "popularity": 4, "description": "A bear of very little brain, a gloomy donkey, and a small pig in a windy wood — adventures of honey, heffalumps, and friendship in the Hundred Acre Wood."}
+      ]
+    },
+    {
+      "name": "Katherine Paterson",
+      "birth_date": "1932-10-31",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American children's author and two-time Newbery medalist who trusts young readers with grief.",
+      "books": [
+        {"title": "Bridge to Terabithia", "year": 1977, "genre": "Children", "popularity": 3, "description": "Jess and Leslie rule an imaginary kingdom across the creek until a rainy morning changes everything, in a classic of friendship and loss."}
+      ]
+    },
+    {
+      "name": "Stephen Chbosky",
+      "birth_date": "1970-01-25",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American novelist and filmmaker whose epistolary debut became a rite of passage passed hand to hand through high schools.",
+      "books": [
+        {"title": "The Perks of Being a Wallflower", "year": 1999, "genre": "Young Adult", "popularity": 4, "description": "Freshman Charlie writes letters to a stranger about mixtapes, first love, found friends, and the memory he's been protecting himself from."}
+      ]
+    },
+    {
+      "name": "Veronica Roth",
+      "birth_date": "1988-08-19",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "American author who sold her faction-divided dystopia while still in college and topped bestseller lists before twenty-five.",
+      "books": [
+        {"title": "Divergent", "year": 2011, "genre": "Young Adult", "popularity": 3, "description": "In faction-divided Chicago, Tris Prior tests as Divergent — fitting no faction — a secret that could get her killed."}
+      ]
+    },
+    {
+      "name": "Tomi Adeyemi",
+      "birth_date": "1993-08-01",
+      "death_date": null,
+      "nationality": "American",
+      "biography": "Nigerian American novelist whose West African-inspired fantasy debut landed a record-setting deal and a devoted readership.",
+      "books": [
+        {"title": "Children of Blood and Bone", "year": 2018, "genre": "Young Adult", "popularity": 3, "description": "Zélie has one chance to restore magic to Orïsha and strike against the monarchy that slaughtered the maji — including her mother."}
+      ]
+    }
+  ]
+}

@@ -1,101 +1,141 @@
 isbn,title,author_name,genre,publication_year,available_copies
-978-1000-00001-1,Advanced Python Programming Vol 1,Dr. Alan Smith,Technology,2023,5
-978-1000-00002-2,Advanced Python Programming Vol 2,Dr. Alan Smith,Technology,2023,5
-978-1000-00003-3,Advanced Python Programming Vol 3,Dr. Alan Smith,Technology,2023,5
-978-1000-00004-4,The Mystery of the Lost City,Jane Wilson,Mystery,2022,3
-978-1000-00005-5,Romance Under the Stars,Emily Davis,Romance,2021,2
-978-1000-00006-6,Quantum Mechanics Explained,Prof. John Lee,Science,2023,4
-978-1000-00007-7,The Art of French Cooking,Marie Laurent,Non-Fiction,2022,6
-978-1000-00008-8,Space Warriors: The Beginning,Tom Anderson,Science Fiction,2024,8
-978-1000-00009-9,History of Ancient Egypt,Dr. Sarah Brown,History,2021,2
-978-1000-00010-0,JavaScript: The Complete Guide,Mike Johnson,Technology,2023,7
-978-1000-00011-1,Murder at the Museum,Detective K. Holmes,Mystery,2022,4
-978-1000-00012-2,Love Letters from Paris,Sophie Martin,Romance,2023,3
-978-1000-00013-3,The Biology of Life,Dr. Emma White,Science,2021,5
-978-1000-00014-4,Italian Cuisine Mastery,Giovanni Rossi,Non-Fiction,2022,4
-978-1000-00015-5,Mars Colony 2150,Robert Chen,Science Fiction,2024,6
-978-1000-00016-6,The Roman Empire,Marcus Thompson,History,2023,3
-978-1000-00017-7,Data Science with R,Prof. Lisa Garcia,Technology,2022,5
-978-1000-00018-8,The Silent Witness,Patricia Jones,Mystery,2021,2
-978-1000-00019-9,Hearts in Harmony,Jennifer Taylor,Romance,2023,4
-978-1000-00020-0,Physics for Everyone,Dr. Michael Brown,Science,2022,6
-978-1000-00021-1,Mastering Chess Strategy,GM Viktor Petrov,Non-Fiction,2023,3
-978-1000-00022-2,The Alien Encounter,Susan Williams,Science Fiction,2024,7
-978-1000-00023-3,Medieval Europe,Prof. Richard Davies,History,2021,2
-978-1000-00024-4,Machine Learning Basics,Dr. Amy Chen,Technology,2023,8
-978-1000-00025-5,The Stolen Painting,Inspector Grant,Mystery,2022,5
-978-1000-00026-6,Summer in Tuscany,Maria Romano,Romance,2021,3
-978-1000-00027-7,Chemistry Fundamentals,Dr. Paul Wilson,Science,2023,4
-978-1000-00028-8,Photography Masterclass,Linda Jackson,Non-Fiction,2022,5
-978-1000-00029-9,Journey to Alpha Centauri,Captain James Kirk,Science Fiction,2024,9
-978-1000-00030-0,The American Revolution,George Washington Adams,History,2023,3
-978-1000-00031-1,Web Development Bootcamp,Sarah Developer,Technology,2022,6
-978-1000-00032-2,Death in the Library,Miss Marbles,Mystery,2021,4
-978-1000-00033-3,The Wedding Planner,Elizabeth Hart,Romance,2023,5
-978-1000-00034-4,Astronomy for Beginners,Dr. Carl Cosmos,Science,2022,3
-978-1000-00035-5,Yoga and Meditation Guide,Guru Prakash,Non-Fiction,2023,7
-978-1000-00036-6,Robot Revolution 2100,Isaac Android,Science Fiction,2024,8
-978-1000-00037-7,World War II Stories,General Patton Jr,History,2021,2
-978-1000-00038-8,Cloud Computing Essentials,Tech Guru Mike,Technology,2023,9
-978-1000-00039-9,The Vanishing Guest,Sherlock Modern,Mystery,2022,3
-978-1000-00040-0,Love in the Time of AI,Digital Romantic,Romance,2024,4
-978-1000-00041-1,Organic Chemistry,Prof. Benzene Ring,Science,2023,5
-978-1000-00042-2,Guitar for Beginners,Rock Star Johnny,Non-Fiction,2022,6
-978-1000-00043-3,Time Travel Paradox,Dr. Who When,Science Fiction,2024,7
-978-1000-00044-4,The French Revolution,Napoleon Bonaparte III,History,2021,3
-978-1000-00045-5,Artificial Intelligence Ethics,Dr. Robot Ethics,Technology,2023,8
-978-1000-00046-6,The Lighthouse Mystery,Keeper Jones,Mystery,2022,4
-978-1000-00047-7,Parisian Romance,Amelie Dubois,Romance,2021,5
-978-1000-00048-8,Molecular Biology,Dr. DNA Helix,Science,2023,6
-978-1000-00049-9,Drawing Fundamentals,Artist Pablo,Non-Fiction,2022,4
-978-1000-00050-0,Cyberpunk 2077 Novel,Neon Writer,Science Fiction,2024,10
-978-1000-00051-1,Ancient Greece,Philosopher King,History,2023,2
-978-1000-00052-2,Blockchain Technology,Crypto Master,Technology,2022,7
-978-1000-00053-3,The Poisoned Cup,Dame Christie,Mystery,2021,3
-978-1000-00054-4,Mediterranean Love Story,Sophia Loren Jr,Romance,2023,4
-978-1000-00055-5,Genetics and Evolution,Darwin Modern,Science,2022,5
-978-1000-00056-6,Piano Mastery,Maestro Keys,Non-Fiction,2023,6
-978-1000-00057-7,Galactic Empire Falls,Star Commander,Science Fiction,2024,8
-978-1000-00058-8,The Civil War,Lincoln Memorial,History,2021,3
-978-1000-00059-9,React.js Complete Guide,Frontend Master,Technology,2023,9
-978-1000-00060-0,Murder on the Orient Metro,Hercule Modern,Mystery,2022,4
-978-1000-00061-1,Love Algorithm,Dating App Developer,Romance,2024,5
-978-1000-00062-2,Environmental Science,Green Earth PhD,Science,2023,6
-978-1000-00063-3,Cooking Around the World,Chef International,Non-Fiction,2022,7
-978-1000-00064-4,Quantum Leap 2250,Time Jumper,Science Fiction,2024,9
-978-1000-00065-5,The Renaissance,Da Vinci Code,History,2021,2
-978-1000-00066-6,DevOps Practices,Pipeline Master,Technology,2023,8
-978-1000-00067-7,The Haunted Manor,Ghost Hunter,Mystery,2022,3
-978-1000-00068-8,Venice in Love,Gondola Romance,Romance,2021,4
-978-1000-00069-9,Neuroscience Today,Brain Doctor,Science,2023,5
-978-1000-00070-0,Financial Planning Guide,Money Wise,Non-Fiction,2022,6
-978-1000-00071-1,Android Uprising,Philip K Future,Science Fiction,2024,7
-978-1000-00072-2,The Crusades,Knight Templar,History,2023,3
-978-1000-00073-3,Kubernetes Mastery,Container Captain,Technology,2022,8
-978-1000-00074-4,The Secret Room,Hidden Mystery,Mystery,2021,4
-978-1000-00075-5,Tropical Paradise Love,Beach Romance,Romance,2023,5
-978-1000-00076-6,Climate Change Science,Weather Expert,Science,2022,4
-978-1000-00077-7,Marathon Training,Runner Elite,Non-Fiction,2023,6
-978-1000-00078-8,Virtual Reality Wars,VR Warrior,Science Fiction,2024,8
-978-1000-00079-9,The Viking Age,Thor Hammer,History,2021,2
-978-1000-00080-0,GraphQL API Design,Query Master,Technology,2023,7
-978-1000-00081-1,The Midnight Killer,Dark Detective,Mystery,2022,3
-978-1000-00082-2,Love Bytes,Computer Romance,Romance,2024,4
-978-1000-00083-3,Particle Physics,Hadron Collider,Science,2023,5
-978-1000-00084-4,Wine Tasting Guide,Sommelier Pro,Non-Fiction,2022,6
-978-1000-00085-5,Martian Chronicles 2200,Red Planet Writer,Science Fiction,2024,9
-978-1000-00086-6,The Industrial Revolution,Steam Engine,History,2021,3
-978-1000-00087-7,Microservices Architecture,Service Mesh,Technology,2023,8
-978-1000-00088-8,The Fog of Death,Misty Murder,Mystery,2022,4
-978-1000-00089-9,Caribbean Romance,Island Love,Romance,2021,5
-978-1000-00090-0,Immunology Basics,Vaccine Doctor,Science,2023,6
-978-1000-00091-1,Woodworking Projects,Carpenter Master,Non-Fiction,2022,4
-978-1000-00092-2,Space Station Alpha,Zero Gravity,Science Fiction,2024,7
-978-1000-00093-3,The Cold War,Spy Master,History,2023,2
-978-1000-00094-4,Vue.js 3 Guide,Reactive Developer,Technology,2022,8
-978-1000-00095-5,The Glass House Murder,Crystal Clear,Mystery,2021,3
-978-1000-00096-6,Scottish Highland Romance,Kilt Lover,Romance,2023,4
-978-1000-00097-7,Oceanography,Deep Sea Explorer,Science,2022,5
-978-1000-00098-8,Public Speaking Mastery,TED Talker,Non-Fiction,2023,6
-978-1000-00099-9,Nanobot Revolution,Tiny Tech,Science Fiction,2024,8
-978-1000-00100-0,The Egyptian Pharaohs,Pyramid Builder,History,2021,3
+9780026776226,Jude the Obscure,Thomas Hardy,Fiction,1895,1
+9785208051290,Tess of the d'Urbervilles,Thomas Hardy,Fiction,1891,2
+9789454610843,Far from the Madding Crowd,Thomas Hardy,Fiction,1874,3
+9788224885672,Middlemarch,George Eliot,Fiction,1871,4
+9785529077108,Silas Marner,George Eliot,Fiction,1861,1
+9788602889933,Heart of Darkness,Joseph Conrad,Fiction,1899,2
+9784955239463,Lord Jim,Joseph Conrad,Adventure,1900,3
+9782407790029,The Time Machine,H.G. Wells,Science Fiction,1895,4
+9782448450012,The War of the Worlds,H.G. Wells,Science Fiction,1898,1
+9788607834044,The Invisible Man,H.G. Wells,Science Fiction,1897,2
+9780109751980,Twenty Thousand Leagues Under the Seas,Jules Verne,Adventure,1870,3
+9783162247681,Around the World in Eighty Days,Jules Verne,Adventure,1872,4
+9786465565636,Journey to the Center of the Earth,Jules Verne,Adventure,1864,1
+9788669870332,Robinson Crusoe,Daniel Defoe,Adventure,1719,2
+9785568383130,Gulliver's Travels,Jonathan Swift,Adventure,1726,3
+9786487790016,Don Quixote,Miguel de Cervantes,Fiction,1605,4
+9781046364868,The Sorrows of Young Werther,Johann Wolfgang von Goethe,Fiction,1774,1
+9785947048483,Madame Bovary,Gustave Flaubert,Fiction,1856,2
+9780562156445,Pere Goriot,Honore de Balzac,Fiction,1835,3
+9780428245757,Germinal,Emile Zola,Fiction,1885,4
+9783405496197,Fathers and Sons,Ivan Turgenev,Fiction,1862,1
+9789575068905,Dead Souls,Nikolai Gogol,Fiction,1842,2
+9785347289103,Doctor Zhivago,Boris Pasternak,Historical Fiction,1957,3
+9782393388903,One Day in the Life of Ivan Denisovich,Aleksandr Solzhenitsyn,Historical Fiction,1962,4
+9785826391709,The Sound and the Fury,William Faulkner,Fiction,1929,1
+9784342599972,As I Lay Dying,William Faulkner,Fiction,1930,2
+9780645213560,Wise Blood,Flannery O'Connor,Fiction,1952,3
+9789782752161,The Heart Is a Lonely Hunter,Carson McCullers,Fiction,1940,4
+9789135710855,"Rabbit, Run",John Updike,Fiction,1960,1
+9783120305248,American Pastoral,Philip Roth,Fiction,1997,2
+9782861254518,The Adventures of Augie March,Saul Bellow,Fiction,1953,3
+9788912535445,White Noise,Don DeLillo,Fiction,1985,4
+9785632001823,The Crying of Lot 49,Thomas Pynchon,Fiction,1966,1
+9783040519275,The Shipping News,Annie Proulx,Fiction,1993,2
+9784488240172,Housekeeping,Marilynne Robinson,Fiction,1980,3
+9783690984409,Angle of Repose,Wallace Stegner,Historical Fiction,1971,4
+9785394504037,Crossing to Safety,Wallace Stegner,Fiction,1987,1
+9783619895359,Cold Mountain,Charles Frazier,Historical Fiction,1997,2
+9789160507895,A Clockwork Orange,Anthony Burgess,Dystopian,1962,3
+9785957232568,The Quiet American,Graham Greene,Fiction,1955,4
+9784398019318,The Power and the Glory,Graham Greene,Fiction,1940,1
+9783662621028,Brideshead Revisited,Evelyn Waugh,Fiction,1945,2
+9788219049416,Lucky Jim,Kingsley Amis,Fiction,1954,3
+9789101971297,"The Sea, the Sea",Iris Murdoch,Fiction,1978,4
+9785789097366,The Golden Notebook,Doris Lessing,Fiction,1962,1
+9780134725864,The Prime of Miss Jean Brodie,Muriel Spark,Fiction,1961,2
+9780939909605,NW,Zadie Smith,Fiction,2012,3
+9783881357753,High Fidelity,Nick Hornby,Fiction,1995,4
+9785877980259,Jonathan Strange & Mr Norrell,Susanna Clarke,Fantasy,2004,1
+9789267089485,Piranesi,Susanna Clarke,Fantasy,2020,2
+9789660509443,The Night Circus,Erin Morgenstern,Fantasy,2011,3
+9789226205277,Six of Crows,Leigh Bardugo,Young Adult,2015,4
+9786861819739,Shadow and Bone,Leigh Bardugo,Young Adult,2012,1
+9780809413041,The Golden Compass,Philip Pullman,Fantasy,1995,2
+9780616931714,The Subtle Knife,Philip Pullman,Fantasy,1997,3
+9789536816286,Sabriel,Garth Nix,Fantasy,1995,4
+9788313140859,Howl's Moving Castle,Diana Wynne Jones,Fantasy,1986,1
+9784095406299,The Amulet of Samarkand,Jonathan Stroud,Fantasy,2003,2
+9786169570813,Eragon,Christopher Paolini,Fantasy,2002,3
+9788965817499,Artemis Fowl,Eoin Colfer,Children,2001,4
+9780492933178,Inkheart,Cornelia Funke,Children,2003,1
+9785985277081,Stranger in a Strange Land,Robert A. Heinlein,Science Fiction,1961,2
+9781325814299,Starship Troopers,Robert A. Heinlein,Science Fiction,1959,3
+9784062632737,Ringworld,Larry Niven,Science Fiction,1970,4
+9787332461396,Ender's Game,Orson Scott Card,Science Fiction,1985,1
+9782407892648,Hyperion,Dan Simmons,Science Fiction,1989,2
+9780660714523,A Fire Upon the Deep,Vernor Vinge,Science Fiction,1992,3
+9782079741893,Revelation Space,Alastair Reynolds,Science Fiction,2000,4
+9785075942776,Consider Phlebas,Iain M. Banks,Science Fiction,1987,1
+9787192819672,Ancillary Justice,Ann Leckie,Science Fiction,2013,2
+9781954438248,Old Man's War,John Scalzi,Science Fiction,2005,3
+9785027808402,"The Long Way to a Small, Angry Planet",Becky Chambers,Science Fiction,2014,4
+9784366734052,Children of Time,Adrian Tchaikovsky,Science Fiction,2015,1
+9787874876214,Leviathan Wakes,James S.A. Corey,Science Fiction,2011,2
+9787884210442,Red Rising,Pierce Brown,Science Fiction,2014,3
+9784700226564,The Blade Itself,Joe Abercrombie,Fantasy,2006,4
+9788863263374,The Lies of Locke Lamora,Scott Lynch,Fantasy,2006,1
+9789601273204,Tigana,Guy Gavriel Kay,Fantasy,1990,2
+9785162205661,The Eye of the World,Robert Jordan,Fantasy,1990,3
+9780095666800,The Exorcist,William Peter Blatty,Horror,1971,4
+9780036581063,Rosemary's Baby,Ira Levin,Horror,1967,1
+9789070011192,The Andromeda Strain,Michael Crichton,Science Fiction,1969,2
+9782103883223,Jurassic Park,Michael Crichton,Science Fiction,1990,3
+9783650057662,The Hunt for Red October,Tom Clancy,Thriller,1984,4
+9789486488984,Raise the Titanic!,Clive Cussler,Adventure,1976,1
+9783125914896,Watchers,Dean Koontz,Horror,1987,2
+9780078312014,Coma,Robin Cook,Thriller,1977,3
+9782770075259,The Firm,John Grisham,Thriller,1991,4
+9787139683434,A Time to Kill,John Grisham,Thriller,1989,1
+9780717571802,Presumed Innocent,Scott Turow,Thriller,1987,2
+9787307688636,Absolute Power,David Baldacci,Thriller,1996,3
+9783840788178,The Bone Collector,Jeffery Deaver,Thriller,1997,4
+9784038989599,A Is for Alibi,Sue Grafton,Mystery,1982,1
+9787054817617,Indemnity Only,Sara Paretsky,Mystery,1982,2
+9780892383702,One for the Money,Janet Evanovich,Mystery,1994,3
+9788942813025,Devil in a Blue Dress,Walter Mosley,Mystery,1990,4
+9784949110167,L.A. Confidential,James Ellroy,Mystery,1990,1
+9786048209971,Mystic River,Dennis Lehane,Mystery,2001,2
+9784862498304,"Gone, Baby, Gone",Dennis Lehane,Mystery,1998,3
+9789899131125,Faceless Killers,Henning Mankell,Mystery,1991,4
+9783693689783,The Snowman,Jo Nesbo,Thriller,2007,1
+9789224634680,The Devotion of Suspect X,Keigo Higashino,Mystery,2005,2
+9781510910461,Big Little Lies,Liane Moriarty,Fiction,2014,3
+9786554292832,My Sister's Keeper,Jodi Picoult,Fiction,2004,4
+9788043844973,The Forgotten Garden,Kate Morton,Mystery,2008,1
+9783159308715,The Thirteenth Tale,Diane Setterfield,Mystery,2006,2
+9787176459573,"In a Dark, Dark Wood",Ruth Ware,Thriller,2015,3
+9781360223704,The Guest List,Lucy Foley,Thriller,2020,4
+9780840420558,The Quiet Tenant,Clemence Michallon,Thriller,2023,1
+9780709656302,Tell No One,Harlan Coben,Thriller,2001,2
+9789740325017,Magpie Murders,Anthony Horowitz,Mystery,2016,3
+9782933301126,In Cold Blood,Truman Capote,True Crime,1966,4
+9786124811609,The Year of Magical Thinking,Joan Didion,Memoir,2005,1
+9782307695332,The Orchid Thief,Susan Orlean,True Crime,1998,2
+9780274086610,Midnight in the Garden of Good and Evil,John Berendt,True Crime,1994,3
+9781219738359,Quiet: The Power of Introverts,Susan Cain,Psychology,2012,4
+9784276103160,The Power of Habit,Charles Duhigg,Psychology,2012,1
+9782763222318,Grit,Angela Duckworth,Psychology,2016,2
+9782770043883,Mindset,Carol Dweck,Psychology,2006,3
+9780658804939,Give and Take,Adam Grant,Business,2013,4
+9781984558305,Essentialism,Greg McKeown,Self-Help,2014,1
+9780352314369,Factfulness,Hans Rosling,Science,2018,2
+9782415297114,The Better Angels of Our Nature,Steven Pinker,History,2011,3
+9782531508989,"Guns, Germs, and Steel",Jared Diamond,History,1997,4
+9789338411306,An Immense World,Ed Yong,Science,2022,1
+9788710406961,Entangled Life,Merlin Sheldrake,Science,2020,2
+9784333218301,Braiding Sweetgrass,Robin Wall Kimmerer,Science,2013,3
+9782069350654,Silent Spring,Rachel Carson,Science,1962,4
+9783532945544,A Sand County Almanac,Aldo Leopold,Science,1949,1
+9787702211538,The Professor and the Madman,Simon Winchester,History,1998,2
+9786989187154,The River of Doubt,Candice Millard,History,2005,3
+9787505059979,In the Heart of the Sea,Nathaniel Philbrick,History,2000,4
+9784973743010,Ghost Soldiers,Hampton Sides,History,2001,1
+9788136027085,Empire of the Summer Moon,S.C. Gwynne,History,2010,2
+9785617215597,The Worst Hard Time,Timothy Egan,History,2006,3
+9784514735641,The Warmth of Other Suns,Isabel Wilkerson,History,2010,4
+9780649021956,Between the World and Me,Ta-Nehisi Coates,Memoir,2015,1
+9780357452622,Just Mercy,Bryan Stevenson,Memoir,2014,2
+9782970903345,Evicted,Matthew Desmond,History,2016,3
+9783362891004,Nickel and Dimed,Barbara Ehrenreich,History,2001,4
