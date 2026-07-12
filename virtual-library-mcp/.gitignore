@@ -223,3 +223,9 @@ Pipfile.lock
 # requirements-dev.txt
 type_annotation_analysis.md
 type_annotation_audit.md
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfvars
+terraform/*.tfstate*
+terraform/.terraform.lock.hcl
