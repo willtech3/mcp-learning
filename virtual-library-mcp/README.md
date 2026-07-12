@@ -2,6 +2,28 @@
 
 A comprehensive MCP (Model Context Protocol) server implementation that simulates a complete library management system. This server serves as both a learning tool and a reference implementation for MCP concepts.
 
+## 🆕 Protocol 2026-07-28 (dual-era)
+
+This server now speaks **two MCP protocol eras on one endpoint**: the legacy
+`initialize`-handshake protocol (2025-11-25, via FastMCP) *and* the new
+**stateless [2026-07-28](https://modelcontextprotocol.io/specification/draft)
+revision**, implemented from scratch in [`modern/`](modern/) for teaching —
+`server/discover`, per-request `_meta`, MRTR, `subscriptions/listen`,
+CacheableResult, the SEP-2640 skills extension, the tasks extension, and the
+draft authorization model (with a built-in demo authorization server).
+
+- **What changed and where it lives:** [docs/mcp/11-protocol-2026-07-28.md](docs/mcp/11-protocol-2026-07-28.md)
+- **Spec:** <https://modelcontextprotocol.io/specification/draft> ·
+  [changelog](https://modelcontextprotocol.io/specification/draft/changelog) ·
+  [transports](https://modelcontextprotocol.io/specification/draft/basic/transports/streamable-http) ·
+  [MRTR](https://modelcontextprotocol.io/specification/draft/basic/patterns/mrtr) ·
+  [authorization](https://modelcontextprotocol.io/specification/draft/basic/authorization)
+
+```bash
+# Dual-era Streamable HTTP (serves both protocol eras on :8080/mcp)
+VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true uv run python server.py
+```
+
 ## 🚀 Quick Start
 
 ```bash

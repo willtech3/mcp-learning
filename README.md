@@ -2,6 +2,13 @@
 
 A comprehensive educational repository for learning and implementing the Model Context Protocol (MCP). This project includes extensive MCP documentation and a hands-on Virtual Library MCP Server implementation that demonstrates all core MCP concepts.
 
+> **Now targeting MCP [2026-07-28](https://modelcontextprotocol.io/specification/draft)** — the
+> new stateless protocol revision. The server is dual-era (legacy 2025-11-25 via
+> FastMCP + a from-scratch 2026-07-28 implementation in
+> [`virtual-library-mcp/modern/`](virtual-library-mcp/modern/)). See
+> [virtual-library-mcp/docs/mcp/11-protocol-2026-07-28.md](virtual-library-mcp/docs/mcp/11-protocol-2026-07-28.md)
+> for what changed and where each feature lives, with links back to the spec.
+
 ## 🎯 Project Goals
 
 - **Learn MCP by Building**: Implement a fully-featured MCP server while understanding the protocol deeply

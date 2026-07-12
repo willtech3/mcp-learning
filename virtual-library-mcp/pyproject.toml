@@ -24,6 +24,11 @@ classifiers = [
 dependencies = [
     # MCP framework (v3, targets protocol revision 2025-11-25)
     "fastmcp[tasks]>=3.4,<4",
+
+    # MCP 2026-07-28 modern-protocol implementation (modern/ package)
+    "pyjwt[crypto]>=2.9",
+    "pyyaml>=6.0",
+    "jsonschema>=4.21",
     # Data validation and serialization - critical for MCP protocol compliance
     "pydantic>=2.13",
     "pydantic-settings>=2.10",
@@ -159,7 +164,8 @@ docstring-code-line-length = 80
 # Type checking configuration - essential for MCP protocol implementation
 include = [
     "database",
-    "models", 
+    "models",
+    "modern",
     "prompts",
     "resources",
     "tools",
