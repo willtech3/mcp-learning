@@ -72,8 +72,12 @@ class ServerConfig(BaseSettings):
 
     transport: str = Field(
         default="stdio",
-        description="Transport: 'stdio' for local development, 'http' for Streamable HTTP",
-        pattern=r"^(stdio|http|streamable_http)$",
+        description=(
+            "Transport: 'stdio' (legacy initialize-era protocol via FastMCP), "
+            "'stdio-modern' (MCP 2026-07-28 stateless protocol, modern/ package), "
+            "or 'http' (Streamable HTTP serving BOTH eras on one endpoint)"
+        ),
+        pattern=r"^(stdio|stdio-modern|http|streamable_http)$",
     )
 
     # Streamable HTTP configuration
@@ -147,6 +151,82 @@ class ServerConfig(BaseSettings):
             "Local development only - never enable in production."
         ),
     )
+
+    # === MCP 2026-07-28 (modern era) Configuration ===
+    # The modern/ package implements the stateless 2026-07-28 revision from
+    # scratch (SEP-2575). These settings apply only to the modern protocol
+    # path; the legacy (initialize-era) FastMCP path keeps the Google OAuth
+    # settings above.
+
+    modern_auth_enabled: bool = Field(
+        default=False,
+        description=(
+            "Require OAuth 2.1 bearer tokens on the MODERN (2026-07-28) HTTP "
+            "path. The server then acts as an RFC 9728 protected resource: "
+            "PRM metadata, WWW-Authenticate challenges, JWT audience "
+            "validation (RFC 8707)."
+        ),
+    )
+
+    demo_as_enabled: bool = Field(
+        default=False,
+        description=(
+            "Mount the EDUCATIONAL built-in authorization server under /auth "
+            "(RFC 8414 metadata, PKCE S256, resource indicators, RFC 9207 iss, "
+            "CIMD + deprecated-DCR registration). Never use in production; it "
+            "exists so the whole draft auth model runs locally end to end."
+        ),
+    )
+
+    demo_as_auto_approve: bool = Field(
+        default=True,
+        description=(
+            "Demo AS skips the consent page and immediately redirects with a "
+            "code (headless demos/tests). Set false to see the consent step."
+        ),
+    )
+
+    request_state_secret: str | None = Field(
+        default=None,
+        description=(
+            "HMAC secret protecting MRTR requestState blobs (SEP-2322). The "
+            "spec REQUIRES integrity protection because requestState transits "
+            "the client. Unset = random per-process secret (fine for a single "
+            "instance; multi-instance deployments need a shared secret)."
+        ),
+        repr=False,  # never appears in logs or repr
+    )
+
+    modern_cache_ttl_ms: int = Field(
+        default=300_000,  # 5 minutes, matches resource_cache_ttl
+        description=(
+            "ttlMs freshness hint on CacheableResult list/read responses "
+            "(SEP-2549). 0 = immediately stale."
+        ),
+        ge=0,
+    )
+
+    allowed_origins: list[str] = Field(
+        default=[],
+        description=(
+            "Extra Origin header values accepted on the HTTP transport. "
+            "Localhost origins are always accepted. Origin validation is a "
+            "MUST in the 2026-07-28 Streamable HTTP binding (DNS-rebinding "
+            "protection); unknown origins get 403."
+        ),
+    )
+
+    @property
+    def canonical_url(self) -> str:
+        """Canonical URI of the MCP endpoint (RFC 8707 resource identity).
+
+        This exact string is the OAuth resource indicator, the PRM
+        `resource` value, and the JWT audience the modern bearer verifier
+        demands — audience binding only works if everyone agrees on one
+        canonical form (lowercase scheme/host, no trailing slash).
+        """
+        base = self.base_url or f"http://{self.http_host}:{self.http_port}"
+        return f"{base}{self.http_path}"
 
     # === Security Configuration ===
 
@@ -294,6 +374,16 @@ class ServerConfig(BaseSettings):
                 raise ValueError(
                     f"auth_enabled=true but missing required settings: {', '.join(missing)}"
                 )
+        if self.modern_auth_enabled and not self.demo_as_enabled:
+            # The modern resource-server path validates JWTs against an
+            # authorization server's JWKS. This educational build bundles its
+            # own AS; pointing at an external AS would need issuer + JWKS
+            # settings that we deliberately keep out of scope (deployment).
+            raise ValueError(
+                "modern_auth_enabled=true requires demo_as_enabled=true "
+                "(the educational build validates tokens from its built-in "
+                "authorization server)"
+            )
         return self
 
     # === Computed Properties ===

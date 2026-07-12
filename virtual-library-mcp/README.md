@@ -4,6 +4,28 @@ A complete MCP (Model Context Protocol) server simulating a library
 management system — built as a learning tool and a reference for the
 **full protocol surface, revision 2025-11-25**, on FastMCP 3.
 
+## 🆕 Protocol 2026-07-28 (dual-era)
+
+This server now speaks **two MCP protocol eras on one endpoint**: the legacy
+`initialize`-handshake protocol (2025-11-25, via FastMCP) *and* the new
+**stateless [2026-07-28](https://modelcontextprotocol.io/specification/draft)
+revision**, implemented from scratch in [`modern/`](modern/) for teaching —
+`server/discover`, per-request `_meta`, MRTR, `subscriptions/listen`,
+CacheableResult, the SEP-2640 skills extension, the tasks extension, and the
+draft authorization model (with a built-in demo authorization server).
+
+- **What changed and where it lives:** [docs/mcp/11-protocol-2026-07-28.md](docs/mcp/11-protocol-2026-07-28.md)
+- **Spec:** <https://modelcontextprotocol.io/specification/draft> ·
+  [changelog](https://modelcontextprotocol.io/specification/draft/changelog) ·
+  [transports](https://modelcontextprotocol.io/specification/draft/basic/transports/streamable-http) ·
+  [MRTR](https://modelcontextprotocol.io/specification/draft/basic/patterns/mrtr) ·
+  [authorization](https://modelcontextprotocol.io/specification/draft/basic/authorization)
+
+```bash
+# Dual-era Streamable HTTP (serves both protocol eras on :8080/mcp)
+VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true uv run python server.py
+```
+
 Pairs with [mcp-client-learning](https://github.com/willtech3/mcp-client-learning),
 a from-scratch client that exercises everything below (including the
 OAuth 2.1 flow against the deployed server).
