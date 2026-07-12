@@ -229,3 +229,8 @@ terraform/.terraform/
 terraform/terraform.tfvars
 terraform/*.tfstate*
 terraform/.terraform.lock.hcl
+# Bootstrap state is local by design (it creates the remote-state bucket)
+# and must never be committed: state can embed sensitive values.
+terraform/bootstrap/.terraform/
+terraform/bootstrap/*.tfstate*
+terraform/bootstrap/.terraform.lock.hcl
