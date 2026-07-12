@@ -215,12 +215,18 @@ def build_modern_stack():
 
 def _run_http_server() -> None:
     """Run the Streamable HTTP transport with the configured security posture."""
-    if not config.auth_enabled:
+    if not (config.auth_enabled and config.modern_auth_enabled):
+        # The HTTP endpoint serves BOTH protocol eras, so "authenticated"
+        # means both layers are on: the legacy era's OAuth (GoogleProvider)
+        # AND the modern era's bearer validation. Enabling only one would
+        # silently leave the other era open — fail closed instead.
         if not config.allow_insecure_http:
             logger.error(
-                "Refusing to serve HTTP without authentication. Either enable "
-                "OAuth (VIRTUAL_LIBRARY_AUTH_ENABLED=true with Google credentials) "
-                "or explicitly opt out for local development "
+                "Refusing to serve HTTP without authentication on BOTH protocol "
+                "eras. Enable legacy OAuth (VIRTUAL_LIBRARY_AUTH_ENABLED=true "
+                "with Google credentials) AND modern bearer auth "
+                "(VIRTUAL_LIBRARY_MODERN_AUTH_ENABLED=true), or explicitly opt "
+                "out for local development "
                 "(VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true)."
             )
             sys.exit(1)

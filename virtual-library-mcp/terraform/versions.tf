@@ -1,7 +1,15 @@
 # Terraform and provider requirements.
 #
-# State is local by default — fine for a single-owner demo. For anything
-# shared, create a GCS bucket and uncomment the backend block.
+# State lives in GCS because deploys run from ephemeral GitHub Actions
+# runners — local state would vanish with each runner. The bucket is
+# created once by terraform/bootstrap; the backend block is PARTIAL
+# (no bucket name) and completed at init time:
+#
+#   terraform init \
+#     -backend-config="bucket=<project-id>-tfstate" \
+#     -backend-config="prefix=virtual-library-mcp"
+#
+# (`just tf-init` does this for you; CI does it in the deploy workflow.)
 
 terraform {
   required_version = ">= 1.7"
@@ -13,10 +21,7 @@ terraform {
     }
   }
 
-  # backend "gcs" {
-  #   bucket = "your-tf-state-bucket"
-  #   prefix = "virtual-library-mcp"
-  # }
+  backend "gcs" {}
 }
 
 provider "google" {

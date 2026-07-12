@@ -268,34 +268,34 @@ docker-run: docker-build
         -e VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true \
         virtual-library-mcp:local
 
-# Build and push the image to Artifact Registry (uses terraform outputs)
-docker-push:
-    @echo "🚀 Building and pushing $(terraform -chdir=terraform output -raw image)"
-    gcloud auth configure-docker $(terraform -chdir=terraform output -raw image | cut -d/ -f1) --quiet
-    docker build --platform linux/amd64 -t $(terraform -chdir=terraform output -raw image) .
-    docker push $(terraform -chdir=terraform output -raw image)
+# DEPLOYS ARE CI-ONLY: push to main (or run the Deploy workflow) and GitHub
+# Actions builds, pushes, and applies Terraform. The targets below exist for
+# the ONE-TIME bootstrap and for read-only inspection — not for deploying.
 
-# Store the Google OAuth client secret in Secret Manager (prompts; no shell history)
+# One-time bootstrap: state bucket, Workload Identity Federation, deployer SA.
+# The only Terraform a human applies. See docs/DEPLOYMENT.md.
+bootstrap project_id:
+    terraform -chdir=terraform/bootstrap init
+    terraform -chdir=terraform/bootstrap apply -var project_id={{project_id}}
+
+# Store the Google OAuth client secret in Secret Manager (prompts; no shell
+# history, no terraform state involved). One-time, after creating the OAuth
+# client in Cloud Console.
 secret-set:
     @echo "🔐 Paste the Google OAuth client secret (input hidden):"
     @stty -echo; read SECRET; stty echo; echo; \
         printf '%s' "$$SECRET" | gcloud secrets versions add \
-        $(terraform -chdir=terraform output -raw oauth_secret_name) --data-file=-
-    @echo "✅ Secret version added"
+        virtual-library-mcp-google-oauth-client-secret --data-file=-
+    @echo "✅ Secret version added — re-run the Deploy workflow"
 
-# Terraform shortcuts
+# Terraform shortcuts (read-only inspection; remote state in GCS)
 tf-init:
-    terraform -chdir=terraform init
+    terraform -chdir=terraform init \
+        -backend-config="bucket=$(gcloud config get-value project --quiet 2>/dev/null)-tfstate" \
+        -backend-config="prefix=virtual-library-mcp"
 
 tf-plan:
     terraform -chdir=terraform plan
-
-tf-apply:
-    terraform -chdir=terraform apply
-
-# Bootstrap apply: everything except the Cloud Run service itself
-tf-bootstrap:
-    terraform -chdir=terraform apply -var deploy_service=false
 
 # === PRODUCTION ===
 

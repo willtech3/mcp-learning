@@ -1,0 +1,200 @@
+# Deploy the Virtual Library MCP server to Cloud Run.
+#
+# This is the ONLY sanctioned deployment path — no local `terraform apply`,
+# no local `docker push`. Auth is keyless: the workflow exchanges its GitHub
+# OIDC token for the deployer service account via Workload Identity
+# Federation (created once by terraform/bootstrap; see docs/DEPLOYMENT.md).
+#
+# Configuration lives in GitHub repo settings:
+#   variables: GCP_PROJECT_ID, GCP_REGION, GCP_WIF_PROVIDER, GCP_DEPLOYER_SA,
+#              GOOGLE_OAUTH_CLIENT_ID
+#   secrets:   AUTH_ALLOWED_EMAILS  (JSON array, e.g. ["you@gmail.com"])
+#
+# First run on a fresh project intentionally stops after creating the
+# Secret Manager containers: the Google OAuth client secret can only come
+# from a human (Cloud Console). Run `just secret-set`, then re-run.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "virtual-library-mcp/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+# Never run two applies against the same state concurrently; queue instead.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # required for the OIDC token exchange (WIF)
+
+defaults:
+  run:
+    working-directory: virtual-library-mcp
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "virtual-library-mcp/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Type check (pyright)
+        run: uv run pyright
+
+      - name: Tests (pytest)
+        run: uv run pytest -q
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+      SERVICE_NAME: virtual-library-mcp
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+      TF_VAR_region: ${{ vars.GCP_REGION || 'us-central1' }}
+      TF_VAR_google_oauth_client_id: ${{ vars.GOOGLE_OAUTH_CLIENT_ID }}
+      TF_VAR_auth_allowed_emails: ${{ secrets.AUTH_ALLOWED_EMAILS }}
+      TF_VAR_image_tag: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required configuration
+        run: |
+          missing=""
+          [ -n "${{ vars.GCP_PROJECT_ID }}" ]         || missing="$missing GCP_PROJECT_ID"
+          [ -n "${{ vars.GCP_WIF_PROVIDER }}" ]       || missing="$missing GCP_WIF_PROVIDER"
+          [ -n "${{ vars.GCP_DEPLOYER_SA }}" ]        || missing="$missing GCP_DEPLOYER_SA"
+          [ -n "${{ vars.GOOGLE_OAUTH_CLIENT_ID }}" ] || missing="$missing GOOGLE_OAUTH_CLIENT_ID"
+          [ -n "${{ secrets.AUTH_ALLOWED_EMAILS }}" ] || missing="$missing AUTH_ALLOWED_EMAILS(secret)"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub repo configuration:$missing — see docs/DEPLOYMENT.md"
+            exit 1
+          fi
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init (remote state)
+        working-directory: virtual-library-mcp/terraform
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${PROJECT_ID}-tfstate" \
+            -backend-config="prefix=virtual-library-mcp"
+
+      # Phase 1, FIRST RUN ONLY: everything except the Cloud Run service
+      # (APIs, Artifact Registry, Secret Manager containers, runtime service
+      # account). Split from phase 2 because the image push needs the
+      # registry and the service needs secret VERSIONS that don't exist yet.
+      # Guarded on service existence: `deploy_service=false` removes the
+      # service from the configuration, so running it unconditionally would
+      # DESTROY a live service on every deploy.
+      - name: Terraform apply — infrastructure prerequisites (first run only)
+        working-directory: virtual-library-mcp/terraform
+        run: |
+          if gcloud run services describe "$SERVICE_NAME" --region "$REGION" \
+               --project "$PROJECT_ID" --format="value(metadata.name)" >/dev/null 2>&1; then
+            echo "Service already exists — skipping prerequisite-only apply"
+          else
+            terraform apply -input=false -auto-approve -var deploy_service=false
+          fi
+
+      # The MRTR requestState HMAC key is machine-generated: seed it once,
+      # directly into Secret Manager, so it never exists in Terraform state
+      # or GitHub. Subsequent runs see the version and skip.
+      - name: Seed MRTR request-state secret (first run only)
+        run: |
+          NAME="${SERVICE_NAME}-request-state-secret"
+          if ! gcloud secrets versions list "$NAME" --filter="state=enabled" \
+               --format="value(name)" --project "$PROJECT_ID" | grep -q .; then
+            echo "No enabled version — seeding random HMAC key"
+            openssl rand -base64 48 | tr -d '\n' | \
+              gcloud secrets versions add "$NAME" --data-file=- --project "$PROJECT_ID"
+          else
+            echo "Secret already seeded"
+          fi
+
+      # The Google OAuth client secret can only come from a human (Cloud
+      # Console). Fail loudly with instructions rather than deploying a
+      # service that would crash-loop on a missing secret version.
+      - name: Verify Google OAuth client secret is set
+        run: |
+          NAME="${SERVICE_NAME}-google-oauth-client-secret"
+          if ! gcloud secrets versions list "$NAME" --filter="state=enabled" \
+               --format="value(name)" --project "$PROJECT_ID" | grep -q .; then
+            echo "::error::Secret $NAME has no version. Run 'just secret-set' locally (one time) with the OAuth client secret from Cloud Console, then re-run this workflow. See docs/DEPLOYMENT.md."
+            exit 1
+          fi
+
+      - name: Build and push image
+        run: |
+          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/mcp-servers/${SERVICE_NAME}:${{ github.sha }}"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build --platform linux/amd64 -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      # Phase 2: the Cloud Run service itself, pinned to the immutable
+      # image tag just pushed (no `latest` — rollback = redeploy old SHA).
+      - name: Terraform apply — deploy service
+        working-directory: virtual-library-mcp/terraform
+        run: terraform apply -input=false -auto-approve
+
+      - name: Smoke test
+        working-directory: virtual-library-mcp/terraform
+        run: |
+          BASE_URL=$(terraform output -raw base_url)
+          MCP_URL=$(terraform output -raw mcp_endpoint)
+
+          echo "Health check..."
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 \
+            --retry-all-errors "$BASE_URL/health"
+          echo
+
+          echo "Legacy era must demand auth (expect 401)..."
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$MCP_URL" \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json, text/event-stream' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}')
+          [ "$code" = "401" ] || { echo "::error::expected 401, got $code"; exit 1; }
+
+          echo "Modern era must demand auth (expect 401)..."
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$MCP_URL" \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            -H 'MCP-Protocol-Version: 2026-07-28' \
+            -H 'Mcp-Method: tools/list' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}}')
+          [ "$code" = "401" ] || { echo "::error::expected 401, got $code"; exit 1; }
+
+          echo "OAuth discovery documents..."
+          curl --fail --silent "$BASE_URL/.well-known/oauth-protected-resource/mcp" >/dev/null
+          curl --fail --silent "$BASE_URL/.well-known/oauth-authorization-server/auth" >/dev/null
+
+          echo "All smoke tests passed. MCP endpoint: $MCP_URL"

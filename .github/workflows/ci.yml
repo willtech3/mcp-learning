@@ -1,0 +1,41 @@
+# Quality gates for every PR and push: the same three checks the repo's
+# CLAUDE.md requires locally (just test / just lint / just typecheck).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - "virtual-library-mcp/**"
+      - ".github/workflows/ci.yml"
+
+defaults:
+  run:
+    working-directory: virtual-library-mcp
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "virtual-library-mcp/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type check (pyright)
+        run: uv run pyright
+
+      - name: Tests (pytest)
+        run: uv run pytest -q

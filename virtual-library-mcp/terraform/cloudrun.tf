@@ -88,6 +88,33 @@ resource "google_cloud_run_v2_service" "server" {
         }
       }
 
+      # --- MODERN era (2026-07-28) ---------------------------------------
+      # Bearer validation on the modern protocol path, tokens issued by the
+      # bundled educational AS (see variables.tf for the security caveat).
+      env {
+        name  = "VIRTUAL_LIBRARY_MODERN_AUTH_ENABLED"
+        value = tostring(var.modern_auth_enabled)
+      }
+      env {
+        name  = "VIRTUAL_LIBRARY_DEMO_AS_ENABLED"
+        value = tostring(var.demo_as_enabled)
+      }
+      env {
+        name  = "VIRTUAL_LIBRARY_DEMO_AS_AUTO_APPROVE"
+        value = tostring(var.demo_as_auto_approve)
+      }
+      # Shared MRTR requestState HMAC key — see secrets.tf for why this
+      # must be identical across instances.
+      env {
+        name = "VIRTUAL_LIBRARY_REQUEST_STATE_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.request_state_secret.secret_id
+            version = "latest"
+          }
+        }
+      }
+
       startup_probe {
         http_get {
           path = "/health"
@@ -109,6 +136,7 @@ resource "google_cloud_run_v2_service" "server" {
   depends_on = [
     google_project_service.apis,
     google_secret_manager_secret_iam_member.service_can_read,
+    google_secret_manager_secret_iam_member.request_state_read,
   ]
 }
 

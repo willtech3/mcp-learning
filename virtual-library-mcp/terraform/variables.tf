@@ -31,6 +31,8 @@ variable "auth_allowed_emails" {
   description = "Google accounts authorized to use the server (empty = any Google account)"
   type        = list(string)
   default     = []
+  # Personal email addresses; sensitive keeps them out of CI plan output.
+  sensitive = true
 }
 
 variable "deploy_service" {
@@ -52,4 +54,38 @@ variable "max_instances" {
   EOT
   type        = number
   default     = 2
+}
+
+variable "modern_auth_enabled" {
+  description = <<-EOT
+    Require OAuth 2.1 bearer tokens on the MODERN (2026-07-28) protocol
+    path. The server refuses to start over HTTP unless BOTH eras are
+    authenticated (or insecure mode is explicitly opted into), so leave
+    this true for any deployment.
+  EOT
+  type        = bool
+  default     = true
+}
+
+variable "demo_as_enabled" {
+  description = <<-EOT
+    Mount the EDUCATIONAL built-in authorization server under /auth. The
+    modern era's bearer validation only accepts tokens from this AS, so it
+    must be on whenever modern_auth_enabled is. Caveat, documented in
+    DEPLOYMENT.md: the demo AS has no user identity — anyone completing
+    the PKCE flow gets a token for the modern era. Acceptable for a demo
+    catalog; never for real data.
+  EOT
+  type        = bool
+  default     = true
+}
+
+variable "demo_as_auto_approve" {
+  description = <<-EOT
+    Demo AS skips its consent page and immediately redirects with a code.
+    Convenient for headless local demos; on a public deployment keep the
+    consent step (false) so token issuance at least requires a human click.
+  EOT
+  type        = bool
+  default     = false
 }

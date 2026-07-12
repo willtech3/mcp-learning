@@ -108,9 +108,10 @@ development tunnels rather than permanent hosting.
   plus an email allowlist for authorization. The server **fails closed**:
   HTTP without auth requires an explicit local-dev opt-out.
 
-Deployment to Google Cloud Run (Terraform, Secret Manager, least-privilege
-service account, session affinity) is covered in
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Deployment to Google Cloud Run happens exclusively through GitHub Actions
+(keyless Workload Identity Federation, Terraform with remote state,
+Secret Manager, least-privilege service accounts, session affinity) —
+covered in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Architecture
 

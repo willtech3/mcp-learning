@@ -4,7 +4,7 @@ output "base_url" {
     deployed — use it to create the Google OAuth client:
       Authorized redirect URI: <base_url>/auth/callback
   EOT
-  value = local.base_url
+  value       = local.base_url
 }
 
 output "mcp_endpoint" {
