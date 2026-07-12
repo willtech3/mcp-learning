@@ -1,0 +1,17 @@
+.venv/
+.git/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+__pycache__/
+*.pyc
+.env
+.env.local
+data/library.db
+data/*.db
+terraform/
+docs/
+examples/
+tests/
+.pre-commit-config.yaml
+.secrets.baseline
