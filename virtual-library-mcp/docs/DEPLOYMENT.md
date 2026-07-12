@@ -62,13 +62,23 @@ protocol eras have authentication enabled.
   That is fine for this demo catalog (per-instance, self-resetting
   SQLite) and would be unacceptable for real data — this is exactly the
   kind of trade-off the deployment is meant to teach.
-- **Discovery shadowing:** both eras publish OAuth discovery documents,
-  and the modern era's routes win at `/.well-known/oauth-protected-resource*`
-  and `/.well-known/oauth-authorization-server`. Remote clients should
-  therefore speak the **modern** era (the sibling `mcp-client-learning`
-  repo does); the legacy era still *enforces* its Google bearer auth, but
-  its self-discovery documents are shadowed, so exercise the legacy OAuth
-  flow locally rather than against this deployment.
+- **Shared discovery paths — `discovery_era`:** both eras publish OAuth
+  discovery documents, but RFC 9728/8414 pin them to fixed well-known
+  locations, so one era must own the shared paths. The deployment sets
+  `discovery_era = "legacy"`: the Google OAuth stack serves
+  `/.well-known/oauth-protected-resource*` and the host-root
+  `/.well-known/oauth-authorization-server`, which is what lets
+  interactive chat clients (Claude, ChatGPT — legacy-era speakers)
+  complete discovery → registration → PKCE against this server. The
+  modern era keeps its collision-free path-inserted metadata form
+  (`/.well-known/oauth-authorization-server/auth`), so a modern client
+  configured with the AS issuer (`<base_url>/auth`) still authenticates.
+- **Stateless legacy path — `http_stateless = true`:** hosted chat
+  clients cache `Mcp-Session-Id` across server restarts and fail hard
+  when an ephemeral instance recycles. The deployed legacy era therefore
+  runs sessionless; the session-stream features (sampling, elicitation,
+  subscriptions) are local-development demos, and the modern era is
+  stateless by design.
 
 ## One-time setup
 
@@ -169,6 +179,30 @@ curl "$BASE_URL/.well-known/oauth-authorization-server/auth"
 Then connect a real client — the `mcp-client-learning` sibling repo
 implements the full modern discovery → CIMD registration → PKCE →
 bearer flow.
+
+## Testing in chat clients (remote MCP + Apps UI)
+
+State of the client world as of 2026-07-12 (verify against current docs —
+this moves fast):
+
+| Client | Remote MCP + OAuth | Protocol era | MCP Apps UI | Notes |
+|---|---|---|---|---|
+| Claude (web, Desktop, iOS/Android) | Custom connectors, OAuth 2.1 + PKCE + DCR/CIMD | Legacy (2025-11-25) | Yes (since 2026-01-26) | Free plan: 1 custom connector; connects from Anthropic's cloud |
+| ChatGPT (web) | Developer mode (Plus/Pro/Business+), OAuth incl. DCR/CIMD | Legacy (version header unconfirmed — log it) | Yes — native MCP Apps standard; `openai/outputTemplate` is a legacy alias | Dev-mode connectors are web-only; mobile needs a published app |
+| Anything speaking 2026-07-28 | — | Modern | — | No shipping chat client yet (spec finals 2026-07-28); use the sibling client repo or beta-SDK tools |
+
+- **Claude:** Settings → Connectors → *Add custom connector* → URL
+  `<base_url>/mcp`. Claude walks the legacy PRM (which `discovery_era =
+  "legacy"` hands to the Google OAuth stack), registers dynamically, runs
+  PKCE, and you sign in with an allowlisted Google account. The
+  `browse_catalog_app` / `library_dashboard_app` tools render as
+  interactive widgets in chat on desktop, web, and mobile.
+- **ChatGPT:** Settings → Apps & Connectors → Advanced → Developer mode,
+  then create a connector with the same `/mcp` URL and OAuth. Widgets use
+  FastMCP's standard MCP Apps metadata, which ChatGPT consumes natively.
+- **Modern era (2026-07-28):** chat clients can't exercise it yet. Verify
+  it remotely with the sibling client repo against the deployed endpoint
+  (AS issuer `<base_url>/auth`), or MCPJam / beta-SDK clients.
 
 ## Security checklist
 

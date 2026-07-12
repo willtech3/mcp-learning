@@ -99,6 +99,21 @@ class ServerConfig(BaseSettings):
         pattern=r"^/[a-zA-Z0-9/_-]*$",
     )
 
+    http_stateless: bool = Field(
+        default=False,
+        description=(
+            "Run the LEGACY (FastMCP) protocol path without Mcp-Session-Id "
+            "sessions. Ephemeral compute (Cloud Run scale-to-zero) recycles "
+            "instances at will, and hosted chat clients are known to cache a "
+            "stale session id across server restarts and then fail hard — "
+            "stateless mode sidesteps that entirely. Trade-off: legacy "
+            "features that ride the session's server->client stream "
+            "(sampling, elicitation, subscriptions) stop working; today's "
+            "chat clients don't use them anyway. The modern (2026-07-28) "
+            "era is stateless by design and unaffected."
+        ),
+    )
+
     # === Authentication (OAuth 2.1, MCP 2025-11-25 authorization spec) ===
     # The server acts as an OAuth Protected Resource. FastMCP's GoogleProvider
     # implements the OAuth Proxy pattern: spec-compliant PRM metadata, dynamic
@@ -204,6 +219,23 @@ class ServerConfig(BaseSettings):
             "(SEP-2549). 0 = immediately stale."
         ),
         ge=0,
+    )
+
+    discovery_era: str = Field(
+        default="modern",
+        description=(
+            "Which protocol era's OAuth discovery documents own the SHARED "
+            "well-known paths (both RFC 9728 PRM forms and the host-root "
+            "RFC 8414 form). 'modern' (default): the 2026-07-28 era serves "
+            "them — right for local demos of the draft auth flow. 'legacy': "
+            "they fall through to the legacy (FastMCP/Google) OAuth stack — "
+            "required for interactive chat clients (Claude, ChatGPT), which "
+            "speak the legacy era and cannot onboard if discovery points at "
+            "the modern demo AS. The modern era stays reachable either way "
+            "via its path-inserted metadata form "
+            "(/.well-known/oauth-authorization-server/auth)."
+        ),
+        pattern=r"^(modern|legacy)$",
     )
 
     allowed_origins: list[str] = Field(
@@ -374,6 +406,16 @@ class ServerConfig(BaseSettings):
                 raise ValueError(
                     f"auth_enabled=true but missing required settings: {', '.join(missing)}"
                 )
+        if self.discovery_era == "legacy" and not self.auth_enabled:
+            # Ceding the shared well-knowns to the legacy era only makes
+            # sense when a legacy OAuth stack exists to serve them; without
+            # it those paths would just 404 and BOTH eras would lose
+            # discovery.
+            raise ValueError(
+                "discovery_era='legacy' requires auth_enabled=true (the "
+                "legacy OAuth stack is what serves the shared discovery "
+                "documents in that mode)"
+            )
         if self.modern_auth_enabled and not self.demo_as_enabled:
             # The modern resource-server path validates JWTs against an
             # authorization server's JWKS. This educational build bundles its

@@ -125,6 +125,52 @@ def prm_url_for(canonical_resource_url: str) -> str:
     return f"{parts.scheme}://{parts.netloc}{prm_well_known_paths(canonical_resource_url)[0]}"
 
 
+def shared_discovery_paths(canonical_resource_url: str) -> set[str]:
+    """Well-known paths BOTH protocol eras want to serve — the dual-era rub.
+
+    A dual-era server has two authorization stories publishing discovery
+    documents, but RFC 9728 and RFC 8414 pin those documents to fixed
+    well-known locations, so exactly one era can own each path:
+
+    - both PRM forms (path-inserted and host-root fallback): the modern era
+      serves its own PRM here, and a legacy OAuth stack (e.g. FastMCP's
+      OAuth proxy) serves ITS protected-resource metadata at the very same
+      paths — the resource URI is the same ``/mcp`` endpoint in both eras.
+    - the host-root RFC 8414 form ``/.well-known/oauth-authorization-server``:
+      the demo AS serves it as a convenience fallback, and a legacy stack
+      whose issuer is the host root serves it as its PRIMARY metadata URL.
+
+    NOT shared — and deliberately excluded — is the path-inserted AS
+    metadata form (``/.well-known/oauth-authorization-server/auth``): the
+    demo AS issuer has a ``/auth`` path component, so RFC 8414 §3.1 gives it
+    a collision-free home of its own. That is what keeps the modern era
+    discoverable even when the legacy era owns every shared path: a client
+    told the issuer directly can still fetch metadata and run the flow.
+    """
+    return set(prm_well_known_paths(canonical_resource_url)) | {
+        "/.well-known/oauth-authorization-server"
+    }
+
+
+def filter_shared_discovery_routes(routes: list[Route], canonical_resource_url: str) -> list[Route]:
+    """Drop the shared well-known routes so they fall through to the legacy era.
+
+    The dual-era front door (:func:`modern.http.create_dual_era_app`) routes
+    a non-MCP path to the modern app only when the modern app registered it;
+    everything else goes legacy. So ceding a discovery document to the
+    legacy era is done by NOT registering it here — no special cases in the
+    router itself.
+
+    Used when ``discovery_era = "legacy"``: interactive chat clients that
+    speak the legacy protocol walk PRM -> AS metadata -> PKCE from the
+    shared paths, so the legacy OAuth stack must own them for those clients
+    to onboard at all. The modern era keeps every era-specific route (the
+    ``/auth/*`` endpoints and the path-inserted metadata form).
+    """
+    shared = shared_discovery_paths(canonical_resource_url)
+    return [route for route in routes if route.path not in shared]
+
+
 def build_prm_routes(
     *,
     canonical_resource_url: str,

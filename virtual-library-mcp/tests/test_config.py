@@ -309,3 +309,35 @@ class TestConfigurationScenarios:
         # Server can provide required protocol information
         assert config.server_info
         assert config.capabilities
+
+
+class TestDiscoveryEra:
+    """discovery_era decides which era owns the SHARED well-known paths.
+
+    A dual-era server has two OAuth stacks but RFC 9728/8414 pin discovery
+    documents to fixed locations — the config knob picks the owner, and the
+    validator refuses combinations that would leave discovery serving 404s.
+    """
+
+    def test_default_is_modern(self):
+        assert ServerConfig().discovery_era == "modern"
+
+    def test_legacy_requires_legacy_auth(self):
+        # Ceding the shared paths to a legacy OAuth stack that isn't enabled
+        # would give NEITHER era working discovery — fail closed at startup.
+        with pytest.raises(ValidationError, match="requires auth_enabled"):
+            ServerConfig(discovery_era="legacy", auth_enabled=False)
+
+    def test_legacy_with_legacy_auth_is_valid(self):
+        config = ServerConfig(
+            discovery_era="legacy",
+            auth_enabled=True,
+            base_url="https://library.example.run.app",
+            google_client_id="client-id",
+            google_client_secret="client-secret",
+        )
+        assert config.discovery_era == "legacy"
+
+    def test_invalid_value_rejected(self):
+        with pytest.raises(ValidationError):
+            ServerConfig(discovery_era="both")

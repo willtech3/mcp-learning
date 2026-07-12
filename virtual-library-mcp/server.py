@@ -185,7 +185,13 @@ def build_modern_stack():
     challenge_401_fn = None
     challenge_403_fn = None
     if config.demo_as_enabled:
-        from modern.auth import build_demo_auth, challenge_401, challenge_403, prm_url_for
+        from modern.auth import (
+            build_demo_auth,
+            challenge_401,
+            challenge_403,
+            filter_shared_discovery_routes,
+            prm_url_for,
+        )
 
         base = config.base_url or f"http://{config.http_host}:{config.http_port}"
         routes, verifier, issuer = build_demo_auth(
@@ -193,6 +199,17 @@ def build_modern_stack():
             canonical_resource_url=config.canonical_url,
             auto_approve=config.demo_as_auto_approve,
         )
+        if config.discovery_era == "legacy":
+            # Cede the shared well-known paths (PRM + host-root AS metadata)
+            # to the legacy OAuth stack so legacy-era chat clients can
+            # onboard; the modern flow stays reachable via the demo AS's
+            # path-inserted metadata form. See config.discovery_era.
+            routes = filter_shared_discovery_routes(routes, config.canonical_url)
+            logger.info(
+                "Discovery era: legacy — shared well-known paths fall through "
+                "to the legacy OAuth stack; modern AS metadata remains at "
+                "/.well-known/oauth-authorization-server/auth"
+            )
         extra_routes.extend(routes)
         prm_url = prm_url_for(config.canonical_url)
         challenge_401_fn = partial(challenge_401, prm_url)
@@ -249,7 +266,10 @@ def _run_http_server() -> None:
     # sessions, GET SSE stream, and Google OAuth; the modern pipeline is
     # stateless (SEP-2575). Classification happens per POST.
     _dispatcher, _broker, modern_asgi = build_modern_stack()
-    legacy_asgi = mcp.http_app(path=config.http_path)
+    # stateless_http: see config.http_stateless — required for reliable
+    # operation behind ephemeral compute; hosted chat clients cache stale
+    # session ids across instance recycles and then wedge.
+    legacy_asgi = mcp.http_app(path=config.http_path, stateless_http=config.http_stateless)
     app = create_dual_era_app(modern_asgi, legacy_asgi, mcp_path=config.http_path)
 
     logger.info(

@@ -1011,3 +1011,69 @@ class TestBufferedCancellation:
         # Nothing meaningful goes to the vanished client: no JSON-RPC bytes.
         bodies = b"".join(m.get("body", b"") for m in sent if m["type"] == "http.response.body")
         assert bodies == b""
+
+
+# ---------------------------------------------------------------------------
+# Discovery-era routing (dual-era front door + filtered discovery routes)
+# ---------------------------------------------------------------------------
+
+
+class TestLegacyDiscoveryEraRouting:
+    """End-to-end routing behavior behind ``discovery_era='legacy'``.
+
+    server.py filters the modern route set with
+    ``filter_shared_discovery_routes`` before building the modern app; the
+    dual-era front door then routes anything the modern app did NOT register
+    to the legacy app. Together that hands the shared well-known documents
+    to the legacy OAuth stack while every /auth/* endpoint and the
+    path-inserted AS metadata stay modern — chat clients (legacy era) and a
+    modern client that knows the issuer can BOTH authenticate.
+    """
+
+    BASE = "https://library.example.run.app"
+
+    def dual_app_with_legacy_discovery(self) -> tuple[Any, LegacyStubApp]:
+        from modern.auth import build_demo_auth, filter_shared_discovery_routes
+
+        routes, _verifier, _issuer = build_demo_auth(
+            base_url=self.BASE,
+            canonical_resource_url=f"{self.BASE}/mcp",
+        )
+        routes = filter_shared_discovery_routes(routes, f"{self.BASE}/mcp")
+        modern, _dispatcher = make_modern(extra_routes=routes)
+        legacy = LegacyStubApp()
+        return create_dual_era_app(modern, legacy), legacy
+
+    async def test_shared_well_knowns_fall_through_to_legacy(self):
+        app, legacy = self.dual_app_with_legacy_discovery()
+        async with make_client(app) as client:
+            for path in (
+                "/.well-known/oauth-protected-resource/mcp",
+                "/.well-known/oauth-protected-resource",
+                "/.well-known/oauth-authorization-server",
+            ):
+                response = await client.get(path)
+                assert response.json() == {"era": "legacy"}, path
+        assert [call["path"] for call in legacy.calls] == [
+            "/.well-known/oauth-protected-resource/mcp",
+            "/.well-known/oauth-protected-resource",
+            "/.well-known/oauth-authorization-server",
+        ]
+
+    async def test_modern_as_stays_reachable_at_path_inserted_form(self):
+        app, legacy = self.dual_app_with_legacy_discovery()
+        async with make_client(app) as client:
+            metadata = await client.get("/.well-known/oauth-authorization-server/auth")
+        # RFC 8414 path-inserted metadata is served by the modern app…
+        assert metadata.status_code == 200
+        assert metadata.json()["issuer"] == f"{self.BASE}/auth"
+        # …without ever touching the legacy app.
+        assert legacy.calls == []
+
+    async def test_auth_endpoints_stay_modern(self):
+        app, legacy = self.dual_app_with_legacy_discovery()
+        async with make_client(app) as client:
+            jwks = await client.get("/auth/jwks.json")
+        assert jwks.status_code == 200
+        assert "keys" in jwks.json()
+        assert legacy.calls == []

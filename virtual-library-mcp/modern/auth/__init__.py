@@ -46,8 +46,10 @@ from modern.auth.metadata import (
     build_prm_routes,
     challenge_401,
     challenge_403,
+    filter_shared_discovery_routes,
     prm_url_for,
     prm_well_known_paths,
+    shared_discovery_paths,
 )
 
 
@@ -108,6 +110,8 @@ __all__ = [
     "build_prm_routes",
     "challenge_401",
     "challenge_403",
+    "filter_shared_discovery_routes",
     "prm_url_for",
     "prm_well_known_paths",
+    "shared_discovery_paths",
 ]
