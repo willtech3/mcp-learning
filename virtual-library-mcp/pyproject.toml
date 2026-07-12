@@ -23,7 +23,10 @@ classifiers = [
 # Core dependencies for MCP server functionality
 dependencies = [
     # MCP framework (v3, targets protocol revision 2025-11-25)
-    "fastmcp[tasks]>=3.4,<4",
+    "fastmcp[apps,tasks]>=3.4,<4",
+    # FastMCP intentionally leaves Prefab's upper bound open; pin it for
+    # reproducible MCP App rendering while the UI package evolves quickly.
+    "prefab-ui==0.20.2",
 
     # MCP 2026-07-28 modern-protocol implementation (modern/ package)
     "pyjwt[crypto]>=2.9",

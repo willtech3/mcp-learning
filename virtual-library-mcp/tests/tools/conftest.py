@@ -31,12 +31,14 @@ from database.schema import (
 # Every tools module imports its session factory into its own namespace,
 # so each must be patched where it is *used*, not where it is defined.
 _SESSION_FACTORY_PATCHES = [
+    "tools.apps.session_scope",
     "tools.search.get_session",
     "tools.circulation.get_session",
     "tools.membership.get_session",
     "tools.bulk_import.session_scope",
     "tools.catalog_maintenance.session_scope",
     "tools.book_insights.session_scope",
+    "resources.stats.session_scope",
 ]
 
 

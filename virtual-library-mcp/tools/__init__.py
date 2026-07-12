@@ -33,6 +33,8 @@ from mcp.types import Icon, ToolAnnotations
 
 from icons import BOOK_ICON, CARD_ICON, MAINTENANCE_ICON, SEARCH_ICON, SPARKLE_ICON
 
+from . import apps
+from .apps import browse_catalog_app, library_dashboard_app
 from .book_insights import generate_book_insights
 from .bulk_import import bulk_import_books
 from .catalog_maintenance import regenerate_catalog
@@ -180,14 +182,17 @@ def register(mcp: FastMCP) -> None:
             tags=set(spec.tags),
             task=spec.task,
         )
+    apps.register(mcp)
 
 
 __all__ = [
     "TOOL_SPECS",
     "ToolSpec",
+    "browse_catalog_app",
     "bulk_import_books",
     "checkout_book",
     "generate_book_insights",
+    "library_dashboard_app",
     "regenerate_catalog",
     "register",
     "renew_membership",
