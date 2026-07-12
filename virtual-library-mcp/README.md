@@ -68,6 +68,38 @@ mcp-client demo --server http://127.0.0.1:8080/mcp --anonymous
 
 …or see [docs/DEMO.md](docs/DEMO.md) for the guided live-demo script.
 
+## MCP Apps demo
+
+The FastMCP protocol path includes two read-only MCP App tools:
+
+- `browse_catalog_app` renders a searchable, sortable catalog with inventory
+  metrics and selectable book details.
+- `library_dashboard_app` renders circulation metrics, genre activity, and a
+  popular-books table.
+
+Preview both tools in FastMCP's local AppBridge host:
+
+```bash
+just dev-apps
+```
+
+For ChatGPT Developer Mode, run the app-only server so a temporary tunnel does
+not expose the full server's circulation or administration tools:
+
+```bash
+just dev-apps-http
+# In another terminal:
+ngrok http 8001
+```
+
+In ChatGPT, enable **Settings → Security and login → Developer mode**, then open
+**Plugins** and use the plus button to create a developer-mode app. Set its MCP
+server URL to the tunnel's HTTPS URL followed by `/mcp`, for example
+`https://example.ngrok.app/mcp`. Refresh the app in ChatGPT after changing tool
+metadata. The app-only endpoint is stateless and contains only the two read-only
+UI tools; it still serves simulated data and is intended for short-lived
+development tunnels rather than permanent hosting.
+
 ## Transports & security
 
 - **stdio** (default): local development, Claude Desktop integration.

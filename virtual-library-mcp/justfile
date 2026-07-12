@@ -64,6 +64,14 @@ dev-http-auth:
     @echo "   Requires VIRTUAL_LIBRARY_BASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET in .env"
     VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_AUTH_ENABLED=true .venv/bin/python server.py
 
+# Preview MCP App tools in FastMCP's local AppBridge host
+dev-apps:
+    uv run fastmcp dev apps apps_server.py
+
+# Run only the read-only MCP App tools for temporary HTTPS tunneling
+dev-apps-http:
+    uv run python apps_server.py
+
 # === CODE QUALITY ===
 
 # Run all linting checks
