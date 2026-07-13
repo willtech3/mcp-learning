@@ -88,6 +88,18 @@ resource "google_cloud_run_v2_service" "server" {
         }
       }
 
+      # Stateless legacy path + legacy-owned discovery: what interactive
+      # chat clients need from an ephemeral-compute deployment (see
+      # variables.tf for both stories).
+      env {
+        name  = "VIRTUAL_LIBRARY_HTTP_STATELESS"
+        value = tostring(var.http_stateless)
+      }
+      env {
+        name  = "VIRTUAL_LIBRARY_DISCOVERY_ERA"
+        value = var.discovery_era
+      }
+
       # --- MODERN era (2026-07-28) ---------------------------------------
       # Bearer validation on the modern protocol path, tokens issued by the
       # bundled educational AS (see variables.tf for the security caveat).

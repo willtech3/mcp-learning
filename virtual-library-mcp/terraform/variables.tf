@@ -89,3 +89,32 @@ variable "demo_as_auto_approve" {
   type        = bool
   default     = false
 }
+
+variable "discovery_era" {
+  description = <<-EOT
+    Which protocol era's OAuth discovery documents own the shared
+    well-known paths. "legacy" is right for a deployment that interactive
+    chat clients (Claude, ChatGPT) connect to — they speak the legacy era
+    and walk PRM -> AS metadata -> PKCE from those paths. The modern
+    (2026-07-28) era keeps its path-inserted metadata form either way.
+  EOT
+  type        = string
+  default     = "legacy"
+
+  validation {
+    condition     = contains(["modern", "legacy"], var.discovery_era)
+    error_message = "discovery_era must be \"modern\" or \"legacy\"."
+  }
+}
+
+variable "http_stateless" {
+  description = <<-EOT
+    Run the legacy (FastMCP) protocol path without Mcp-Session-Id sessions.
+    Strongly recommended on Cloud Run: scale-to-zero recycles instances,
+    and hosted chat clients are known to cache a stale session id across
+    restarts and then wedge. Costs the session-stream features (sampling,
+    elicitation, subscriptions) remotely — chat clients don't use them.
+  EOT
+  type        = bool
+  default     = true
+}

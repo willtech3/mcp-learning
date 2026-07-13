@@ -363,3 +363,65 @@ class TestChallengeHeaders:
         # quoted-string escaping keeps the header parseable regardless.
         header = challenge_403("s", "http://h/prm", 'needs "write" access')
         assert 'error_description="needs \\"write\\" access"' in header
+
+
+class TestSharedDiscoveryFiltering:
+    """discovery_era='legacy' support: ceding shared well-knowns to FastMCP.
+
+    A dual-era server has TWO OAuth stacks that both want the fixed RFC
+    9728/8414 well-known locations. ``shared_discovery_paths`` names the
+    contested paths; ``filter_shared_discovery_routes`` removes them from
+    the modern route set so the dual-era front door lets them fall through
+    to the legacy app — that is how interactive chat clients (which speak
+    the legacy era) complete OAuth discovery against a deployed dual-era
+    server.
+    """
+
+    CANONICAL = "https://library.example.run.app/mcp"
+
+    def test_shared_paths_are_the_three_contested_locations(self):
+        from modern.auth import shared_discovery_paths
+
+        assert shared_discovery_paths(self.CANONICAL) == {
+            "/.well-known/oauth-protected-resource/mcp",
+            "/.well-known/oauth-protected-resource",
+            "/.well-known/oauth-authorization-server",
+        }
+
+    def test_filter_keeps_every_era_specific_route(self):
+        from modern.auth import build_demo_auth, filter_shared_discovery_routes
+
+        routes, _verifier, _issuer = build_demo_auth(
+            base_url="https://library.example.run.app",
+            canonical_resource_url=self.CANONICAL,
+        )
+        kept = {r.path for r in filter_shared_discovery_routes(routes, self.CANONICAL)}
+
+        # The path-inserted AS metadata form is the modern era's collision-
+        # free discovery home (RFC 8414 §3.1 path insertion) — it MUST stay,
+        # or a modern client pointed at the issuer could never bootstrap.
+        assert "/.well-known/oauth-authorization-server/auth" in kept
+        # The AS endpoints themselves are all under /auth and never contested.
+        assert {
+            "/auth/authorize",
+            "/auth/consent",
+            "/auth/token",
+            "/auth/register",
+            "/auth/jwks.json",
+        } <= kept
+
+    def test_filter_drops_exactly_the_shared_paths(self):
+        from modern.auth import (
+            build_demo_auth,
+            filter_shared_discovery_routes,
+            shared_discovery_paths,
+        )
+
+        routes, _verifier, _issuer = build_demo_auth(
+            base_url="https://library.example.run.app",
+            canonical_resource_url=self.CANONICAL,
+        )
+        before = {r.path for r in routes}
+        after = {r.path for r in filter_shared_discovery_routes(routes, self.CANONICAL)}
+
+        assert before - after == shared_discovery_paths(self.CANONICAL)
