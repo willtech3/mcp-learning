@@ -159,6 +159,34 @@ class ServerConfig(BaseSettings):
         ),
     )
 
+    legacy_oauth_firestore_project: str | None = Field(
+        default=None,
+        description=(
+            "Google Cloud project containing the Firestore database used for "
+            "durable legacy OAuth client registrations and upstream tokens. "
+            "Unset keeps FastMCP's local-development storage default."
+        ),
+    )
+
+    legacy_oauth_jwt_signing_key: str | None = Field(
+        default=None,
+        description=(
+            "Stable secret used to sign FastMCP OAuth proxy tokens. Required "
+            "with legacy_oauth_firestore_project so tokens remain valid across "
+            "Cloud Run instances and revisions."
+        ),
+        repr=False,
+    )
+
+    legacy_oauth_storage_encryption_key: str | None = Field(
+        default=None,
+        description=(
+            "Secret source material used to encrypt legacy OAuth registrations "
+            "and upstream tokens before storing them in Firestore."
+        ),
+        repr=False,
+    )
+
     allow_insecure_http: bool = Field(
         default=False,
         description=(
@@ -406,6 +434,19 @@ class ServerConfig(BaseSettings):
                 raise ValueError(
                     f"auth_enabled=true but missing required settings: {', '.join(missing)}"
                 )
+        oauth_storage_settings = {
+            "VIRTUAL_LIBRARY_LEGACY_OAUTH_FIRESTORE_PROJECT": self.legacy_oauth_firestore_project,
+            "VIRTUAL_LIBRARY_LEGACY_OAUTH_JWT_SIGNING_KEY": self.legacy_oauth_jwt_signing_key,
+            "VIRTUAL_LIBRARY_LEGACY_OAUTH_STORAGE_ENCRYPTION_KEY": (
+                self.legacy_oauth_storage_encryption_key
+            ),
+        }
+        if any(oauth_storage_settings.values()) and not all(oauth_storage_settings.values()):
+            missing = [name for name, value in oauth_storage_settings.items() if not value]
+            raise ValueError(
+                "legacy OAuth persistent storage requires all settings; missing: "
+                + ", ".join(missing)
+            )
         if self.discovery_era == "legacy" and not self.auth_enabled:
             # Ceding the shared well-knowns to the legacy era only makes
             # sense when a legacy OAuth stack exists to serve them; without

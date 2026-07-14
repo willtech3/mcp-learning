@@ -31,10 +31,43 @@ from fastmcp.server.auth import AuthProvider
 from fastmcp.server.auth.providers.google import GoogleProvider
 from fastmcp.server.dependencies import get_access_token
 from fastmcp.server.middleware import Middleware, MiddlewareContext
+from key_value.aio.protocols import AsyncKeyValue
+from key_value.aio.stores.firestore import (
+    FirestoreStore,
+    FirestoreV1CollectionSanitizationStrategy,
+    FirestoreV1KeySanitizationStrategy,
+)
+from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
 
 from config import ServerConfig
 
 logger = logging.getLogger(__name__)
+
+
+def build_oauth_client_storage(config: ServerConfig) -> AsyncKeyValue | None:
+    """Build shared encrypted OAuth storage for horizontally hosted servers.
+
+    FastMCP's Linux default is process memory, which loses DCR registrations
+    whenever Cloud Run scales to zero or starts another instance. Firestore is
+    only selected when all three production settings are present; local OAuth
+    development keeps FastMCP's normal storage behavior.
+    """
+    if not config.legacy_oauth_firestore_project:
+        return None
+
+    assert config.legacy_oauth_storage_encryption_key is not None
+    firestore = FirestoreStore(
+        project=config.legacy_oauth_firestore_project,
+        database="(default)",
+        default_collection="virtual-library-oauth",
+        key_sanitization_strategy=FirestoreV1KeySanitizationStrategy(),
+        collection_sanitization_strategy=FirestoreV1CollectionSanitizationStrategy(),
+    )
+    return FernetEncryptionWrapper(
+        key_value=firestore,
+        source_material=config.legacy_oauth_storage_encryption_key,
+        salt=f"{config.server_name}:legacy-oauth-storage:v1",
+    )
 
 
 class EmailAllowlistMiddleware(Middleware):
@@ -75,6 +108,12 @@ def build_auth_provider(config: ServerConfig) -> AuthProvider | None:
     assert config.google_client_secret is not None
 
     logger.info("OAuth 2.1 enabled: Google identity, base_url=%s", config.base_url)
+    client_storage = build_oauth_client_storage(config)
+    if client_storage is not None:
+        logger.info(
+            "Legacy OAuth registrations use encrypted Firestore storage (project=%s)",
+            config.legacy_oauth_firestore_project,
+        )
     return GoogleProvider(
         client_id=config.google_client_id,
         client_secret=config.google_client_secret,
@@ -83,4 +122,6 @@ def build_auth_provider(config: ServerConfig) -> AuthProvider | None:
         # Defaults kept explicit for the reader:
         require_authorization_consent=True,  # user sees a consent page
         enable_cimd=True,  # SEP-991 client registration via metadata documents
+        client_storage=client_storage,
+        jwt_signing_key=config.legacy_oauth_jwt_signing_key,
     )

@@ -47,11 +47,10 @@ USER app
 # The HTTP transport refuses to start without auth unless explicitly
 # overridden, so a misconfigured deployment fails closed.
 #
-# HOME=/tmp: FastMCP's OAuth proxy persists dynamic client registrations
-# under ~/.local/share/fastmcp. The app user's home is read-only by
-# design, and on Cloud Run /tmp is a writable in-memory tmpfs. Stored
-# registrations are per-instance and ephemeral, which FastMCP handles:
-# clients simply re-register on first contact with a fresh instance.
+# HOME=/tmp gives libraries a writable scratch home while the app user's real
+# home stays read-only. Production OAuth state does NOT live here: Terraform
+# configures FastMCP with encrypted Firestore storage so DCR registrations and
+# tokens survive scale-to-zero, revision changes, and multiple instances.
 ENV VIRTUAL_LIBRARY_TRANSPORT=http \
     VIRTUAL_LIBRARY_HTTP_HOST=0.0.0.0 \
     PYTHONUNBUFFERED=1 \

@@ -43,3 +43,39 @@ resource "google_secret_manager_secret_iam_member" "request_state_read" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.run_service.email}"
 }
+
+# Stable FastMCP OAuth proxy keys. The deploy workflow seeds both values once;
+# Terraform manages only their containers and IAM policies. Keeping signing
+# and at-rest encryption keys separate avoids key reuse across cryptographic
+# purposes.
+resource "google_secret_manager_secret" "oauth_jwt_signing_key" {
+  secret_id = "${var.service_name}-oauth-jwt-signing-key"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_iam_member" "oauth_jwt_signing_key_read" {
+  secret_id = google_secret_manager_secret.oauth_jwt_signing_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.run_service.email}"
+}
+
+resource "google_secret_manager_secret" "oauth_storage_encryption_key" {
+  secret_id = "${var.service_name}-oauth-storage-encryption-key"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_iam_member" "oauth_storage_encryption_key_read" {
+  secret_id = google_secret_manager_secret.oauth_storage_encryption_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.run_service.email}"
+}

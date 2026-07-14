@@ -10,9 +10,10 @@ import httpx
 import pytest
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.google import GoogleProvider
+from key_value.aio.stores.memory import MemoryStore
 from pydantic import ValidationError
 
-from auth import build_auth_provider
+from auth import build_auth_provider, build_oauth_client_storage
 from config import ServerConfig
 
 FAKE_AUTH = {
@@ -74,6 +75,98 @@ class TestProviderConstruction:
     def test_provider_uses_configured_base_url(self, clean_env):
         provider = build_auth_provider(_config(**FAKE_AUTH))
         assert str(provider.base_url).rstrip("/") == "https://library.example.app"
+
+    def test_firestore_storage_is_encrypted_and_sanitized(self, clean_env, monkeypatch):
+        calls = {}
+
+        class StubFirestoreStore:
+            def __init__(self, **kwargs):
+                calls["firestore"] = kwargs
+
+        class StubEncryptedStore:
+            def __init__(self, **kwargs):
+                calls["encryption"] = kwargs
+
+        monkeypatch.setattr("auth.FirestoreStore", StubFirestoreStore)
+        monkeypatch.setattr("auth.FernetEncryptionWrapper", StubEncryptedStore)
+
+        config = _config(
+            **FAKE_AUTH,
+            legacy_oauth_firestore_project="library-project",
+            legacy_oauth_jwt_signing_key="jwt-key",
+            legacy_oauth_storage_encryption_key="storage-key",
+        )
+        storage = build_oauth_client_storage(config)
+
+        assert isinstance(storage, StubEncryptedStore)
+        assert calls["firestore"]["project"] == "library-project"
+        assert calls["firestore"]["database"] == "(default)"
+        assert calls["firestore"]["default_collection"] == "virtual-library-oauth"
+        assert calls["firestore"]["key_sanitization_strategy"] is not None
+        assert calls["firestore"]["collection_sanitization_strategy"] is not None
+        assert calls["encryption"]["source_material"] == "storage-key"
+
+    async def test_shared_storage_survives_provider_instance_change(self, clean_env):
+        """A client registered on one instance must authorize on another."""
+        shared_storage = MemoryStore()
+        provider_kwargs = {
+            "client_id": "google-client-id",
+            "client_secret": "google-client-secret",
+            "base_url": "https://library.example.app",
+            "required_scopes": [
+                "openid",
+                "https://www.googleapis.com/auth/userinfo.email",
+            ],
+            "client_storage": shared_storage,
+            "jwt_signing_key": "stable-test-signing-key",
+        }
+        registration_app = FastMCP(
+            "registration-instance", auth=GoogleProvider(**provider_kwargs)
+        ).http_app()
+        authorization_app = FastMCP(
+            "authorization-instance", auth=GoogleProvider(**provider_kwargs)
+        ).http_app()
+        redirect_uri = "https://chatgpt.com/connector/oauth/test"
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=registration_app),
+            base_url="https://library.example.app",
+        ) as registration_client:
+            registered = await registration_client.post(
+                "/register",
+                json={
+                    "client_name": "ChatGPT",
+                    "redirect_uris": [redirect_uri],
+                    "grant_types": ["authorization_code", "refresh_token"],
+                    "response_types": ["code"],
+                    "token_endpoint_auth_method": "client_secret_post",
+                    "scope": "openid https://www.googleapis.com/auth/userinfo.email",
+                },
+            )
+
+        assert registered.status_code == 201, registered.text
+        client_id = registered.json()["client_id"]
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=authorization_app),
+            base_url="https://library.example.app",
+        ) as authorization_client:
+            authorized = await authorization_client.get(
+                "/authorize",
+                params={
+                    "response_type": "code",
+                    "client_id": client_id,
+                    "redirect_uri": redirect_uri,
+                    "scope": "openid https://www.googleapis.com/auth/userinfo.email",
+                    "code_challenge": "x" * 43,
+                    "code_challenge_method": "S256",
+                    "resource": "https://library.example.app/mcp",
+                },
+            )
+
+        assert authorized.status_code == 302
+        assert authorized.headers["location"].startswith("https://library.example.app/consent?")
+        assert "Client Not Registered" not in authorized.text
 
 
 class TestOAuthDiscoveryEndpoints:
