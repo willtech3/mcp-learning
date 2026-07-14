@@ -6,6 +6,8 @@ discovery endpoints required by the MCP 2025-11-25 authorization spec
 are actually mounted on the HTTP app.
 """
 
+import logging
+
 import httpx
 import pytest
 from fastmcp import FastMCP
@@ -75,6 +77,27 @@ class TestProviderConstruction:
     def test_provider_uses_configured_base_url(self, clean_env):
         provider = build_auth_provider(_config(**FAKE_AUTH))
         assert str(provider.base_url).rstrip("/") == "https://library.example.app"
+
+    def test_provider_suppresses_sensitive_http_client_logs(self, clean_env, monkeypatch, caplog):
+        """Dependency request logs must not expose bearer tokens in URLs or headers."""
+        httpx_logger = logging.getLogger("httpx")
+        httpcore_logger = logging.getLogger("httpcore")
+        monkeypatch.setattr(httpx_logger, "level", logging.INFO)
+        monkeypatch.setattr(httpcore_logger, "level", logging.DEBUG)
+        fake_token = "fake-google-oauth-token-for-log-test"
+
+        build_auth_provider(_config(**FAKE_AUTH))
+
+        transport = httpx.MockTransport(lambda request: httpx.Response(200, request=request))
+        with caplog.at_level(logging.DEBUG), httpx.Client(transport=transport) as client:
+            client.get(
+                "https://oauth2.googleapis.com/tokeninfo",
+                params={"access_token": fake_token},
+            )
+
+        assert httpx_logger.getEffectiveLevel() >= logging.WARNING
+        assert httpcore_logger.getEffectiveLevel() >= logging.WARNING
+        assert fake_token not in caplog.text
 
     def test_firestore_storage_is_encrypted_and_sanitized(self, clean_env, monkeypatch):
         calls = {}

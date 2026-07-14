@@ -19,6 +19,7 @@ Security posture implemented here:
 - Tokens are validated server-side on every request; scopes checked
 - Authorization consent screen enabled (require_authorization_consent)
 - Client ID Metadata Documents enabled (enable_cimd, SEP-991)
+- Dependency request logs suppressed so bearer tokens never appear in URLs
 - HTTPS required for the public base URL (config validator)
 - The HTTP transport refuses to start unauthenticated unless explicitly
   opted out via VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP (dev only)
@@ -42,6 +43,19 @@ from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
 from config import ServerConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _suppress_sensitive_http_client_logs() -> None:
+    """Keep OAuth bearer tokens out of dependency request logs.
+
+    FastMCP's Google verifier sends the opaque access token to Google's
+    tokeninfo endpoint as a query parameter. ``httpx`` logs the complete URL
+    at INFO, while ``httpcore`` may log request details at DEBUG. Keep both
+    dependency loggers at WARNING; application-owned OAuth logs remain
+    available without exposing credentials.
+    """
+    for logger_name in ("httpx", "httpcore"):
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 
 def build_oauth_client_storage(config: ServerConfig) -> AsyncKeyValue | None:
@@ -107,6 +121,7 @@ def build_auth_provider(config: ServerConfig) -> AuthProvider | None:
     assert config.google_client_id is not None
     assert config.google_client_secret is not None
 
+    _suppress_sensitive_http_client_logs()
     logger.info("OAuth 2.1 enabled: Google identity, base_url=%s", config.base_url)
     client_storage = build_oauth_client_storage(config)
     if client_storage is not None:
