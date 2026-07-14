@@ -79,10 +79,32 @@ resource "google_cloud_run_v2_service" "server" {
         value = jsonencode(var.auth_allowed_emails)
       }
       env {
+        name  = "VIRTUAL_LIBRARY_LEGACY_OAUTH_FIRESTORE_PROJECT"
+        value = var.project_id
+      }
+      env {
         name = "VIRTUAL_LIBRARY_GOOGLE_CLIENT_SECRET"
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.oauth_client_secret.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "VIRTUAL_LIBRARY_LEGACY_OAUTH_JWT_SIGNING_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.oauth_jwt_signing_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "VIRTUAL_LIBRARY_LEGACY_OAUTH_STORAGE_ENCRYPTION_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.oauth_storage_encryption_key.secret_id
             version = "latest"
           }
         }
@@ -149,6 +171,9 @@ resource "google_cloud_run_v2_service" "server" {
     google_project_service.apis,
     google_secret_manager_secret_iam_member.service_can_read,
     google_secret_manager_secret_iam_member.request_state_read,
+    google_secret_manager_secret_iam_member.oauth_jwt_signing_key_read,
+    google_secret_manager_secret_iam_member.oauth_storage_encryption_key_read,
+    google_project_iam_member.oauth_firestore_user,
   ]
 }
 

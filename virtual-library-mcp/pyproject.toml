@@ -24,6 +24,9 @@ classifiers = [
 dependencies = [
     # MCP framework (v3, targets protocol revision 2025-11-25)
     "fastmcp[apps,tasks]>=3.4,<4",
+    # Cloud Run recycles instances, so FastMCP's OAuth proxy needs a shared
+    # registration/token store instead of its Linux in-memory default.
+    "py-key-value-aio[firestore]>=0.4.5",
     # FastMCP intentionally leaves Prefab's upper bound open; pin it for
     # reproducible MCP App rendering while the UI package evolves quickly.
     "prefab-ui==0.20.2",

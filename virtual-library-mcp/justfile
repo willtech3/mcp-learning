@@ -297,6 +297,15 @@ tf-init:
 tf-plan:
     terraform -chdir=terraform plan
 
+tf-format:
+    terraform fmt -recursive terraform
+
+tf-format-check:
+    terraform fmt -check -recursive terraform
+
+tf-validate:
+    terraform -chdir=terraform validate
+
 # === PRODUCTION ===
 
 # Build distribution package

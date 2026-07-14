@@ -206,6 +206,30 @@ class TestServerConfig:
         # But the value should still be accessible
         assert config.external_api_key == "secret-key"
 
+    def test_oauth_storage_keys_are_hidden_in_repr(self):
+        config = ServerConfig(
+            legacy_oauth_firestore_project="library-project",
+            legacy_oauth_jwt_signing_key="jwt-signing-secret",
+            legacy_oauth_storage_encryption_key="storage-encryption-secret",
+        )
+
+        config_str = repr(config)
+        assert "jwt-signing-secret" not in config_str
+        assert "storage-encryption-secret" not in config_str
+
+    def test_oauth_persistent_storage_requires_complete_configuration(self):
+        with pytest.raises(ValidationError, match="persistent storage requires all settings"):
+            ServerConfig(legacy_oauth_firestore_project="library-project")
+
+    def test_oauth_persistent_storage_accepts_complete_configuration(self):
+        config = ServerConfig(
+            legacy_oauth_firestore_project="library-project",
+            legacy_oauth_jwt_signing_key="jwt-key",
+            legacy_oauth_storage_encryption_key="storage-key",
+        )
+
+        assert config.legacy_oauth_firestore_project == "library-project"
+
     def test_global_config_singleton(self):
         """Test global configuration singleton pattern."""
         # Reset to ensure clean state

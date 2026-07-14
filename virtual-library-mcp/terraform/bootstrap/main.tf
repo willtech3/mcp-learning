@@ -161,6 +161,7 @@ resource "google_project_iam_member" "deployer_roles" {
   for_each = toset([
     "roles/run.admin",                       # Cloud Run service + invoker IAM
     "roles/artifactregistry.admin",          # image repo + docker push
+    "roles/datastore.cloneAdmin",            # creates/reads database metadata; no entity access
     "roles/secretmanager.admin",             # secret containers + versions + IAM
     "roles/iam.serviceAccountAdmin",         # creates the runtime SA
     "roles/iam.serviceAccountUser",          # actAs the runtime SA on deploy

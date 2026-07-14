@@ -38,6 +38,7 @@ MCP-specific properties are handled explicitly:
 MCP client ──OAuth 2.1 + PKCE──> Cloud Run (virtual-library-mcp)
    │                                 │ LEGACY era: Google OAuth + email allowlist
    │<──discovery, tokens─────────────│ MODERN era: bearer JWTs from bundled demo AS
+   │                                 │ encrypted OAuth state ──> Firestore
    │                                 │ SQLite catalog (baked into image)
    └──sign-in──> Google OAuth <──────┘ secrets from Secret Manager
 ```
@@ -79,6 +80,12 @@ protocol eras have authentication enabled.
   runs sessionless; the session-stream features (sampling, elicitation,
   subscriptions) are local-development demos, and the modern era is
   stateless by design.
+- **Durable legacy OAuth state:** FastMCP defaults to process memory on Linux.
+  That is not sufficient on Cloud Run: ChatGPT may dynamically register on
+  one instance, then open `/authorize` after scale-to-zero or on another
+  instance. The deployment therefore stores DCR registrations and upstream
+  tokens in Firestore, encrypted by the application, and uses a stable JWT
+  signing key from Secret Manager.
 
 ## One-time setup
 
@@ -102,12 +109,24 @@ just bootstrap <PROJECT_ID>
 This applies `terraform/bootstrap/`: the Terraform state bucket, the
 Workload Identity Federation pool/provider (trusting only
 `willtech3/mcp-learning` on `refs/heads/main`), and the deployer service
-account. It prints four outputs used in the next steps, including the
+account (including the six-permission `roles/datastore.cloneAdmin` role needed
+to create and inspect the Firestore OAuth database, without access to its
+documents).
+It prints four outputs used in the next steps, including the
 service's **deterministic URL** (`base_url`) — knowable before anything
 is deployed, which is what lets the OAuth client be registered up front.
 
 The bootstrap state file stays local (gitignored); keep it — it's only
 needed to change or destroy these few resources.
+
+> **Existing deployment upgrading to persistent OAuth storage:** run this
+> bootstrap command once from the updated branch before merging it. That adds
+> the deployer's narrow Firestore database-creation role; the normal post-merge
+> workflow creates the database and performs every remaining deployment step.
+> If the gitignored local bootstrap state was not retained, do not approve a
+> plan that proposes recreating the existing bootstrap resources. Recover or
+> import that state, or grant only `roles/datastore.cloneAdmin` to the existing
+> deployer service account before running the normal deployment.
 
 ### Step 2 — Create the Google OAuth client (console, once)
 
@@ -149,15 +168,16 @@ just secret-set     # prompts for the secret from Step 2; pipes it to gcloud
 
 Secrets never touch Terraform state, the repo, or GitHub — Terraform
 manages the containers, values go straight to Secret Manager. The MRTR
-HMAC key is seeded automatically by the workflow (random bytes, first run
-only).
+HMAC key plus separate legacy OAuth signing and storage-encryption keys are
+seeded automatically by the workflow (random bytes, first run only).
 
 ## Deploying (every time)
 
 Push to `main` touching `virtual-library-mcp/**`, or run the **Deploy**
 workflow manually. The pipeline: quality gates (ruff, pyright, pytest) →
 WIF auth → build + push image tagged with the git SHA → `terraform apply`
-→ smoke tests (health, a 401 from *each* era, discovery documents).
+→ smoke tests (health, a 401 from *each* era, legacy and modern discovery
+documents).
 
 Rollback: revert the commit on `main` and let the workflow redeploy —
 images are tagged by SHA and stay in the registry. (Deploying non-`main`
@@ -174,6 +194,9 @@ curl "$BASE_URL/health"
 # Modern era discovery chain (what a 2026-07-28 client walks):
 curl "$BASE_URL/.well-known/oauth-protected-resource/mcp"
 curl "$BASE_URL/.well-known/oauth-authorization-server/auth"
+
+# Legacy authorization server metadata (what ChatGPT walks):
+curl "$BASE_URL/.well-known/oauth-authorization-server"
 ```
 
 Then connect a real client — the `mcp-client-learning` sibling repo
@@ -211,7 +234,8 @@ this moves fast):
 - [x] Email allowlist on the legacy era (authorization, not just authentication)
 - [x] Keyless CI (Workload Identity Federation pinned to repo + branch); no SA keys exist
 - [x] Secrets only in Secret Manager; never in Terraform state, git, or GitHub
-- [x] Least-privilege runtime SA (logs + metrics + two secrets); deployer SA scoped to its job
+- [x] Legacy OAuth registrations/tokens encrypted in Firestore; stable signing key across instances
+- [x] Least-privilege runtime SA (logs + metrics + four secrets + Firestore data); deployer SA scoped to its job
 - [x] Immutable image tags (git SHA); rate limiting; non-root container
 - [ ] Known, documented gap: the modern era's demo AS issues tokens without identity — demo data only
 
@@ -221,8 +245,10 @@ this moves fast):
   into the image; checkouts vanish when an instance recycles. Intentional
   for a self-resetting demo. For durable state: Cloud SQL (Postgres) +
   the SQLAlchemy URL in config.
-- **Costs.** Scale-to-zero + `cpu_idle` keeps an idle demo at ~$0/month;
-  Secret Manager, Artifact Registry, and the state bucket are pennies.
+- **Costs.** Scale-to-zero + `cpu_idle` keeps an idle demo inexpensive;
+  Firestore's small OAuth workload, Secret Manager, Artifact Registry, and
+  the state bucket should remain in their low/free usage tiers for a personal
+  demo, but check current GCP pricing for your region.
 - **Logs.** `gcloud run services logs read virtual-library-mcp --region=<region>`;
   Logfire tracing activates automatically when `LOGFIRE_TOKEN` is set.
 - **Terraform state** lives in `gs://<PROJECT_ID>-tfstate` (versioned).
