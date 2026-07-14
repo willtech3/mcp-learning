@@ -109,7 +109,9 @@ just bootstrap <PROJECT_ID>
 This applies `terraform/bootstrap/`: the Terraform state bucket, the
 Workload Identity Federation pool/provider (trusting only
 `willtech3/mcp-learning` on `refs/heads/main`), and the deployer service
-account (including permission to create/manage the Firestore OAuth database).
+account (including the six-permission `roles/datastore.cloneAdmin` role needed
+to create and inspect the Firestore OAuth database, without access to its
+documents).
 It prints four outputs used in the next steps, including the
 service's **deterministic URL** (`base_url`) — knowable before anything
 is deployed, which is what lets the OAuth client be registered up front.
@@ -119,8 +121,12 @@ needed to change or destroy these few resources.
 
 > **Existing deployment upgrading to persistent OAuth storage:** run this
 > bootstrap command once from the updated branch before merging it. That adds
-> the deployer's Firestore role; the normal post-merge workflow creates the
-> database and performs every remaining deployment step.
+> the deployer's narrow Firestore database-creation role; the normal post-merge
+> workflow creates the database and performs every remaining deployment step.
+> If the gitignored local bootstrap state was not retained, do not approve a
+> plan that proposes recreating the existing bootstrap resources. Recover or
+> import that state, or grant only `roles/datastore.cloneAdmin` to the existing
+> deployer service account before running the normal deployment.
 
 ### Step 2 — Create the Google OAuth client (console, once)
 
