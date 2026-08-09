@@ -97,7 +97,7 @@ TOOL_SPECS: list[ToolSpec] = [
             title="Check Out Book",
             readOnlyHint=False,
             destructiveHint=False,  # additive: creates a loan, destroys nothing
-            idempotentHint=False,  # same call twice = two loans
+            idempotentHint=True,  # same patron + ISBN reconciles to the active loan
             openWorldHint=False,
         ),
         icons=[CARD_ICON],
@@ -110,7 +110,7 @@ TOOL_SPECS: list[ToolSpec] = [
             title="Return Book",
             readOnlyHint=False,
             destructiveHint=False,
-            idempotentHint=False,
+            idempotentHint=True,  # repeat returns reuse the immutable return record
             openWorldHint=False,
         ),
         icons=[CARD_ICON],
@@ -123,7 +123,7 @@ TOOL_SPECS: list[ToolSpec] = [
             title="Reserve Book",
             readOnlyHint=False,
             destructiveHint=False,
-            idempotentHint=False,
+            idempotentHint=True,  # an existing active hold is returned on retry
             openWorldHint=False,
         ),
         icons=[CARD_ICON],

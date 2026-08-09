@@ -40,6 +40,7 @@ _SESSION_FACTORY_PATCHES = [
     "tools.book_insights.session_scope",
     "tools.patrons.session_scope",
     "resources.stats.session_scope",
+    "resources.recommendations.session_scope",
 ]
 
 

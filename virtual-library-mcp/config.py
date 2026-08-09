@@ -115,6 +115,18 @@ class ServerConfig(BaseSettings):
         ),
     )
 
+    elicitation_timeout_seconds: float = Field(
+        default=20.0,
+        description=(
+            "Maximum time a sessionful legacy client may take to answer a "
+            "server-initiated elicitation before the tool returns a recoverable "
+            "error without applying its mutation. Stateless HTTP and the modern "
+            "MRTR path do not wait on this timer."
+        ),
+        ge=1.0,
+        le=120.0,
+    )
+
     # === Authentication (OAuth 2.1, MCP 2025-11-25 authorization spec) ===
     # The server acts as an OAuth Protected Resource. FastMCP's GoogleProvider
     # implements the OAuth Proxy pattern: spec-compliant PRM metadata, dynamic

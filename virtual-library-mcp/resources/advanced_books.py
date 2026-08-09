@@ -14,9 +14,11 @@ from typing import Any
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
-from database.book_repository import BookRepository, BookSearchParams
+from database.author_repository import AuthorRepository
+from database.book_repository import BookRepository, BookSortOptions
 from database.repository import PaginationParams
 from database.session import session_scope
+from models.book import Book
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +28,6 @@ class FilteredBooksParams(BaseModel):
 
     page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
     limit: int = Field(default=20, ge=1, le=100, description="Items per page")
-    sort_by: str = Field(
-        default="title",
-        pattern="^(title|author|publication_year|rating)$",
-        description="Sort field",
-    )
-    sort_order: str = Field(default="asc", pattern="^(asc|desc)$", description="Sort direction")
     available_only: bool = Field(default=False, description="Show only available books")
 
 
@@ -49,11 +45,31 @@ class FilteredBooksResponse(BaseModel):
     has_previous: bool = Field(..., description="Whether there's a previous page")
 
 
+def _book_data(book: Book, author_name: str) -> dict[str, Any]:
+    """Return only catalog fields that exist in the current data model."""
+    description = book.description
+    if description and len(description) > 200:
+        description = f"{description[:200].rstrip()}..."
+
+    return {
+        "isbn": book.isbn,
+        "title": book.title,
+        "author_id": book.author_id,
+        "author": author_name,
+        "genre": book.genre,
+        "publication_year": book.publication_year,
+        "description": description,
+        "total_copies": book.total_copies,
+        "available_copies": book.available_copies,
+        "is_available": book.is_available,
+    }
+
+
 async def get_books_by_author_handler(author_id: str) -> dict[str, Any]:
     """Returns books written by the specified author.
 
-    Client requests library://books/by-author/{author_name} to browse
-    all books by that author with pagination and sorting options.
+    Client requests library://books/by-author/{author_id} to browse
+    the first page of books by that author.
     """
     try:
         # Use default parameters for pagination
@@ -68,46 +84,19 @@ async def get_books_by_author_handler(author_id: str) -> dict[str, Any]:
 
         with session_scope() as session:
             book_repo = BookRepository(session)
+            author_repo = AuthorRepository(session)
+            author = author_repo.get_by_id(author_id)
 
-            # Create search parameters for author filter
-            search_params = BookSearchParams(
-                author_name=author_id,  # Search by author name
+            # Fetch filtered results
+            result = book_repo.get_by_author(
+                author_id=author_id,
+                pagination=PaginationParams(page=params.page, page_size=params.limit),
                 available_only=params.available_only,
             )
 
-            # Map sort fields to repository sort options
-            sort_mapping = {
-                "title": book_repo.sort_options.TITLE,
-                "author": book_repo.sort_options.AUTHOR,
-                "publication_year": book_repo.sort_options.PUBLICATION_YEAR,
-                "rating": book_repo.sort_options.RATING,
-            }
-            sort_by = sort_mapping.get(params.sort_by, book_repo.sort_options.TITLE)
-
-            # Fetch filtered results
-            result = book_repo.search(
-                search_params=search_params,
-                pagination=PaginationParams(page=params.page, page_size=params.limit),
-                sort_by=sort_by,
-                sort_desc=(params.sort_order == "desc"),
-            )
-
             # Convert books to simplified format for response
-            books_data = []
-            for book in result.items:
-                books_data.append(
-                    {
-                        "isbn": book.isbn,
-                        "title": book.title,
-                        "author": book.author,
-                        "genre": book.genre,
-                        "publication_year": book.publication_year,
-                        "average_rating": book.average_rating,
-                        "total_copies": book.total_copies,
-                        "available_copies": book.available_copies,
-                        "is_available": book.is_available,
-                    }
-                )
+            author_name = author.name if author else "Unknown author"
+            books_data = [_book_data(book, author_name) for book in result.items]
 
             # Build response
             response = FilteredBooksResponse(
@@ -148,50 +137,22 @@ async def get_books_by_genre_handler(genre: str) -> dict[str, Any]:
 
         with session_scope() as session:
             book_repo = BookRepository(session)
-
-            # Create search parameters for genre filter
-            search_params = BookSearchParams(
-                genre=genre,  # Exact genre match
-                available_only=params.available_only,
-            )
-
-            # Map sort fields to repository sort options
-            sort_mapping = {
-                "title": book_repo.sort_options.TITLE,
-                "author": book_repo.sort_options.AUTHOR,
-                "publication_year": book_repo.sort_options.PUBLICATION_YEAR,
-                "rating": book_repo.sort_options.RATING,
-            }
-            sort_by = sort_mapping.get(params.sort_by, book_repo.sort_options.TITLE)
+            author_repo = AuthorRepository(session)
 
             # Fetch filtered results
-            result = book_repo.search(
-                search_params=search_params,
+            result = book_repo.get_by_genre(
+                genre=genre,
                 pagination=PaginationParams(page=params.page, page_size=params.limit),
-                sort_by=sort_by,
-                sort_desc=(params.sort_order == "desc"),
+                sort_by=BookSortOptions.TITLE,
             )
 
             # Convert books to response format
-            books_data = []
+            author_names: dict[str, str] = {}
             for book in result.items:
-                books_data.append(
-                    {
-                        "isbn": book.isbn,
-                        "title": book.title,
-                        "author": book.author,
-                        "genre": book.genre,
-                        "publication_year": book.publication_year,
-                        "publisher": book.publisher,
-                        "description": book.description[:200] + "..."
-                        if book.description and len(book.description) > 200
-                        else book.description,
-                        "average_rating": book.average_rating,
-                        "total_copies": book.total_copies,
-                        "available_copies": book.available_copies,
-                        "is_available": book.is_available,
-                    }
-                )
+                if book.author_id not in author_names:
+                    author = author_repo.get_by_id(book.author_id)
+                    author_names[book.author_id] = author.name if author else "Unknown author"
+            books_data = [_book_data(book, author_names[book.author_id]) for book in result.items]
 
             # Build response
             response = FilteredBooksResponse(
@@ -218,9 +179,8 @@ advanced_book_resources: list[dict[str, Any]] = [
         "uri_template": "library://books/by-author/{author_id}",
         "name": "Books by Author",
         "description": (
-            "Browse all books by a specific author. Supports pagination and sorting "
-            "by title, publication year, or rating. Use URL-encoded author names "
-            "for authors with spaces or special characters."
+            "Browse books by a stable author identifier. Returns current copy "
+            "availability and readable author metadata for the first catalog page."
         ),
         "mime_type": "application/json",
         "handler": get_books_by_author_handler,
@@ -230,8 +190,8 @@ advanced_book_resources: list[dict[str, Any]] = [
         "name": "Books by Genre",
         "description": (
             "Browse all books in a specific genre. Perfect for readers looking "
-            "for their next book in a favorite category. Supports filtering by "
-            "availability and sorting options."
+            "for their next book in a favorite category. Returns the first catalog "
+            "page sorted by title with current copy availability."
         ),
         "mime_type": "application/json",
         "handler": get_books_by_genre_handler,

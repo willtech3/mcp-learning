@@ -204,8 +204,10 @@ def dispatcher(broker):
         broker,
         ListCachePolicy(ttl_ms=300_000, cache_scope="public"),
         resource_update_hooks={
-            "checkout_book": lambda args: f"library://books/{args['book_isbn']}",
-            "return_book": lambda args: f"library://books/{args.get('book_isbn', '')}",
+            "checkout_book": lambda args, _result: f"library://books/{args['book_isbn']}",
+            "return_book": lambda _args, result: (
+                f"library://books/{result['structuredContent']['book_isbn']}"
+            ),
         },
     )
 
@@ -432,6 +434,29 @@ class TestToolsCall:
         )
         assert broker.resource_updated == []
 
+    async def test_return_hook_publishes_the_exact_book_uri(self, dispatcher, broker, library):
+        checkout = await dispatcher.handle(
+            request(
+                "tools/call",
+                name="checkout_book",
+                arguments={"patron_id": "patron_clean001", "book_isbn": "9780134685991"},
+            ),
+            ENV,
+        )
+        checkout_id = checkout["result"]["structuredContent"]["checkout_id"]
+        broker.resource_updated.clear()
+
+        await dispatcher.handle(
+            request(
+                "tools/call",
+                name="return_book",
+                arguments={"checkout_id": checkout_id},
+            ),
+            ENV,
+        )
+
+        assert broker.resource_updated == ["library://books/9780134685991"]
+
 
 # ---------------------------------------------------------------------------
 # The full MRTR round trip with the REAL checkout_book tool
@@ -461,8 +486,10 @@ class TestMrtrRoundTrip:
         embedded = result["inputRequests"]["elicit:0"]
         assert embedded["method"] == "elicitation/create"
         assert "$4.50" in embedded["params"]["message"]
-        # Approval-only elicitation: the same empty-object schema FastMCP sends.
-        assert embedded["params"]["requestedSchema"] == {"type": "object", "properties": {}}
+        schema = embedded["params"]["requestedSchema"]
+        assert schema["type"] == "object"
+        assert schema["required"] == ["value"]
+        assert schema["properties"]["value"]["type"] == "boolean"
         state = result["requestState"]
         assert isinstance(state, str)
 
@@ -473,7 +500,7 @@ class TestMrtrRoundTrip:
                 caps=ELICIT_CAPS,
                 name="checkout_book",
                 arguments=FINES_ARGS,
-                inputResponses={"elicit:0": {"action": "accept", "content": {}}},
+                inputResponses={"elicit:0": {"action": "accept", "content": {"value": True}}},
                 requestState=state,
             ),
             ENV,
@@ -509,7 +536,7 @@ class TestMrtrRoundTrip:
         )
         result = retry["result"]
         assert result["isError"] is True
-        assert "declined" in result["content"][0]["text"]
+        assert "did not approve" in result["content"][0]["text"]
 
     async def test_tampered_request_state_is_32602(self, dispatcher, library):
         first = await dispatcher.handle(
@@ -531,7 +558,7 @@ class TestMrtrRoundTrip:
                 caps=ELICIT_CAPS,
                 name="checkout_book",
                 arguments=FINES_ARGS,
-                inputResponses={"elicit:0": {"action": "accept", "content": {}}},
+                inputResponses={"elicit:0": {"action": "accept", "content": {"value": True}}},
                 requestState=tampered,
             ),
             ENV,
@@ -550,7 +577,7 @@ class TestMrtrRoundTrip:
                 "a": canonical_arguments_hash(FINES_ARGS),
                 "p": "anon",
                 "exp": int(time.time()) - 10,
-                "r": {"elicit:0": {"action": "accept", "content": {}}},
+                "r": {"elicit:0": {"action": "accept", "content": {"value": True}}},
             }
         )
         retry = await dispatcher.handle(
@@ -587,7 +614,7 @@ class TestMrtrRoundTrip:
                 caps=ELICIT_CAPS,
                 name="checkout_book",
                 arguments=other_args,
-                inputResponses={"elicit:0": {"action": "accept", "content": {}}},
+                inputResponses={"elicit:0": {"action": "accept", "content": {"value": True}}},
                 requestState=first["result"]["requestState"],
             ),
             ENV,
@@ -595,10 +622,8 @@ class TestMrtrRoundTrip:
         assert retry["error"]["code"] == -32602
         assert "arguments" in retry["error"]["message"]
 
-    async def test_no_capability_means_handler_fallback(self, dispatcher, library):
-        """checkout_book catches the missing-capability error and proceeds
-        without confirmation (its documented graceful degradation) — the
-        capability gate protects the WIRE, not the business rule."""
+    async def test_no_capability_fails_closed_without_checkout(self, dispatcher, library):
+        """A missing confirmation channel never silently authorizes a loan."""
         response = await dispatcher.handle(
             request(
                 "tools/call",
@@ -610,7 +635,20 @@ class TestMrtrRoundTrip:
         )
         result = response["result"]
         assert result["resultType"] == "complete"
-        assert not result.get("isError")
+        assert result["isError"] is True
+        assert "fines_acknowledged=true" in result["content"][0]["text"]
+
+        retry = await dispatcher.handle(
+            request(
+                "tools/call",
+                caps={},
+                name="checkout_book",
+                arguments={**FINES_ARGS, "fines_acknowledged": True},
+            ),
+            ENV,
+        )
+        assert retry["result"]["resultType"] == "complete"
+        assert not retry["result"].get("isError")
 
 
 # ---------------------------------------------------------------------------

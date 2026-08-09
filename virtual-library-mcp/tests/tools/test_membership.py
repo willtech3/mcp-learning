@@ -1,10 +1,11 @@
-"""Tests for renew_membership — the enum-elicitation showcase.
+"""Tests for renew_membership — interactive and stateless-safe renewal paths.
 
-The renewal term is never a tool argument: the server elicits it from the
-user mid-execution (MCP 2025-11-25 elicitation with constrained options).
+Sessionful clients can elicit the term mid-execution. Stateless clients ask
+the user first and retry with the same explicit term argument.
 """
 
 from datetime import date, timedelta
+from types import SimpleNamespace
 
 import pytest
 from fastmcp import Client
@@ -59,3 +60,31 @@ class TestRenewMembership:
         async with Client(server.mcp, elicitation_handler=_term_handler("6 months")) as client:
             with pytest.raises(ToolError, match="not found"):
                 await client.call_tool("renew_membership", {"patron_id": "patron_missing99"})
+
+    async def test_stateless_client_fails_closed_then_accepts_explicit_term(
+        self, library, monkeypatch
+    ):
+        patron = library.get(PatronDB, "patron_clean001")
+        original_expiration = patron.expiration_date
+        monkeypatch.setattr(
+            "tools.interaction.get_config",
+            lambda: SimpleNamespace(
+                transport="http",
+                http_stateless=True,
+                elicitation_timeout_seconds=20,
+            ),
+        )
+
+        async with Client(server.mcp) as client:
+            with pytest.raises(ToolError, match="retry with the term argument"):
+                await client.call_tool("renew_membership", {"patron_id": "patron_clean001"})
+            library.refresh(patron)
+            assert patron.expiration_date == original_expiration
+
+            result = await client.call_tool(
+                "renew_membership",
+                {"patron_id": "patron_clean001", "term": "6 months"},
+            )
+
+        assert result.structured_content["renewed"] is True
+        assert result.structured_content["term"] == "6 months"

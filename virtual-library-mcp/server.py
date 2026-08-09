@@ -68,8 +68,11 @@ mcp = FastMCP(
         "Virtual Library MCP Server - A comprehensive library management system "
         "demonstrating the full MCP feature surface. Browse the catalog through "
         "resources, perform circulation actions through tools, and use prompts "
-        "for AI-assisted recommendations. Some tools ask follow-up questions "
-        "(elicitation) or generate content via your LLM (sampling)."
+        "for AI-assisted recommendations. Questions such as 'Can I check this "
+        "out?' are read-only: use checkout_readiness_app and never checkout_book "
+        "until the user explicitly asks to complete the loan. Some tools ask "
+        "follow-up questions (elicitation) or generate content via your LLM "
+        "(sampling)."
     ),
 )
 
@@ -157,8 +160,11 @@ def build_modern_stack():
             "Virtual Library MCP Server (dual-era). Browse the catalog through "
             "resources, perform circulation actions through tools, and use "
             "prompts for AI-assisted recommendations. Agent skills live at "
-            "skill://index.json (SEP-2640). Some tools need follow-up input "
-            "and will answer with resultType 'input_required' (MRTR)."
+            "skill://index.json (SEP-2640). Treat questions such as 'Can I check "
+            "this out?' as read-only and use checkout_readiness_app; call "
+            "checkout_book only after an explicit request to complete the loan. "
+            "Some tools need follow-up input and will answer with resultType "
+            "'input_required' (MRTR)."
         ),
         broker=broker,
         cache_policy=ListCachePolicy(
@@ -170,9 +176,9 @@ def build_modern_stack():
             # After these tools mutate a book, subscribers watching that
             # exact URI get notifications/resources/updated on their
             # listen stream.
-            "checkout_book": lambda a: f"library://books/{a['book_isbn']}",
-            "return_book": lambda a: f"library://books/{a['book_isbn']}",
-            "reserve_book": lambda a: f"library://books/{a['book_isbn']}",
+            "checkout_book": lambda a, _r: f"library://books/{a['book_isbn']}",
+            "return_book": lambda _a, r: f"library://books/{r['structuredContent']['book_isbn']}",
+            "reserve_book": lambda a, _r: f"library://books/{a['book_isbn']}",
         },
         task_runner=tasks_ext.maybe_run_as_task,
         task_tool_names={"regenerate_catalog"},

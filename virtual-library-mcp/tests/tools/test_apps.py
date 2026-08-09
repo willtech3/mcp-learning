@@ -1,6 +1,7 @@
 """Protocol-level tests for the read-only MCP App tools."""
 
 import json
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -28,14 +29,22 @@ class TestAppDescriptors:
 
         assert tools == {
             "browse_catalog_app",
+            "checkout_readiness_app",
             "library_dashboard_app",
             "patron_account_app",
+            "reading_recommendations_app",
         }
 
     async def test_app_tools_publish_ui_metadata_and_safety_hints(self, client):
         tools = {tool.name: tool for tool in await client.list_tools()}
 
-        for name in ("browse_catalog_app", "library_dashboard_app", "patron_account_app"):
+        for name in (
+            "browse_catalog_app",
+            "checkout_readiness_app",
+            "library_dashboard_app",
+            "patron_account_app",
+            "reading_recommendations_app",
+        ):
             descriptor = tools[name].model_dump(by_alias=True, exclude_none=True)
             assert descriptor["annotations"] == {
                 "readOnlyHint": True,
@@ -125,7 +134,10 @@ class TestAppBehavior:
         assert "The Available Book" in payload
         assert "The Popular Book" not in payload
         assert "Test Author" in payload
-        assert "On-shelf titles only" in payload
+        assert "Ready to borrow" in payload
+        assert "Book details" in payload
+        assert "Library record" in payload
+        assert "Check borrowing readiness" in payload
 
     async def test_dashboard_contains_metrics_and_popular_books(self, client):
         result = await client.call_tool(
@@ -134,9 +146,11 @@ class TestAppBehavior:
         )
         payload = json.dumps(result.structured_content, ensure_ascii=False)
 
-        assert "Virtual Library Dashboard" in payload
+        assert "Library Pulse" in payload
         assert "The Popular Book" in payload
         assert "Circulation rate" in payload
+        assert "Popular titles" in payload
+        assert "Genres" in payload
 
     async def test_patron_app_finds_account_without_patron_number(self, client):
         result = await client.call_tool("patron_account_app", {"query": "Clean Reader"})
@@ -147,6 +161,49 @@ class TestAppBehavior:
         assert "c••••@example.com" in payload
         assert "clean@example.com" not in payload
         assert "The Popular Book" in payload
+        assert "Current loans" in payload
+        assert "Reading profile" in payload
+
+    async def test_checkout_readiness_resolves_book_and_patron_without_ids(self, client):
+        result = await client.call_tool(
+            "checkout_readiness_app",
+            {"book_query": "Available Book", "patron_query": "Clean Reader"},
+        )
+        payload = json.dumps(result.structured_content, ensure_ascii=False)
+
+        assert "Checkout Readiness" in payload
+        assert "Ready to check out" in payload
+        assert "The Available Book" in payload
+        assert "Clean Reader" in payload
+        assert "patron_clean001" not in payload
+        assert "clean@example.com" not in payload
+        assert "Read-only preflight" in payload
+
+    async def test_checkout_readiness_detects_existing_loan_and_unavailable_book(self, client):
+        existing = await client.call_tool(
+            "checkout_readiness_app",
+            {"book_query": "Popular Book", "patron_query": "Clean Reader"},
+        )
+        assert "Already checked out" in json.dumps(existing.structured_content)
+
+        hold = await client.call_tool(
+            "checkout_readiness_app",
+            {"book_query": "Popular Book", "patron_query": "Fined Reader"},
+        )
+        assert "Place a hold" in json.dumps(hold.structured_content)
+
+    async def test_recommendations_app_is_patron_friendly_and_private(self, client):
+        result = await client.call_tool(
+            "reading_recommendations_app",
+            {"query": "Clean Reader", "limit": 5},
+        )
+        payload = json.dumps(result.structured_content, ensure_ascii=False)
+
+        assert "Your Next Read" in payload
+        assert "Recommendations for Clean Reader" in payload
+        assert "patron_clean001" not in payload
+        assert "clean@example.com" not in payload
+        assert all(int(score) <= 100 for score in re.findall(r'"match": "(\d+)%', payload))
 
     async def test_patron_app_explains_truncated_matches(self, client):
         result = await client.call_tool(
@@ -164,3 +221,9 @@ class TestAppBehavior:
 
         with pytest.raises(Exception, match="two non-space"):
             await client.call_tool("patron_account_app", {"query": "  "})
+
+        with pytest.raises(Exception, match=r"two non-space|at least 2 characters"):
+            await client.call_tool("checkout_readiness_app", {"book_query": " "})
+
+        with pytest.raises(Exception, match=r"two non-space|at least 2 characters"):
+            await client.call_tool("reading_recommendations_app", {"query": " "})

@@ -210,7 +210,8 @@ class Dispatcher:
         discover_ttl_ms: int = 3_600_000,
         *,
         page_size: int = 50,
-        resource_update_hooks: dict[str, Callable[[dict[str, Any]], str]] | None = None,
+        resource_update_hooks: dict[str, Callable[[dict[str, Any], dict[str, Any]], str]]
+        | None = None,
         task_runner: Callable[..., Awaitable[dict[str, Any]]] | None = None,
         task_tool_names: set[str] | None = None,
     ) -> None:
@@ -223,8 +224,9 @@ class Dispatcher:
         self.discover_ttl_ms = discover_ttl_ms
         self.page_size = page_size
         #: Post-call hook table (integrator-supplied): tool name -> function
-        #: from call arguments to the resource URI that call mutates.  After
-        #: a successful call, broker.publish_resource_updated(uri) fires so
+        #: from call arguments and the completed result to the resource URI
+        #: that call mutated. After a successful call,
+        #: broker.publish_resource_updated(uri) fires so
         #: listen streams subscribed to that URI hear about the change.
         self.resource_update_hooks = resource_update_hooks or {}
         #: Optional tasks-extension wiring (SEP-2663): task_runner is
@@ -472,7 +474,7 @@ class Dispatcher:
             and name in self.resource_update_hooks
             and self.broker is not None
         ):
-            uri = self.resource_update_hooks[name](arguments)
+            uri = self.resource_update_hooks[name](arguments, result)
             self.broker.publish_resource_updated(uri)
 
         return result

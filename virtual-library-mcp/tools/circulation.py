@@ -32,6 +32,8 @@ from database.patron_repository import PatronRepository
 from database.repository import NotFoundError, RepositoryException
 from database.session import get_session
 
+from .interaction import ElicitationUnavailableError, elicit_with_timeout
+
 logger = logging.getLogger(__name__)
 
 PATRON_ID_FIELD = Field(
@@ -63,6 +65,7 @@ class CheckoutResult(BaseModel):
     due_date: str
     status: str
     loan_period_days: int
+    replayed: bool = False
     message: str
 
 
@@ -77,6 +80,7 @@ class ReturnResult(BaseModel):
     late_days: int
     fine_assessed: float
     fine_outstanding: float
+    replayed: bool = False
     message: str
 
 
@@ -92,7 +96,34 @@ class ReservationResult(BaseModel):
     queue_position: int
     estimated_wait_days: int | None
     total_in_queue: int
+    replayed: bool = False
     message: str
+
+
+def _checkout_result(checkout, *, replayed: bool) -> CheckoutResult:
+    if replayed:
+        message = (
+            f"This checkout was already completed as {checkout.id}; no second loan "
+            f"was created. '{checkout.book_isbn}' is due "
+            f"{checkout.due_date.strftime('%B %d, %Y')}."
+        )
+    else:
+        message = (
+            f"Checked out '{checkout.book_isbn}' to {checkout.patron_id}. "
+            f"Due {checkout.due_date.strftime('%B %d, %Y')} "
+            f"({checkout.loan_period_days}-day loan)."
+        )
+    return CheckoutResult(
+        checkout_id=checkout.id,
+        patron_id=checkout.patron_id,
+        book_isbn=checkout.book_isbn,
+        checkout_date=checkout.checkout_date.isoformat(),
+        due_date=checkout.due_date.isoformat(),
+        status=str(checkout.status),
+        loan_period_days=checkout.loan_period_days,
+        replayed=replayed,
+        message=message,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +135,15 @@ async def checkout_book(
     patron_id: Annotated[str, PATRON_ID_FIELD],
     book_isbn: Annotated[str, ISBN_FIELD],
     ctx: Context,
+    fines_acknowledged: Annotated[
+        bool,
+        Field(
+            description=(
+                "Set true only after the user explicitly agrees to proceed despite "
+                "the patron's outstanding fines. Leave false for the normal flow."
+            )
+        ),
+    ] = False,
     due_date: Annotated[
         date | None,
         Field(description="Custom due date (defaults to a 14-day loan)"),
@@ -113,11 +153,14 @@ async def checkout_book(
         Field(description="Optional notes, e.g. 'Book club selection'", max_length=500),
     ] = None,
 ) -> CheckoutResult:
-    """Check out a book to a patron.
+    """Complete a checkout only after the user explicitly asks to borrow the book.
 
     Validates patron eligibility and book availability, creates the loan
     record, and updates availability. If the patron has outstanding fines,
     the user is asked to confirm before proceeding (elicitation).
+
+    Do not use this tool for questions such as "Can I check this out?" Use
+    ``checkout_readiness_app`` for those read-only eligibility questions.
     """
     if due_date is not None and due_date < datetime.now().date():
         raise ToolError("Due date cannot be in the past.")
@@ -129,22 +172,50 @@ async def checkout_book(
     # travels server -> client -> user and execution pauses for the answer.
     with get_session() as session:
         patron = PatronRepository(session).get_by_id(patron_id)
-    if patron is not None and 0 < patron.outstanding_fines <= 10.0:
+        existing_checkout = CirculationRepository(session).get_active_checkout_for_book(
+            patron_id, book_isbn
+        )
+    if existing_checkout is not None:
+        _log_operation(
+            "checkout_book_reconciled",
+            checkout_id=existing_checkout.id,
+            patron_id=patron_id,
+            book_isbn=book_isbn,
+        )
+        return _checkout_result(existing_checkout, replayed=True)
+
+    if patron is not None and 0 < patron.outstanding_fines <= 10.0 and not fines_acknowledged:
         try:
-            answer = await ctx.elicit(
+            answer = await elicit_with_timeout(
+                ctx,
                 f"{patron.name} has ${patron.outstanding_fines:.2f} in outstanding "
                 "fines. Proceed with this checkout anyway?",
-                response_type=None,  # approval-only: accept / decline / cancel
+                response_type=bool,
+                response_title="Proceed with checkout",
+                response_description=(
+                    "Confirm that the patron may borrow this book despite the listed fines."
+                ),
             )
-        except Exception:  # client doesn't support elicitation — proceed
-            logger.info("Client lacks elicitation support; proceeding without confirmation")
-        else:
-            if answer.action != "accept":
-                _log_operation("checkout_book_declined", patron_id=patron_id, action=answer.action)
-                raise ToolError(
-                    "Checkout cancelled: the librarian declined to proceed while "
-                    f"the patron has ${patron.outstanding_fines:.2f} in fines."
-                )
+        except ElicitationUnavailableError as exc:
+            raise ToolError(
+                f"Confirmation required: {patron.name} has "
+                f"${patron.outstanding_fines:.2f} in outstanding fines. Ask the "
+                "user whether to proceed, then retry this same checkout with "
+                "fines_acknowledged=true. No checkout was created."
+            ) from exc
+        except Exception as exc:
+            raise ToolError(
+                f"Confirmation required before checkout because {patron.name} has "
+                f"${patron.outstanding_fines:.2f} in outstanding fines. Ask the "
+                "user, then retry with fines_acknowledged=true. No checkout was created."
+            ) from exc
+
+        if answer.action != "accept" or not answer.data:
+            _log_operation("checkout_book_declined", patron_id=patron_id, action=answer.action)
+            raise ToolError(
+                "Checkout cancelled: the user did not approve proceeding while "
+                f"the patron has ${patron.outstanding_fines:.2f} in fines."
+            )
 
     with get_session() as session:
         repo = CirculationRepository(session)
@@ -161,27 +232,13 @@ async def checkout_book(
             _log_operation("checkout_book_failed", patron_id=patron_id, error="business_rule")
             raise ToolError(str(e)) from e
 
-    message = (
-        f"Checked out '{checkout.book_isbn}' to {checkout.patron_id}. "
-        f"Due {checkout.due_date.strftime('%B %d, %Y')} "
-        f"({checkout.loan_period_days}-day loan)."
-    )
     _log_operation(
         "checkout_book_success",
         checkout_id=checkout.id,
         patron_id=checkout.patron_id,
         due_date=checkout.due_date.isoformat(),
     )
-    return CheckoutResult(
-        checkout_id=checkout.id,
-        patron_id=checkout.patron_id,
-        book_isbn=checkout.book_isbn,
-        checkout_date=checkout.checkout_date.isoformat(),
-        due_date=checkout.due_date.isoformat(),
-        status=str(checkout.status),
-        loan_period_days=checkout.loan_period_days,
-        message=message,
-    )
+    return _checkout_result(checkout, replayed=False)
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +277,23 @@ async def return_book(
 
     with get_session() as session:
         repo = CirculationRepository(session)
+        existing_return = repo.get_return_for_checkout(checkout_id)
+        if existing_return is not None:
+            return ReturnResult(
+                return_id=existing_return.id,
+                checkout_id=existing_return.checkout_id,
+                book_isbn=existing_return.book_isbn,
+                return_date=existing_return.return_date.isoformat(),
+                condition=existing_return.condition,
+                late_days=existing_return.late_days,
+                fine_assessed=existing_return.fine_assessed,
+                fine_outstanding=existing_return.fine_outstanding,
+                replayed=True,
+                message=(
+                    f"This return was already processed as {existing_return.id}; "
+                    "no second return or fine was created."
+                ),
+            )
         try:
             return_record, _ = repo.return_book(
                 ReturnProcessSchema(
@@ -263,6 +337,7 @@ async def return_book(
         late_days=return_record.late_days,
         fine_assessed=return_record.fine_assessed,
         fine_outstanding=return_record.fine_outstanding,
+        replayed=False,
         message=message,
     )
 
@@ -283,7 +358,7 @@ async def reserve_book(
         str | None, Field(description="Optional notes for the reservation", max_length=500)
     ] = None,
 ) -> ReservationResult:
-    """Reserve a book that is currently unavailable.
+    """Place a hold only after the user explicitly asks to reserve the book.
 
     Places the patron in the hold queue and reports their position and
     estimated wait. The reservation expires if not fulfilled in time.
@@ -299,6 +374,25 @@ async def reserve_book(
 
     with get_session() as session:
         repo = CirculationRepository(session)
+        existing_reservation = repo.get_active_reservation_for_book(patron_id, book_isbn)
+        if existing_reservation is not None:
+            queue_info = repo.get_reservation_queue_info(book_isbn)
+            return ReservationResult(
+                reservation_id=existing_reservation.id,
+                patron_id=existing_reservation.patron_id,
+                book_isbn=existing_reservation.book_isbn,
+                reservation_date=existing_reservation.reservation_date.isoformat(),
+                expiration_date=existing_reservation.expiration_date.isoformat(),
+                status=str(existing_reservation.status),
+                queue_position=existing_reservation.queue_position,
+                estimated_wait_days=queue_info.estimated_wait_days,
+                total_in_queue=queue_info.total_reservations,
+                replayed=True,
+                message=(
+                    f"This hold already exists as {existing_reservation.id}; "
+                    "no duplicate reservation was created."
+                ),
+            )
         try:
             reservation = repo.create_reservation(
                 ReservationCreateSchema(
@@ -337,5 +431,6 @@ async def reserve_book(
         queue_position=reservation.queue_position,
         estimated_wait_days=queue_info.estimated_wait_days,
         total_in_queue=queue_info.total_reservations,
+        replayed=False,
         message=message,
     )
