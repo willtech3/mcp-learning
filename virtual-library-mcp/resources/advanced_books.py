@@ -122,7 +122,7 @@ async def get_books_by_author_handler(author_id: str) -> dict[str, Any]:
                 has_previous=result.has_previous,
             )
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except Exception as e:
         logger.exception("Error in books/by-author resource")
@@ -206,7 +206,7 @@ async def get_books_by_genre_handler(genre: str) -> dict[str, Any]:
                 has_previous=result.has_previous,
             )
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except Exception as e:
         logger.exception("Error in books/by-genre resource")

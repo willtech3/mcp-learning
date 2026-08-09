@@ -40,6 +40,7 @@ from .bulk_import import bulk_import_books
 from .catalog_maintenance import regenerate_catalog
 from .circulation import checkout_book, reserve_book, return_book
 from .membership import renew_membership
+from .patrons import find_patron
 from .search import search_catalog
 
 
@@ -75,6 +76,19 @@ TOOL_SPECS: list[ToolSpec] = [
         ),
         icons=[SEARCH_ICON],
         tags=frozenset({"catalog"}),
+    ),
+    ToolSpec(
+        fn=find_patron,
+        name="find_patron",
+        annotations=ToolAnnotations(
+            title="Find Patron Account",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+        icons=[CARD_ICON],
+        tags=frozenset({"patrons"}),
     ),
     ToolSpec(
         fn=checkout_book,

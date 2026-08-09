@@ -160,7 +160,7 @@ async def get_patron_history_handler(patron_id: str) -> dict[str, Any]:
                 history=history_entries,
             )
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except ResourceError:
         raise

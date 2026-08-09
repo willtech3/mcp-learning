@@ -5,17 +5,22 @@ and administration tools that should not sit behind an unauthenticated tunnel.
 This deliberately narrow server publishes only the read-only MCP Apps demos.
 """
 
+import os
+
 from fastmcp import FastMCP
 
 from tools.apps import register
+
+os.environ.setdefault("FASTMCP_CHECK_FOR_UPDATES", "off")
 
 mcp = FastMCP(
     name="Virtual Library MCP Apps",
     version="0.1.0",
     instructions=(
         "Use browse_catalog_app to visually explore books and "
-        "library_dashboard_app to show circulation and popularity. "
-        "Both tools are read-only demonstrations backed by simulated library data."
+        "library_dashboard_app to show circulation and popularity. Use "
+        "patron_account_app to find a simulated patron by familiar details "
+        "without requiring a patron number. All tools are read-only demonstrations."
     ),
 )
 register(mcp)

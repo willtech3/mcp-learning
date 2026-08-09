@@ -21,7 +21,7 @@ class ObservabilityConfig(BaseModel):
         default_factory=lambda: os.getenv("LOGFIRE_CONSOLE", "false").lower() == "true"
     )
     send_to_logfire: bool = Field(
-        default_factory=lambda: os.getenv("LOGFIRE_SEND", "true").lower() == "true"
+        default_factory=lambda: os.getenv("LOGFIRE_SEND", "false").lower() == "true"
     )
 
     sample_rate: float = Field(default=1.0, ge=0.0, le=1.0)

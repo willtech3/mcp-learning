@@ -66,7 +66,7 @@ dev-http-auth:
 
 # Preview MCP App tools in FastMCP's local AppBridge host
 dev-apps:
-    uv run fastmcp dev apps apps_server.py
+    uv run fastmcp dev apps apps_server.py --mcp-port 8002 --dev-port 8081
 
 # Run only the read-only MCP App tools for temporary HTTPS tunneling
 dev-apps-http:
@@ -164,11 +164,11 @@ db-init-empty:
 # Show database location and status
 db-info:
     @echo "🗄️ Database Information:"
-    @echo "Location: src/virtual_library_mcp/data/library.db"
-    @ls -lh src/virtual_library_mcp/data/library.db 2>/dev/null && echo "✅ Database exists" || echo "❌ Database not found"
-    @if [ -f src/virtual_library_mcp/data/library.db ]; then \
-        echo "Size: $(du -h src/virtual_library_mcp/data/library.db | cut -f1)"; \
-        echo "Tables: $(sqlite3 src/virtual_library_mcp/data/library.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "Unable to read")"; \
+    @echo "Location: data/library.db"
+    @ls -lh data/library.db 2>/dev/null && echo "✅ Database exists" || echo "❌ Database not found"
+    @if [ -f data/library.db ]; then \
+        echo "Size: $(du -h data/library.db | cut -f1)"; \
+        echo "Tables: $(sqlite3 data/library.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "Unable to read")"; \
     fi
 
 # Seed database with the curated catalog + simulated circulation
@@ -202,6 +202,14 @@ check-all: lint typecheck test
     @echo "✅ Comprehensive validation complete!"
 
 # === MCP PROTOCOL TESTING ===
+
+# Launch the official MCP Inspector web UI with explicit dual-era connections
+inspector-web:
+    uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --web --config mcp-inspector.json
+
+# Run an Inspector CLI method against the stable 2025-11-25 protocol path
+inspector-legacy method="tools/list" *args:
+    uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --cli --config mcp-inspector.json --server virtual-library-legacy --method {{method}} {{args}}
 
 # Test MCP protocol compliance
 # Validates that our server correctly implements the MCP specification

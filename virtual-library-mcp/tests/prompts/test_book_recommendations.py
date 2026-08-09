@@ -1,8 +1,17 @@
 """Tests for book recommendation prompt functionality."""
 
+import inspect
+
 import pytest
 
 from prompts.book_recommendations import recommend_books
+
+
+def test_patron_id_schema_uses_real_string_identifier():
+    """Patron IDs are values like patron_00042, never integers."""
+    annotation = inspect.signature(recommend_books).parameters["patron_id"].annotation
+
+    assert annotation == str | None
 
 
 @pytest.mark.asyncio

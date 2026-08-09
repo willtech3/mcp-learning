@@ -11,6 +11,7 @@ MCP TESTING PHILOSOPHY:
 """
 
 import inspect
+import json
 import re
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -128,6 +129,7 @@ class TestBookListResource:
                 assert result["total_pages"] == 1
                 assert result["has_next"] is False
                 assert result["has_previous"] is False
+                json.dumps(result)
 
                 # Verify repository was called with default params
                 mock_repo.search.assert_called_once()
@@ -224,6 +226,7 @@ class TestBookDetailResource:
                 assert result["isbn"] == isbn.replace("-", "")  # ISBN is normalized
                 assert result["title"] == "The Art of Computer Programming"
                 assert result["author_id"] == "author_knuth_donald"
+                json.dumps(result)
 
                 # Verify repository was called correctly
                 mock_repo.get_by_isbn.assert_called_once_with(isbn)

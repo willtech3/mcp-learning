@@ -59,6 +59,7 @@ _CM_SESSION_PATCHES = [
     "tools.circulation.get_session",
     "tools.membership.get_session",
     "tools.book_insights.session_scope",
+    "tools.patrons.session_scope",
     "resources.books.session_scope",
     "resources.advanced_books.session_scope",
     "resources.patrons.session_scope",

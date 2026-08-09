@@ -38,6 +38,7 @@ _SESSION_FACTORY_PATCHES = [
     "tools.bulk_import.session_scope",
     "tools.catalog_maintenance.session_scope",
     "tools.book_insights.session_scope",
+    "tools.patrons.session_scope",
     "resources.stats.session_scope",
 ]
 

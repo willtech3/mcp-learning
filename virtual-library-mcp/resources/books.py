@@ -92,7 +92,7 @@ async def list_books_handler() -> dict[str, Any]:
                 has_previous=result.has_previous,
             )
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except Exception as e:
         logger.exception("Error in books/list resource")
@@ -115,7 +115,7 @@ async def get_book_handler(isbn: str) -> dict[str, Any]:
             if book is None:
                 raise ResourceError(f"Book not found: {isbn}")
 
-            return book.model_dump()
+            return book.model_dump(mode="json")
 
     except ResourceError:
         raise

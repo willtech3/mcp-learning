@@ -26,6 +26,7 @@ Transports (VIRTUAL_LIBRARY_TRANSPORT):
 """
 
 import logging
+import os
 import secrets as secrets_module
 import sys
 from functools import partial
@@ -45,6 +46,9 @@ from observability import get_config as get_obs_config
 from observability.middleware import MCPInstrumentationMiddleware
 
 load_dotenv()
+
+# Demo and desktop-client startup must not depend on PyPI availability.
+os.environ.setdefault("FASTMCP_CHECK_FOR_UPDATES", "off")
 
 # stderr for logs — stdout belongs to the MCP protocol when using stdio.
 logging.basicConfig(

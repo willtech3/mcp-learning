@@ -35,7 +35,7 @@ OAuth 2.1 flow against the deployed server).
 | MCP feature | Where to see it |
 |---|---|
 | Resources + RFC 6570 templates | `library://books/list`, `library://books/{isbn}`, stats and recommendations |
-| Tools with real input/output schemas | all 8 tools — typed signatures, structured content |
+| Tools with real input/output schemas | all 9 tools — typed signatures, structured content |
 | Tool annotations + icons (SEP-973) | read-only/idempotent hints, data-URI SVG icons |
 | **Elicitation** (approval + enum select) | `checkout_book` (fines confirmation), `renew_membership` (term choice) |
 | **Sampling** (server-initiated LLM calls) | `generate_book_insights` |
@@ -70,14 +70,17 @@ mcp-client demo --server http://127.0.0.1:8080/mcp --anonymous
 
 ## MCP Apps demo
 
-The FastMCP protocol path includes two read-only MCP App tools:
+The FastMCP protocol path includes three read-only MCP App tools:
 
 - `browse_catalog_app` renders a searchable, sortable catalog with inventory
   metrics and selectable book details.
 - `library_dashboard_app` renders circulation metrics, genre activity, and a
   popular-books table.
+- `patron_account_app` finds a simulated patron by name or familiar contact
+  details, masks private fields, and shows membership and current loans without
+  requiring the patron to know an internal card number.
 
-Preview both tools in FastMCP's local AppBridge host:
+Preview all three tools in FastMCP's local AppBridge host:
 
 ```bash
 just dev-apps
@@ -96,7 +99,7 @@ In ChatGPT, enable **Settings → Security and login → Developer mode**, then 
 **Plugins** and use the plus button to create a developer-mode app. Set its MCP
 server URL to the tunnel's HTTPS URL followed by `/mcp`, for example
 `https://example.ngrok.app/mcp`. Refresh the app in ChatGPT after changing tool
-metadata. The app-only endpoint is stateless and contains only the two read-only
+metadata. The app-only endpoint is stateless and contains only the three read-only
 UI tools; it still serves simulated data and is intended for short-lived
 development tunnels rather than permanent hosting.
 

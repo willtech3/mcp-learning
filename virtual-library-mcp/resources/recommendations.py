@@ -458,7 +458,7 @@ async def get_patron_recommendations_handler(patron_id: str) -> dict[str, Any]:
             engine = RecommendationEngine(session, patron_id, params)
             response = engine.generate_recommendations()
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except ResourceError:
         raise

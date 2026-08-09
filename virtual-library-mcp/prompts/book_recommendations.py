@@ -15,7 +15,7 @@ from database.session import get_session
 async def recommend_books(
     genre: str | None = None,
     mood: str | None = None,
-    patron_id: int | None = None,
+    patron_id: str | None = None,
     limit: int = 5,
     _session=None,  # For testing
 ) -> str:
