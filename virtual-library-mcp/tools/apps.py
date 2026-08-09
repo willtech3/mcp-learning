@@ -127,6 +127,33 @@ def _catalog_location(genre: str) -> str:
     return "Adult Fiction"
 
 
+def _detail_buttons(
+    rows: list[dict[str, Any]],
+    *,
+    label_key: str,
+    destination: str,
+    prompt: str,
+) -> None:
+    """Add explicit drill-down controls for MCP App renderers without row events."""
+    if not rows:
+        return
+
+    with Column(gap=2):
+        Small(prompt)
+        with Grid(columns=2, gap=2):
+            for row in rows:
+                Button(
+                    f"Open {row[label_key]}",
+                    icon="arrow-right",
+                    variant="outline",
+                    size="sm",
+                    on_click=[
+                        SetState("selected", row),
+                        SetState("page", destination),
+                    ],
+                )
+
+
 def _catalog_rows(
     query: str | None,
     genre: str | None,
@@ -258,6 +285,12 @@ async def browse_catalog_app(
                         SetState("selected", Rx("$event")),
                         SetState("page", "details"),
                     ],
+                )
+                _detail_buttons(
+                    rows,
+                    label_key="title",
+                    destination="details",
+                    prompt="Open a shelf record",
                 )
 
             with Page("Book details", value="details"):
@@ -440,6 +473,12 @@ async def patron_account_app(
                             SetState("selected", Rx("$event")),
                             SetState("page", "account"),
                         ],
+                    )
+                    _detail_buttons(
+                        rows,
+                        label_key="name",
+                        destination="account",
+                        prompt="Choose an account",
                     )
                 else:
                     with Alert(variant="warning"):
@@ -858,6 +897,12 @@ async def reading_recommendations_app(
                                 SetState("selected", Rx("$event")),
                                 SetState("page", "details"),
                             ],
+                        )
+                        _detail_buttons(
+                            recommendations,
+                            label_key="title",
+                            destination="details",
+                            prompt="Open a recommendation",
                         )
                     else:
                         with Alert(variant="warning"):

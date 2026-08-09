@@ -139,6 +139,8 @@ class TestAppBehavior:
         assert "Book details" in payload
         assert "Library record" in payload
         assert "Check borrowing readiness" in payload
+        assert "Open The Available Book" in payload
+        assert '"action": "setState"' in payload
 
     async def test_dashboard_contains_metrics_and_popular_books(self, client):
         result = await client.call_tool(
@@ -164,6 +166,7 @@ class TestAppBehavior:
         assert "The Popular Book" in payload
         assert "Current loans" in payload
         assert "Reading profile" in payload
+        assert "Open Clean Reader" in payload
 
     async def test_checkout_readiness_resolves_book_and_patron_without_ids(self, client):
         result = await client.call_tool(
@@ -205,6 +208,7 @@ class TestAppBehavior:
         assert "patron_clean001" not in payload
         assert "clean@example.com" not in payload
         assert all(int(score) <= 100 for score in re.findall(r'"match": "(\d+)%', payload))
+        assert "Open The Available Book" in payload
 
     async def test_patron_app_explains_truncated_matches(self, client):
         result = await client.call_tool(
