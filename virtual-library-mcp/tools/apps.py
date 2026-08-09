@@ -15,7 +15,7 @@ from datetime import date
 from typing import Annotated, Any, Literal
 
 from fastmcp import FastMCP
-from fastmcp.apps import UI_MIME_TYPE, AppConfig, ResourceCSP
+from fastmcp.apps import UI_MIME_TYPE, PrefabAppConfig, ResourceCSP
 from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from prefab_ui.actions import RequestDisplayMode, SendMessage, SetState
@@ -1004,27 +1004,15 @@ def app_resource_definitions() -> list[dict[str, Any]]:
 
 def register(mcp: FastMCP) -> None:
     """Register the UI tools on the FastMCP path used by MCP Apps hosts."""
-    config = get_config()
-    renderer_app = AppConfig(
-        csp=ResourceCSP(**get_renderer_csp()),
-        domain=config.base_url,
-    )
-    tool_app = AppConfig(resourceUri=PREFAB_RENDERER_URI)
-
-    @mcp.resource(
-        PREFAB_RENDERER_URI,
-        name="Virtual Library App Renderer",
-        mime_type=UI_MIME_TYPE,
-        app=renderer_app,
-    )
-    def prefab_renderer() -> str:
-        return get_renderer_html()
-
     for spec in APP_TOOL_SPECS:
         mcp.tool(
             spec.fn,
             name=spec.name,
-            app=tool_app,
+            # FastMCP synthesizes an isolated, per-tool Prefab renderer URI.
+            # ChatGPT binds a component resource to the tool that declared it;
+            # sharing one hand-registered renderer across unrelated app tools
+            # can leave the host with a stale or mismatched component schema.
+            app=PrefabAppConfig(),
             annotations=spec.annotations,
             icons=spec.icons,
             tags=set(spec.tags),
