@@ -8,6 +8,10 @@ from fastmcp import Client, FastMCP
 
 import apps_server
 import server
+from modern.context import ModernContext
+from modern.meta import RequestMeta
+from modern.registry import ModernRegistry
+from modern.types import ClientCapabilities, Implementation
 from tools import apps
 
 
@@ -64,6 +68,50 @@ class TestAppDescriptors:
 
         descriptor = renderer.model_dump(by_alias=True, exclude_none=True)
         assert descriptor["_meta"]["ui"]["domain"] == "https://library.example"
+
+    async def test_modern_registry_exposes_standard_app_extension(self, library):
+        registry = ModernRegistry()
+        capabilities = registry.capabilities().to_wire()
+        tools = {tool.name: tool.to_wire() for tool in registry.list_tools()}
+        resources = {resource.uri: resource.to_wire() for resource in registry.list_resources()}
+
+        assert capabilities["extensions"][apps.MCP_APPS_EXTENSION_ID] == {
+            "mimeTypes": ["text/html;profile=mcp-app"]
+        }
+        assert tools["browse_catalog_app"]["_meta"] == {
+            "ui": {"resourceUri": apps.PREFAB_RENDERER_URI}
+        }
+        assert resources[apps.PREFAB_RENDERER_URI]["mimeType"] == ("text/html;profile=mcp-app")
+
+    async def test_modern_registry_reads_renderer_with_security_metadata(self, library):
+        registry = ModernRegistry()
+        context = ModernContext(
+            meta=RequestMeta(
+                protocol_version="2026-07-28",
+                client_info=Implementation(name="test", version="1.0.0"),
+                client_capabilities=ClientCapabilities(
+                    extensions={
+                        apps.MCP_APPS_EXTENSION_ID: {"mimeTypes": ["text/html;profile=mcp-app"]}
+                    }
+                ),
+                log_level=None,
+                progress_token=None,
+                trace={},
+            ),
+            request_id=1,
+            principal=None,
+            memo={},
+            notify=None,
+            registry=registry,
+        )
+
+        contents = await registry.read_resource(apps.PREFAB_RENDERER_URI, context)
+
+        assert contents[0]["mimeType"] == "text/html;profile=mcp-app"
+        assert contents[0]["_meta"]["ui"]["csp"] == {
+            "resourceDomains": ["https://cdn.jsdelivr.net"]
+        }
+        assert "<html" in contents[0]["text"].lower()
 
 
 class TestAppBehavior:

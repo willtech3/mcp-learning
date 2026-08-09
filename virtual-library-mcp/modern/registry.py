@@ -150,8 +150,9 @@ class _ToolEntry:
 @dataclass
 class _ResourceEntry:
     definition: Resource
-    handler: Callable[..., Awaitable[dict[str, Any]]]
+    handler: Callable[..., Awaitable[Any]]
     mime_type: str
+    content_meta: dict[str, Any] | None
 
 
 @dataclass
@@ -262,13 +263,27 @@ class ModernRegistry:
         # Default to the shared declarative tables.  Imported lazily so a
         # test can hand in tiny synthetic spec lists without touching the
         # real database-backed handlers.
+        default_extension_capabilities: dict[str, dict[str, Any]] = {}
         if tool_specs is None or resource_groups is None or prompt_specs is None:
             from prompts import PROMPT_SPECS
             from resources import _RESOURCE_GROUPS
             from tools import TOOL_SPECS
+            from tools.apps import (
+                APP_EXTENSION_CAPABILITIES,
+                APP_TOOL_SPECS,
+                app_resource_definitions,
+            )
 
-            tool_specs = TOOL_SPECS if tool_specs is None else tool_specs
-            resource_groups = _RESOURCE_GROUPS if resource_groups is None else resource_groups
+            if tool_specs is None:
+                tool_specs = [*TOOL_SPECS, *APP_TOOL_SPECS]
+                default_extension_capabilities.update(APP_EXTENSION_CAPABILITIES)
+            if resource_groups is None:
+                from icons import BOOK_ICON
+
+                resource_groups = [
+                    *_RESOURCE_GROUPS,
+                    (app_resource_definitions(), BOOK_ICON, {"app"}),
+                ]
             prompt_specs = PROMPT_SPECS if prompt_specs is None else prompt_specs
 
         self._tools: dict[str, _ToolEntry] = {}
@@ -293,7 +308,7 @@ class ModernRegistry:
         self.extension_methods: dict[str, MethodHandler] = {}
         #: Extra ServerCapabilities.extensions fragments (e.g. from the
         #: tasks extension, whose methods carry no provider object).
-        self._extension_capabilities: dict[str, dict[str, Any]] = {}
+        self._extension_capabilities = default_extension_capabilities
 
         #: Hidden component names, per kind ("tool"/"resource"/"template"/
         #: "prompt").  Names are DISPLAY names — matching what FastMCP's
@@ -319,6 +334,7 @@ class ModernRegistry:
             output_schema=output_schema,
             annotations=_dump(spec.annotations) if spec.annotations is not None else None,
             icons=[_dump(icon) for icon in spec.icons] or None,
+            meta=getattr(spec, "meta", None),
         )
         ctx_param = _find_ctx_param(spec.fn)
         skip = {ctx_param} if ctx_param else set()
@@ -339,6 +355,7 @@ class ModernRegistry:
             "description": definition["description"],
             "mime_type": mime_type,
             "icons": [_dump(icon)],
+            "meta": definition.get("meta"),
         }
         if "uri_template" in definition and definition.get("uri_template"):
             template = definition["uri_template"]
@@ -358,6 +375,7 @@ class ModernRegistry:
                 definition=Resource(uri=uri, **common),
                 handler=definition["handler"],
                 mime_type=mime_type,
+                content_meta=definition.get("meta"),
             )
 
     def _compile_prompt(self, spec: Any) -> _PromptEntry:
@@ -622,8 +640,11 @@ class ModernRegistry:
             structured = value.structured_content
             is_error = value.is_error
         elif isinstance(value, BaseModel):
-            structured = value.model_dump(mode="json")
-            content = [{"type": "text", "text": json.dumps(structured, indent=2, default=str)}]
+            structured = value.model_dump(mode="json", by_alias=True)
+            if "$prefab" in structured:
+                content = [{"type": "text", "text": "[Rendered Prefab UI]"}]
+            else:
+                content = [{"type": "text", "text": json.dumps(structured, indent=2, default=str)}]
         elif isinstance(value, str):
             content = [{"type": "text", "text": value}]
             if entry.wrap_result:
@@ -654,7 +675,12 @@ class ModernRegistry:
         del ctx  # current handlers take no context; kept for MRTR parity
         entry = self._resources.get(uri)
         if entry is not None and not self._is_disabled("resource", entry.definition.name):
-            return await self._invoke_resource(uri, entry.mime_type, entry.handler)
+            return await self._invoke_resource(
+                uri,
+                entry.mime_type,
+                entry.handler,
+                content_meta=entry.content_meta,
+            )
 
         for template in self._templates:
             if self._is_disabled("template", template.definition.name):
@@ -682,8 +708,9 @@ class ModernRegistry:
         self,
         uri: str,
         mime_type: str,
-        handler: Callable[..., Awaitable[dict[str, Any]]],
+        handler: Callable[..., Awaitable[Any]],
         variables: dict[str, str] | None = None,
+        content_meta: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         try:
             value = await handler(**(variables or {}))
@@ -693,7 +720,14 @@ class ModernRegistry:
             # into -32602 with the message intact.
             raise InvalidParamsError(str(exc), data={"uri": uri}) from exc
         text = value if isinstance(value, str) else json.dumps(value, indent=2, default=str)
-        return [TextResourceContents(uri=uri, mime_type=mime_type, text=text).to_wire()]
+        return [
+            TextResourceContents(
+                uri=uri,
+                mime_type=mime_type,
+                text=text,
+                meta=content_meta,
+            ).to_wire()
+        ]
 
     async def directory_read(self, uri: str) -> list[Resource]:
         """``resources/directory/read`` (SEP-2640) across providers."""

@@ -2,13 +2,14 @@
 
 FastMCP attaches standard MCP Apps UI metadata while Prefab serializes each
 component tree into structured content. The renderer is registered explicitly
-so its stable sandbox domain survives on the wire. These tools are registered
-only on the FastMCP protocol path used by current MCP Apps hosts; the hand-built
-2026-07-28 teaching transport remains framework-independent.
+so its stable sandbox domain survives on the wire. Shared app definitions also
+let the hand-built 2026-07-28 teaching transport advertise the independent MCP
+Apps extension without changing either core protocol version.
 """
 
 import re
 import unicodedata
+from dataclasses import dataclass
 from datetime import date
 from typing import Annotated, Any, Literal
 
@@ -61,6 +62,7 @@ from resources.stats import (
 from .patrons import mask_email, mask_phone
 
 PREFAB_RENDERER_URI = "ui://virtual-library/prefab/renderer-v1.html"
+MCP_APPS_EXTENSION_ID = "io.modelcontextprotocol/ui"
 
 _COLLECTION_CODES = {
     "Adventure": "ADV",
@@ -489,14 +491,94 @@ async def library_dashboard_app(
     return app
 
 
+@dataclass(frozen=True)
+class AppToolSpec:
+    """Framework-neutral metadata shared by both protocol revisions."""
+
+    fn: Any
+    name: str
+    annotations: ToolAnnotations
+    icons: list[Any]
+    tags: frozenset[str]
+    meta: dict[str, Any]
+
+
+_APP_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
+)
+_APP_TOOL_META = {"ui": {"resourceUri": PREFAB_RENDERER_URI}}
+
+APP_TOOL_SPECS = [
+    AppToolSpec(
+        fn=browse_catalog_app,
+        name="browse_catalog_app",
+        annotations=_APP_ANNOTATIONS,
+        icons=[BOOK_ICON],
+        tags=frozenset({"app", "catalog"}),
+        meta=_APP_TOOL_META,
+    ),
+    AppToolSpec(
+        fn=library_dashboard_app,
+        name="library_dashboard_app",
+        annotations=_APP_ANNOTATIONS,
+        icons=[SPARKLE_ICON],
+        tags=frozenset({"app", "analytics"}),
+        meta=_APP_TOOL_META,
+    ),
+    AppToolSpec(
+        fn=patron_account_app,
+        name="patron_account_app",
+        annotations=_APP_ANNOTATIONS,
+        icons=[CARD_ICON],
+        tags=frozenset({"app", "patrons"}),
+        meta=_APP_TOOL_META,
+    ),
+]
+
+APP_EXTENSION_CAPABILITIES = {
+    MCP_APPS_EXTENSION_ID: {"mimeTypes": [UI_MIME_TYPE]},
+}
+
+
+def renderer_resource_meta() -> dict[str, Any]:
+    """Return the reviewable CSP and optional production sandbox domain."""
+    config = get_config()
+    ui_meta: dict[str, Any] = {
+        "csp": ResourceCSP(**get_renderer_csp()).model_dump(
+            by_alias=True,
+            exclude_none=True,
+            mode="json",
+        )
+    }
+    if config.base_url:
+        ui_meta["domain"] = config.base_url
+    return {"ui": ui_meta}
+
+
+async def prefab_renderer_resource() -> str:
+    """Serve the pinned Prefab renderer as an MCP Apps HTML resource."""
+    return get_renderer_html()
+
+
+def app_resource_definitions() -> list[dict[str, Any]]:
+    """Return the modern registry's declaration for the shared renderer."""
+    return [
+        {
+            "uri": PREFAB_RENDERER_URI,
+            "name": "Virtual Library App Renderer",
+            "description": "Sandboxed renderer for the virtual library MCP Apps.",
+            "mime_type": UI_MIME_TYPE,
+            "handler": prefab_renderer_resource,
+            "meta": renderer_resource_meta(),
+        }
+    ]
+
+
 def register(mcp: FastMCP) -> None:
     """Register the UI tools on the FastMCP path used by MCP Apps hosts."""
-    annotations = ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    )
     config = get_config()
     renderer_app = AppConfig(
         csp=ResourceCSP(**get_renderer_csp()),
@@ -513,32 +595,27 @@ def register(mcp: FastMCP) -> None:
     def prefab_renderer() -> str:
         return get_renderer_html()
 
-    mcp.tool(
-        browse_catalog_app,
-        app=tool_app,
-        annotations=annotations,
-        icons=[BOOK_ICON],
-        tags={"app", "catalog"},
-    )
-    mcp.tool(
-        library_dashboard_app,
-        app=tool_app,
-        annotations=annotations,
-        icons=[SPARKLE_ICON],
-        tags={"app", "analytics"},
-    )
-    mcp.tool(
-        patron_account_app,
-        app=tool_app,
-        annotations=annotations,
-        icons=[CARD_ICON],
-        tags={"app", "patrons"},
-    )
+    for spec in APP_TOOL_SPECS:
+        mcp.tool(
+            spec.fn,
+            name=spec.name,
+            app=tool_app,
+            annotations=spec.annotations,
+            icons=spec.icons,
+            tags=set(spec.tags),
+        )
 
 
 __all__ = [
+    "APP_EXTENSION_CAPABILITIES",
+    "APP_TOOL_SPECS",
+    "MCP_APPS_EXTENSION_ID",
+    "PREFAB_RENDERER_URI",
+    "app_resource_definitions",
     "browse_catalog_app",
     "library_dashboard_app",
     "patron_account_app",
+    "prefab_renderer_resource",
     "register",
+    "renderer_resource_meta",
 ]

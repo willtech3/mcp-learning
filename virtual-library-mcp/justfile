@@ -215,6 +215,26 @@ inspector-legacy method="tools/list" *args:
 inspector-stdio method="initialize" *args:
     uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --cli just dev --cwd {{justfile_directory()}} --method {{method}} {{args}}
 
+# Verify the checked-in project server as a fresh Claude Code workspace sees it
+client-claude-list:
+    cd .. && claude mcp list
+
+# Open an interactive Claude Code session to review project trust and MCP approval
+client-claude:
+    cd .. && claude
+
+# Verify the checked-in project server with the Codex binary bundled by ChatGPT
+client-codex-list codex_bin="/Applications/ChatGPT.app/Contents/Resources/codex":
+    cd .. && "{{codex_bin}}" mcp list
+
+# Show the effective Codex MCP entry after project/user config layering
+client-codex-get server="virtual-library-local" codex_bin="/Applications/ChatGPT.app/Contents/Resources/codex":
+    cd .. && "{{codex_bin}}" mcp get "{{server}}"
+
+# Prove a new Codex run can discover and call the read-only project server
+client-codex-smoke codex_bin="/Applications/ChatGPT.app/Contents/Resources/codex":
+    cd .. && "{{codex_bin}}" exec "Use only the virtual-library-local MCP server. Search the catalog for Murderbot without modifying anything. Return the matching titles and the MCP tool name used."
+
 # Test MCP protocol compliance
 # Validates that our server correctly implements the MCP specification
 test-mcp-protocol:
@@ -330,9 +350,15 @@ build:
 prod-check:
     @echo "🚀 Running production readiness checks..."
     @just check-all
-    @echo "🔒 Security check..."
+    @just security-audit
     @echo "📊 Performance baseline..."
     @echo "✅ Production readiness validated!"
+
+# Audit every locked runtime and development dependency against OSV
+security-audit:
+    @echo "🔒 Auditing locked dependencies for known vulnerabilities..."
+    uv audit --preview-features audit --locked
+    @echo "✅ Dependency security audit complete!"
 
 # === HELP ===
 

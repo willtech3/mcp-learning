@@ -103,6 +103,23 @@ metadata. The app-only endpoint is stateless and contains only the three read-on
 UI tools; it still serves simulated data and is intended for short-lived
 development tunnels rather than permanent hosting.
 
+## Fresh Codex and Claude Code sessions
+
+The repository root includes project-scoped configuration for both clients:
+
+- `.codex/config.toml` lets a trusted Codex project start the server over
+  stdio and prompts for write-capable tools while allowing read-only discovery.
+- `.mcp.json` lets Claude Code offer the same local server after its required
+  project-server approval.
+
+Open the repository root in either client and approve the checked-in project
+configuration when prompted. No endpoint, token, or patron number needs to be
+copied. This is intentionally a local stdio flow: the operating-system user and
+project trust boundary provide isolation, and MCP OAuth does not apply to stdio.
+Remote product clients still require a configured HTTPS endpoint with OAuth or
+a private product tunnel; MCP `server/discover` discovers capabilities after a
+client knows the endpoint, not the endpoint's network location.
+
 ## Transports & security
 
 - **stdio** (default): local development, Claude Desktop integration.

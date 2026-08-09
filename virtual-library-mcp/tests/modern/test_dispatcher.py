@@ -290,6 +290,9 @@ class TestDiscover:
         assert caps["resources"] == {"subscribe": True, "listChanged": True}
         assert caps["prompts"] == {"listChanged": True}
         assert caps["completions"] == {}
+        assert caps["extensions"]["io.modelcontextprotocol/ui"] == {
+            "mimeTypes": ["text/html;profile=mcp-app"]
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -311,6 +314,9 @@ class TestLists:
         checkout = next(t for t in result["tools"] if t["name"] == "checkout_book")
         assert checkout["inputSchema"]["required"] == ["patron_id", "book_isbn"]
         assert "ctx" not in checkout["inputSchema"]["properties"]
+
+        app = next(t for t in result["tools"] if t["name"] == "browse_catalog_app")
+        assert app["_meta"]["ui"]["resourceUri"].startswith("ui://")
 
     async def test_resources_and_templates_and_prompts_sorted(self, dispatcher):
         for method, key in [

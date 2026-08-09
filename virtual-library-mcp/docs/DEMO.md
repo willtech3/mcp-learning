@@ -38,6 +38,19 @@ For the visual Apps walkthrough, run `just dev-apps` in another terminal. It
 opens the catalog, library dashboard, and patron-account experiences without
 exposing any write tools.
 
+Inspector 2.1.0 can validate each App tool, UI resource, and capability. Its
+published npm bundle currently omits `clients/web/static/sandbox_proxy.html`,
+so use the FastMCP host above for the visual portion if Inspector reports
+"Sandbox not loaded". Do not work around that packaging defect by disabling
+the App CSP or editing the installed package.
+
+For a fresh coding-agent walkthrough, open the repository root in Codex or
+Claude Code. The checked-in `.codex/config.toml` and `.mcp.json` start the
+stdio server after the client's project-trust approval. This is the strongest
+zero-fiddle flow MCP currently permits: `server/discover` selects versions and
+capabilities only after a client knows the server process or URL. Remote hosts
+still need a stable HTTPS URL plus OAuth, or a supported private tunnel.
+
 For the OAuth variant, run against the Cloud Run deployment instead and
 drop `--anonymous` — the browser sign-in IS the demo of the
 authorization spec.
