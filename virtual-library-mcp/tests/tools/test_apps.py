@@ -5,7 +5,7 @@ import re
 from types import SimpleNamespace
 
 import pytest
-from fastmcp import Client, FastMCP
+from fastmcp import Client
 
 import apps_server
 import server
@@ -37,6 +37,7 @@ class TestAppDescriptors:
 
     async def test_app_tools_publish_ui_metadata_and_safety_hints(self, client):
         tools = {tool.name: tool for tool in await client.list_tools()}
+        renderer_uris = set()
 
         for name in (
             "browse_catalog_app",
@@ -52,31 +53,31 @@ class TestAppDescriptors:
                 "idempotentHint": True,
                 "openWorldHint": False,
             }
-            assert descriptor["_meta"]["ui"]["resourceUri"].startswith("ui://")
+            renderer_uri = descriptor["_meta"]["ui"]["resourceUri"]
+            assert renderer_uri.startswith("ui://prefab/tool/")
+            renderer_uris.add(renderer_uri)
+
+        assert len(renderer_uris) == 5
 
     async def test_prefab_renderer_resource_is_registered(self, client):
         resources = await client.list_resources()
         renderers = [resource for resource in resources if str(resource.uri).startswith("ui://")]
 
-        assert renderers
-        renderer = (await client.read_resource(renderers[0].uri))[0]
-        assert renderer.mimeType == "text/html;profile=mcp-app"
+        assert len(renderers) == 5
+        for resource in renderers:
+            renderer = (await client.read_resource(resource.uri))[0]
+            assert renderer.mimeType == "text/html;profile=mcp-app"
+            assert "@prefecthq/prefab-ui@0.20.2" in renderer.text
 
-    async def test_renderer_publishes_configured_stable_domain(self, monkeypatch):
+    async def test_modern_renderer_publishes_configured_stable_domain(self, monkeypatch):
         monkeypatch.setattr(
             apps,
             "get_config",
             lambda: SimpleNamespace(base_url="https://library.example"),
         )
-        mcp = FastMCP("domain-test")
-        apps.register(mcp)
+        resource = apps.app_resource_definitions()[0]
 
-        async with Client(mcp) as app_client:
-            resources = await app_client.list_resources()
-            renderer = (await app_client.read_resource(resources[0].uri))[0]
-
-        descriptor = renderer.model_dump(by_alias=True, exclude_none=True)
-        assert descriptor["_meta"]["ui"]["domain"] == "https://library.example"
+        assert resource["meta"]["ui"]["domain"] == "https://library.example"
 
     async def test_modern_registry_exposes_standard_app_extension(self, library):
         registry = ModernRegistry()
