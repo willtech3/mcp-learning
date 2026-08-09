@@ -25,6 +25,15 @@ removed `logging/setLevel` method during modern startup; the web UI does not.
 The legacy path can also be smoke-tested non-interactively with
 `just inspector-legacy`.
 
+To verify the same quiet stdio process launch used by local desktop clients,
+run `just inspector-stdio`. This confirms that startup writes no banner or
+version-check output into the JSON-RPC channel. Add `--app-info` after
+`tools/list` to probe the three UI resources without invoking them:
+
+```bash
+just inspector-stdio tools/list --app-info
+```
+
 For the visual Apps walkthrough, run `just dev-apps` in another terminal. It
 opens the catalog, library dashboard, and patron-account experiences without
 exposing any write tools.

@@ -26,7 +26,6 @@ Transports (VIRTUAL_LIBRARY_TRANSPORT):
 """
 
 import logging
-import os
 import secrets as secrets_module
 import sys
 from functools import partial
@@ -46,9 +45,6 @@ from observability import get_config as get_obs_config
 from observability.middleware import MCPInstrumentationMiddleware
 
 load_dotenv()
-
-# Demo and desktop-client startup must not depend on PyPI availability.
-os.environ.setdefault("FASTMCP_CHECK_FOR_UPDATES", "off")
 
 # stderr for logs — stdout belongs to the MCP protocol when using stdio.
 logging.basicConfig(
@@ -305,7 +301,9 @@ def main() -> None:
 
     try:
         if config.transport == "stdio":
-            mcp.run(transport="stdio")
+            # A desktop client needs a quiet stdio channel: no banner and no
+            # version-check network request before JSON-RPC begins.
+            mcp.run(transport="stdio", show_banner=False)
         elif config.transport == "stdio-modern":
             # The 2026-07-28 stateless protocol over newline-delimited
             # JSON-RPC. No handshake: the first request can be anything;

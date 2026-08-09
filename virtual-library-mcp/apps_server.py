@@ -5,13 +5,9 @@ and administration tools that should not sit behind an unauthenticated tunnel.
 This deliberately narrow server publishes only the read-only MCP Apps demos.
 """
 
-import os
-
 from fastmcp import FastMCP
 
 from tools.apps import register
-
-os.environ.setdefault("FASTMCP_CHECK_FOR_UPDATES", "off")
 
 mcp = FastMCP(
     name="Virtual Library MCP Apps",
@@ -35,6 +31,7 @@ def main() -> None:
         path="/mcp",
         stateless_http=True,
         json_response=True,
+        show_banner=False,
     )
 
 

@@ -43,34 +43,34 @@ update:
 # Run the MCP server in development mode
 # This starts the server with stdio transport for testing with MCP clients
 dev:
-    @echo "🚀 Starting Virtual Library MCP Server..."
-    @echo "📖 The server will communicate via stdio (standard input/output)"
-    @echo "🔗 Connect your MCP client to test the protocol implementation"
-    .venv/bin/python server.py
+    @echo "🚀 Starting Virtual Library MCP Server..." >&2
+    @echo "📖 The server will communicate via stdio (standard input/output)" >&2
+    @echo "🔗 Connect your MCP client to test the protocol implementation" >&2
+    @FASTMCP_CHECK_FOR_UPDATES=off .venv/bin/python server.py
 
 # Run the server with debug logging
 dev-debug:
-    @echo "🐛 Starting server with debug logging..."
-    MCP_LOG_LEVEL=DEBUG .venv/bin/python server.py
+    @echo "🐛 Starting server with debug logging..." >&2
+    @FASTMCP_CHECK_FOR_UPDATES=off MCP_LOG_LEVEL=DEBUG .venv/bin/python server.py
 
 # Run the Streamable HTTP transport locally WITHOUT auth (localhost only)
 dev-http:
     @echo "🌐 Starting Streamable HTTP on http://127.0.0.1:8080/mcp (no auth - local dev only)"
-    VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true .venv/bin/python server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true .venv/bin/python server.py
 
 # Run the Streamable HTTP transport with OAuth 2.1 (requires Google creds in .env)
 dev-http-auth:
     @echo "🔐 Starting Streamable HTTP with OAuth 2.1 on http://127.0.0.1:8080/mcp"
     @echo "   Requires VIRTUAL_LIBRARY_BASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET in .env"
-    VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_AUTH_ENABLED=true .venv/bin/python server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_AUTH_ENABLED=true .venv/bin/python server.py
 
 # Preview MCP App tools in FastMCP's local AppBridge host
 dev-apps:
-    uv run fastmcp dev apps apps_server.py --mcp-port 8002 --dev-port 8081
+    @FASTMCP_CHECK_FOR_UPDATES=off uv run fastmcp dev apps apps_server.py --mcp-port 8002 --dev-port 8081
 
 # Run only the read-only MCP App tools for temporary HTTPS tunneling
 dev-apps-http:
-    uv run python apps_server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off uv run python apps_server.py
 
 # === CODE QUALITY ===
 
@@ -210,6 +210,10 @@ inspector-web:
 # Run an Inspector CLI method against the stable 2025-11-25 protocol path
 inspector-legacy method="tools/list" *args:
     uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --cli --config mcp-inspector.json --server virtual-library-legacy --method {{method}} {{args}}
+
+# Exercise the quiet stdio launch used by local desktop clients such as Claude
+inspector-stdio method="initialize" *args:
+    uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --cli just dev --cwd {{justfile_directory()}} --method {{method}} {{args}}
 
 # Test MCP protocol compliance
 # Validates that our server correctly implements the MCP specification
