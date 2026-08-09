@@ -60,6 +60,7 @@ _CM_SESSION_PATCHES = [
     "tools.membership.get_session",
     "tools.book_insights.session_scope",
     "tools.patrons.session_scope",
+    "tools.apps.session_scope",
     "resources.books.session_scope",
     "resources.advanced_books.session_scope",
     "resources.patrons.session_scope",
@@ -380,6 +381,26 @@ class TestToolsCall:
         assert result["resultType"] == "complete"
         assert result["structuredContent"]["books"][0]["isbn"] == "9780134685991"
         assert result["content"][0]["type"] == "text"
+
+    async def test_prefab_app_preserves_complete_component_tree(self, dispatcher, library):
+        response = await dispatcher.handle(
+            request(
+                "tools/call",
+                name="checkout_readiness_app",
+                arguments={
+                    "book_query": "Available Book",
+                    "patron_query": "Clean Reader",
+                },
+            ),
+            ENV,
+        )
+
+        structured = response["result"]["structuredContent"]
+        assert "$prefab" in structured, structured
+        assert structured["$prefab"] == {"version": "0.3"}
+        assert structured["view"]["type"] == "Div"
+        assert structured["view"]["children"][0]["type"] == "Column"
+        assert structured["view"]["children"][0]["children"]
 
     async def test_unknown_tool_is_32602(self, dispatcher):
         response = await dispatcher.handle(
