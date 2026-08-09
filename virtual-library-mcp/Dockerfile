@@ -11,9 +11,9 @@
 # right trade-off for a demo catalog — swap SQLite for Cloud SQL when state
 # must survive. Session affinity keeps an MCP client on one instance.
 
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2 AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.11.14@sha256:1025398289b62de8269e70c45b91ffa37c373f38118d7da036fb8bb8efc85d97 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ RUN .venv/bin/python -m database.seed
 
 # --------------------------------------------------------------------------
 
-FROM python:3.12-slim AS runtime
+FROM python:3.12-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2 AS runtime
 
 # Run as an unprivileged user; SQLite needs write access to data/ for its
 # journal files (and demo writes), nothing else is writable.

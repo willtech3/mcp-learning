@@ -239,15 +239,24 @@ client-codex-smoke codex_bin="/Applications/ChatGPT.app/Contents/Resources/codex
 # Validates that our server correctly implements the MCP specification
 test-mcp-protocol:
     @echo "🔌 Testing MCP protocol compliance..."
-    uv run python scripts/test_mcp_compliance.py
+    uv run pytest -q \
+        tests/modern \
+        tests/test_auth.py \
+        tests/test_resources_books.py \
+        tests/tools \
+        tests/prompts \
+        tests/test_sampling.py
     @echo "✅ MCP protocol compliance verified!"
 
 # Start server and run MCP client test
 # Integration test to verify client-server communication
 test-mcp-integration:
     @echo "🔗 Running MCP integration tests..."
-    @echo "This will start the server and test client communication..."
-    uv run python scripts/integration_test.py
+    @echo "Exercising both transports and the MCP Apps protocol bridge..."
+    uv run pytest -q \
+        tests/modern/test_http.py \
+        tests/modern/test_stdio.py \
+        tests/tools/test_apps.py
 
 # === DEVELOPMENT UTILITIES ===
 
@@ -296,7 +305,7 @@ docker-build:
 # Run the container locally (no auth, localhost only)
 docker-run: docker-build
     @echo "🐳 Running on http://127.0.0.1:8080/mcp (insecure local mode)"
-    docker run --rm -p 8080:8080 \
+    docker run --rm -p 127.0.0.1:8080:8080 \
         -e VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true \
         virtual-library-mcp:local
 
