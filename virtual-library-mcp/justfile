@@ -60,9 +60,15 @@ dev-http:
 
 # Run the Streamable HTTP transport with OAuth 2.1 (requires Google creds in .env)
 dev-http-auth:
-    @echo "🔐 Starting Streamable HTTP with OAuth 2.1 on http://127.0.0.1:8080/mcp"
+    @echo "🔐 Starting dual-era Streamable HTTP with shared Google OAuth on http://127.0.0.1:8080/mcp"
     @echo "   Requires VIRTUAL_LIBRARY_BASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET in .env"
-    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_AUTH_ENABLED=true .venv/bin/python server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_AUTH_ENABLED=true VIRTUAL_LIBRARY_MODERN_AUTH_ENABLED=true VIRTUAL_LIBRARY_DISCOVERY_ERA=legacy .venv/bin/python server.py
+
+# Run the educational OAuth stack entirely on loopback (never public)
+dev-http-demo-auth:
+    @echo "🧪 Starting dual-era HTTP with the localhost-only educational authorization server"
+    @echo "   Modern auth is exercised; the legacy path remains loopback-only and unauthenticated"
+    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true VIRTUAL_LIBRARY_MODERN_AUTH_ENABLED=true VIRTUAL_LIBRARY_DEMO_AS_ENABLED=true .venv/bin/python server.py
 
 # Preview MCP App tools in FastMCP's local AppBridge host
 dev-apps:

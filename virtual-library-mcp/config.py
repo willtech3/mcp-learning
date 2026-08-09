@@ -8,6 +8,7 @@ This module demonstrates MCP best practices for configuration:
 """
 
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -255,13 +256,10 @@ class ServerConfig(BaseSettings):
             "Which protocol era's OAuth discovery documents own the SHARED "
             "well-known paths (both RFC 9728 PRM forms and the host-root "
             "RFC 8414 form). 'modern' (default): the 2026-07-28 era serves "
-            "them — right for local demos of the draft auth flow. 'legacy': "
-            "they fall through to the legacy (FastMCP/Google) OAuth stack — "
-            "required for interactive chat clients (Claude, ChatGPT), which "
-            "speak the legacy era and cannot onboard if discovery points at "
-            "the modern demo AS. The modern era stays reachable either way "
-            "via its path-inserted metadata form "
-            "(/.well-known/oauth-authorization-server/auth)."
+            "them when the localhost demo AS is enabled. 'legacy': they fall "
+            "through to the shared FastMCP/Google OAuth stack — required for "
+            "interactive chat clients (Claude, ChatGPT) and used by the Cloud "
+            "Run deployment for both protocol eras."
         ),
         pattern=r"^(modern|legacy)$",
     )
@@ -412,8 +410,16 @@ class ServerConfig(BaseSettings):
         if v is None:
             return v
         v = v.rstrip("/")
-        is_local = v.startswith(("http://localhost", "http://127.0.0.1"))
-        if not v.startswith("https://") and not is_local:
+        try:
+            parsed = urlsplit(v)
+        except ValueError as exc:
+            raise ValueError("base_url must be a valid absolute URL") from exc
+        if not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("base_url must be an absolute URL without userinfo")
+        if parsed.query or parsed.fragment:
+            raise ValueError("base_url must not contain a query string or fragment")
+        is_local = parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+        if parsed.scheme != "https" and not (parsed.scheme == "http" and is_local):
             raise ValueError("base_url must use https:// (http:// allowed only for localhost)")
         return v
 
@@ -457,16 +463,24 @@ class ServerConfig(BaseSettings):
                 "legacy OAuth stack is what serves the shared discovery "
                 "documents in that mode)"
             )
-        if self.modern_auth_enabled and not self.demo_as_enabled:
-            # The modern resource-server path validates JWTs against an
-            # authorization server's JWKS. This educational build bundles its
-            # own AS; pointing at an external AS would need issuer + JWKS
-            # settings that we deliberately keep out of scope (deployment).
+        if self.modern_auth_enabled and not (self.demo_as_enabled or self.auth_enabled):
+            # Production shares the Google-backed FastMCP OAuth proxy with the
+            # legacy era. Local protocol demonstrations may instead use the
+            # built-in teaching AS, but a protected modern path always needs
+            # one complete authorization stack.
             raise ValueError(
-                "modern_auth_enabled=true requires demo_as_enabled=true "
-                "(the educational build validates tokens from its built-in "
-                "authorization server)"
+                "modern_auth_enabled=true requires auth_enabled=true (shared "
+                "Google OAuth) or demo_as_enabled=true (localhost teaching AS)"
             )
+        if self.demo_as_enabled:
+            public_host = (
+                urlsplit(self.base_url).hostname if self.base_url is not None else self.http_host
+            )
+            if public_host not in {"localhost", "127.0.0.1", "::1"}:
+                raise ValueError(
+                    "demo_as_enabled=true is local-development only; use the shared "
+                    "Google OAuth provider for a public deployment"
+                )
         return self
 
     # === Computed Properties ===

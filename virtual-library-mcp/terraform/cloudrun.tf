@@ -2,12 +2,10 @@
 #
 # Two deliberate, documented choices:
 #
-# 1. SESSION AFFINITY ON, SMALL MAX INSTANCES. MCP's Streamable HTTP
-#    transport here is stateful — sampling, elicitation, and notifications
-#    are server->client requests riding the session's SSE stream, and the
-#    demo's SQLite catalog is per-instance. Affinity pins a client to one
-#    instance; the small cap keeps behavior predictable. Stateless wide
-#    scaling would require externalizing sessions and the database.
+# 1. SESSION AFFINITY ON, ONE MAX INSTANCE. The demo's SQLite catalog is
+#    per-instance and ephemeral. Affinity helps legacy clients, but it cannot
+#    make writes consistent across replicas, so Terraform rejects a cap above
+#    one until the catalog is moved to a shared database.
 #
 # 2. PUBLIC INVOKER, AUTH AT THE APP LAYER. MCP clients authenticate with
 #    OAuth 2.1 bearer tokens validated by the server itself (plus the
@@ -123,8 +121,9 @@ resource "google_cloud_run_v2_service" "server" {
       }
 
       # --- MODERN era (2026-07-28) ---------------------------------------
-      # Bearer validation on the modern protocol path, tokens issued by the
-      # bundled educational AS (see variables.tf for the security caveat).
+      # Bearer validation on the modern path shares the Google-backed OAuth
+      # proxy, encrypted Firestore state, and email allowlist with legacy.
+      # The built-in teaching AS is deliberately disabled on Cloud Run.
       env {
         name  = "VIRTUAL_LIBRARY_MODERN_AUTH_ENABLED"
         value = tostring(var.modern_auth_enabled)

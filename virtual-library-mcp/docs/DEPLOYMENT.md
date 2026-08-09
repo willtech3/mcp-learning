@@ -13,7 +13,7 @@ OAuth 2.1 + PKCE story adds**:
 
 | Concern | Cloud Run | AWS Lambda |
 |---|---|---|
-| OAuth 2.1 + PKCE | Modern era: self-contained (bundled AS), zero cloud config. Legacy era: Google OAuth client — two console clicks, aided by Cloud Run's **deterministic URL** (register the redirect URI before first deploy) | Cognito user pool + domain + app client config; function URLs are random, so OAuth client registration needs a deployed URL or a custom domain first |
+| OAuth 2.1 + PKCE | One Google-backed OAuth proxy serves both protocol eras — two console clicks, aided by Cloud Run's **deterministic URL** (register the redirect URI before first deploy) | Cognito user pool + domain + app client config; function URLs are random, so OAuth client registration needs a deployed URL or a custom domain first |
 | Streamable HTTP / SSE | Native (request/response streaming) | Response streaming has payload/time limits and needs an adapter layer for ASGI |
 | Container story | Runs the existing Dockerfile as-is | Needs Lambda-specific packaging or a web adapter |
 | Idle cost | Scale-to-zero ≈ $0 | ≈ $0 (comparable) |
@@ -22,9 +22,9 @@ MCP-specific properties are handled explicitly:
 
 | MCP property | Cloud Run answer |
 |---|---|
-| Legacy stateful sessions (sampling/elicitation ride a session SSE stream) | `session_affinity = true` + small `max_instances` |
+| Legacy stateful sessions (sampling/elicitation ride a session SSE stream) | Deployed legacy path is stateless; session affinity remains a compatibility aid |
 | Modern era is stateless (SEP-2575), but MRTR `requestState` retries may land on any instance | shared HMAC key in Secret Manager (`VIRTUAL_LIBRARY_REQUEST_STATE_SECRET`) |
-| Demo SQLite baked into the image (per-instance, ephemeral) | acceptable for a demo; swap to Cloud SQL for durable writes |
+| Demo SQLite baked into the image (per-instance, ephemeral) | `max_instances = 1` prevents divergent replicas; swap to Cloud SQL before scaling out |
 
 ## Architecture
 
@@ -36,8 +36,8 @@ MCP-specific properties are handled explicitly:
              build image ─> Artifact Registry ─> terraform apply (state in GCS)
                                                      │
 MCP client ──OAuth 2.1 + PKCE──> Cloud Run (virtual-library-mcp)
-   │                                 │ LEGACY era: Google OAuth + email allowlist
-   │<──discovery, tokens─────────────│ MODERN era: bearer JWTs from bundled demo AS
+   │                                 │ BOTH eras: Google OAuth + email allowlist
+   │<──discovery, tokens─────────────│ one OAuth proxy; tokens checked every request
    │                                 │ encrypted OAuth state ──> Firestore
    │                                 │ SQLite catalog (baked into image)
    └──sign-in──> Google OAuth <──────┘ secrets from Secret Manager
@@ -49,20 +49,18 @@ speak the MCP authorization spec. The platform invoker is therefore public
 while the app fails closed: it refuses to serve HTTP unless *both*
 protocol eras have authentication enabled.
 
-### The two eras have different trust models — read this
+### One production trust model, two protocol eras
 
-- **Legacy era (2025-11-25, FastMCP):** Google is the identity provider
-  and `auth_allowed_emails` is the authorization list. Real identity,
-  real access control.
-- **Modern era (2026-07-28, `modern/`):** tokens come from the bundled
-  **educational** authorization server (`/auth/*`). It demonstrates the
-  full draft flow — PKCE S256, resource indicators, RFC 9207 `iss`, CIMD —
-  but it has **no user database**: anyone who completes the PKCE flow
-  (with a consent click; auto-approve is off in production) gets a token.
-  Treat the modern era of a public deployment as effectively public.
-  That is fine for this demo catalog (per-instance, self-resetting
-  SQLite) and would be unacceptable for real data — this is exactly the
-  kind of trade-off the deployment is meant to teach.
+- **Both eras:** Google is the upstream identity provider. FastMCP's OAuth
+  proxy performs client discovery/registration and Authorization Code + PKCE,
+  then issues audience-bound access tokens. The legacy FastMCP middleware and
+  the modern verifier validate those same tokens on every request and enforce
+  the same normalized `auth_allowed_emails` authorization list.
+- **Built-in demo authorization server:** the educational `/auth/*` server
+  still demonstrates PKCE S256, resource indicators, RFC 9207 `iss`, CIMD,
+  and deprecated DCR in a self-contained local exercise. It has no identity
+  database, so startup validation confines it to loopback development and the
+  Cloud Run configuration keeps it disabled.
 - **Shared discovery paths — `discovery_era`:** both eras publish OAuth
   discovery documents, but RFC 9728/8414 pin them to fixed well-known
   locations, so one era must own the shared paths. The deployment sets
@@ -71,9 +69,10 @@ protocol eras have authentication enabled.
   `/.well-known/oauth-authorization-server`, which is what lets
   interactive chat clients (Claude, ChatGPT — legacy-era speakers)
   complete discovery → registration → PKCE against this server. The
-  modern era keeps its collision-free path-inserted metadata form
-  (`/.well-known/oauth-authorization-server/auth`), so a modern client
-  configured with the AS issuer (`<base_url>/auth`) still authenticates.
+  modern client uses the same PRM and authorization-server metadata. This is
+  intentional: the authorization specifications define the protected-resource
+  relationship, not a requirement for separate authorization servers per MCP
+  protocol revision.
 - **Stateless legacy path — `http_stateless = true`:** hosted chat
   clients cache `Mcp-Session-Id` across server restarts and fail hard
   when an ephemeral instance recycles. The deployed legacy era therefore
@@ -191,11 +190,8 @@ BASE_URL=<base_url from Step 1>
 curl "$BASE_URL/health"
 # {"status":"ok","service":"virtual-library"}
 
-# Modern era discovery chain (what a 2026-07-28 client walks):
+# Protected-resource and authorization-server discovery (both eras):
 curl "$BASE_URL/.well-known/oauth-protected-resource/mcp"
-curl "$BASE_URL/.well-known/oauth-authorization-server/auth"
-
-# Legacy authorization server metadata (what ChatGPT walks):
 curl "$BASE_URL/.well-known/oauth-authorization-server"
 ```
 
@@ -224,27 +220,30 @@ this moves fast):
   then create a connector with the same `/mcp` URL and OAuth. Widgets use
   FastMCP's standard MCP Apps metadata, which ChatGPT consumes natively.
 - **Modern era (2026-07-28):** chat clients can't exercise it yet. Verify
-  it remotely with the sibling client repo against the deployed endpoint
-  (AS issuer `<base_url>/auth`), or MCPJam / beta-SDK clients.
+  it remotely with the sibling client repo against the deployed endpoint,
+  using the same discovered Google-backed OAuth flow, or with a compatible
+  beta-SDK client.
 
 ## Security checklist
 
 - [x] OAuth 2.1 + PKCE (S256) on both eras; tokens validated on every request
 - [x] Fail-closed startup: HTTP refuses to serve unless BOTH eras are authenticated
-- [x] Email allowlist on the legacy era (authorization, not just authentication)
+- [x] One Google identity and email allowlist policy on both eras
+- [x] Identity-free demo authorization server rejected on non-loopback URLs
 - [x] Keyless CI (Workload Identity Federation pinned to repo + branch); no SA keys exist
 - [x] Secrets only in Secret Manager; never in Terraform state, git, or GitHub
 - [x] Legacy OAuth registrations/tokens encrypted in Firestore; stable signing key across instances
 - [x] Least-privilege runtime SA (logs + metrics + four secrets + Firestore data); deployer SA scoped to its job
 - [x] Immutable image tags (git SHA); rate limiting; non-root container
-- [ ] Known, documented gap: the modern era's demo AS issues tokens without identity — demo data only
+- [x] Single Cloud Run instance while SQLite is per-instance; no divergent replicas
 
 ## Operational notes
 
-- **Writes are per-instance and ephemeral.** The SQLite catalog is baked
-  into the image; checkouts vanish when an instance recycles. Intentional
-  for a self-resetting demo. For durable state: Cloud SQL (Postgres) +
-  the SQLAlchemy URL in config.
+- **Writes are ephemeral, but consistent within a live revision.** The SQLite
+  catalog is baked into the image and Cloud Run is capped at one instance, so
+  clients cannot land on divergent catalogs. Checkouts still vanish when the
+  instance recycles. For durable state and horizontal scaling: Cloud SQL
+  (Postgres) plus the SQLAlchemy URL in config.
 - **Costs.** Scale-to-zero + `cpu_idle` keeps an idle demo inexpensive;
   Firestore's small OAuth workload, Secret Manager, Artifact Registry, and
   the state bucket should remain in their low/free usage tiers for a personal

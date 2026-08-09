@@ -335,12 +335,67 @@ class TestConfigurationScenarios:
         assert config.capabilities
 
 
+class TestModernAuthConfiguration:
+    """Production shares Google OAuth; the identity-free AS stays local."""
+
+    google_auth = {
+        "auth_enabled": True,
+        "base_url": "https://library.example.run.app",
+        "google_client_id": "client-id",
+        "google_client_secret": "client-secret",
+    }
+
+    def test_modern_auth_accepts_shared_google_provider(self):
+        config = ServerConfig(
+            _env_file=None,
+            modern_auth_enabled=True,
+            demo_as_enabled=False,
+            **self.google_auth,
+        )
+
+        assert config.modern_auth_enabled is True
+        assert config.demo_as_enabled is False
+
+    def test_modern_auth_requires_complete_authorization_stack(self):
+        with pytest.raises(ValidationError, match="requires auth_enabled"):
+            ServerConfig(
+                _env_file=None,
+                modern_auth_enabled=True,
+                demo_as_enabled=False,
+            )
+
+    def test_demo_authorization_server_is_allowed_on_loopback(self):
+        config = ServerConfig(
+            _env_file=None,
+            transport="http",
+            base_url="http://127.0.0.1:8080",
+            modern_auth_enabled=True,
+            demo_as_enabled=True,
+        )
+
+        assert config.demo_as_enabled is True
+
+    def test_demo_authorization_server_is_rejected_on_public_url(self):
+        with pytest.raises(ValidationError, match="local-development only"):
+            ServerConfig(
+                _env_file=None,
+                transport="http",
+                base_url="https://library.example.run.app",
+                modern_auth_enabled=True,
+                demo_as_enabled=True,
+            )
+
+    def test_localhost_prefix_confusion_is_rejected(self):
+        with pytest.raises(ValidationError, match="https"):
+            ServerConfig(_env_file=None, base_url="http://localhost.evil.example")
+
+
 class TestDiscoveryEra:
     """discovery_era decides which era owns the SHARED well-known paths.
 
-    A dual-era server has two OAuth stacks but RFC 9728/8414 pin discovery
-    documents to fixed locations — the config knob picks the owner, and the
-    validator refuses combinations that would leave discovery serving 404s.
+    RFC 9728/8414 pin discovery documents to fixed locations. The config knob
+    chooses the localhost demo routes or the shared Google-backed routes, and
+    validation refuses combinations that would leave discovery serving 404s.
     """
 
     def test_default_is_modern(self):

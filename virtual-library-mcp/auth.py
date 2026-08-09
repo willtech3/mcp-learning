@@ -26,6 +26,7 @@ Security posture implemented here:
 """
 
 import logging
+from typing import Any
 
 from fastmcp.exceptions import ToolError
 from fastmcp.server.auth import AuthProvider
@@ -41,8 +42,53 @@ from key_value.aio.stores.firestore import (
 from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
 
 from config import ServerConfig
+from modern.auth.bearer import Principal
 
 logger = logging.getLogger(__name__)
+
+
+class ModernIdentityForbiddenError(Exception):
+    """A valid token belongs to an account outside the deployment allowlist."""
+
+    http_status = 403
+    omit_auth_challenge = True
+
+
+class FastMCPModernVerifier:
+    """Adapt FastMCP's OAuth proxy tokens to the 2026-07-28 principal shape.
+
+    Both protocol eras use the same Google-backed OAuth proxy, stable signing
+    key, encrypted Firestore token store, and email allowlist.  This avoids a
+    second authorization server and prevents the modern path from accepting
+    identity-free tokens from the localhost-only educational demo AS.
+    """
+
+    def __init__(self, provider: AuthProvider, allowed_emails: list[str]):
+        self.provider = provider
+        self.allowed = {email.strip().lower() for email in allowed_emails if email.strip()}
+
+    async def verify(self, token: str) -> Principal:
+        access_token = await self.provider.verify_token(token)
+        if access_token is None:
+            raise ValueError("invalid or expired access token")
+
+        claims: dict[str, Any] = dict(access_token.claims or {})
+        raw_email = claims.get("email")
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else None
+        if self.allowed and email not in self.allowed:
+            logger.warning("Modern authorization denied for %s", email or "<no email claim>")
+            raise ModernIdentityForbiddenError(
+                "authenticated account is not authorized for this deployment"
+            )
+
+        raw_subject = claims.get("sub")
+        subject = str(raw_subject) if raw_subject else str(access_token.client_id)
+        return Principal(
+            subject=subject,
+            email=email,
+            scopes=frozenset(access_token.scopes or []),
+            claims=claims,
+        )
 
 
 def _suppress_sensitive_http_client_logs() -> None:

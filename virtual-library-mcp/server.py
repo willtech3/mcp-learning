@@ -11,8 +11,9 @@ MAY serve both eras concurrently on the same endpoint/process"):
   server/discover, MRTR (SEP-2322), subscriptions/listen, CacheableResult
   (SEP-2549), required Mcp-Method/Mcp-Name headers (SEP-2243), the SEP-2640
   skills extension, the io.modelcontextprotocol/tasks extension (SEP-2663),
-  and the draft authorization model (RFC 9728 PRM + bearer validation, with
-  a built-in educational authorization server).
+  and the draft authorization model (RFC 9728 PRM + bearer validation). HTTP
+  deployments share the Google-backed OAuth proxy across both protocol eras;
+  the built-in educational authorization server is localhost-only.
 
 Spec: https://modelcontextprotocol.io/specification/draft (2026-07-28)
 
@@ -38,7 +39,7 @@ from starlette.responses import JSONResponse
 import prompts
 import resources
 import tools
-from auth import EmailAllowlistMiddleware, build_auth_provider
+from auth import EmailAllowlistMiddleware, FastMCPModernVerifier, build_auth_provider
 from config import get_config
 from observability import LOGFIRE_AVAILABLE, initialize_observability
 from observability import get_config as get_obs_config
@@ -57,10 +58,12 @@ logger = logging.getLogger(__name__)
 config = get_config()
 initialize_observability()
 
+auth_provider = build_auth_provider(config)
+
 mcp = FastMCP(
     name=config.server_name,
     version=config.server_version,
-    auth=build_auth_provider(config),
+    auth=auth_provider,
     instructions=(
         "Virtual Library MCP Server - A comprehensive library management system "
         "demonstrating the full MCP feature surface. Browse the catalog through "
@@ -215,6 +218,20 @@ def build_modern_stack():
         challenge_401_fn = partial(challenge_401, prm_url)
         challenge_403_fn = partial(challenge_403, "library:write", prm_url)
         logger.info("Educational authorization server mounted (issuer=%s)", issuer)
+    elif config.modern_auth_enabled:
+        if auth_provider is None:  # config validation should make this unreachable
+            raise RuntimeError("modern OAuth requires the shared FastMCP auth provider")
+        from modern.auth import challenge_401, challenge_403, prm_url_for
+
+        prm_url = prm_url_for(config.canonical_url)
+        verifier = FastMCPModernVerifier(auth_provider, config.auth_allowed_emails)
+        challenge_401_fn = partial(challenge_401, prm_url)
+        challenge_403_fn = partial(
+            challenge_403,
+            " ".join(config.auth_required_scopes),
+            prm_url,
+        )
+        logger.info("Modern bearer validation shares the Google OAuth proxy and allowlist")
 
     modern_asgi = create_modern_asgi(
         dispatcher,

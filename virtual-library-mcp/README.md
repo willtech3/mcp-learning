@@ -12,7 +12,8 @@ This server now speaks **two MCP protocol eras on one endpoint**: the legacy
 revision**, implemented from scratch in [`modern/`](modern/) for teaching —
 `server/discover`, per-request `_meta`, MRTR, `subscriptions/listen`,
 CacheableResult, the SEP-2640 skills extension, the tasks extension, and the
-draft authorization model (with a built-in demo authorization server).
+draft authorization model (shared Google OAuth in production; a built-in
+authorization server restricted to localhost teaching exercises).
 
 - **What changed and where it lives:** [docs/mcp/11-protocol-2026-07-28.md](docs/mcp/11-protocol-2026-07-28.md)
 - **Spec:** <https://modelcontextprotocol.io/specification/draft> ·
@@ -23,7 +24,7 @@ draft authorization model (with a built-in demo authorization server).
 
 ```bash
 # Dual-era Streamable HTTP (serves both protocol eras on :8080/mcp)
-VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true uv run python server.py
+just dev-http
 ```
 
 Pairs with [mcp-client-learning](https://github.com/willtech3/mcp-client-learning),
