@@ -222,9 +222,23 @@ jobs:
             -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}}')
           [ "$code" = "401" ] || { echo "::error::expected 401, got $code"; exit 1; }
 
-          echo "OAuth discovery documents..."
-          curl --fail --silent "$BASE_URL/.well-known/oauth-protected-resource/mcp" >/dev/null
-          curl --fail --silent "$BASE_URL/.well-known/oauth-authorization-server" >/dev/null
-          curl --fail --silent "$BASE_URL/.well-known/oauth-authorization-server/auth" >/dev/null
+          echo "Shared Google-backed OAuth discovery documents..."
+          prm=$(curl --fail --silent \
+            "$BASE_URL/.well-known/oauth-protected-resource/mcp")
+          as_metadata=$(curl --fail --silent \
+            "$BASE_URL/.well-known/oauth-authorization-server")
+          jq -e --arg resource "$MCP_URL" --arg issuer "$BASE_URL/" \
+            '.resource == $resource and .authorization_servers == [$issuer] and
+             .bearer_methods_supported == ["header"]' <<<"$prm" >/dev/null
+          jq -e --arg issuer "$BASE_URL/" \
+            '.issuer == $issuer and
+             (.code_challenge_methods_supported | index("S256")) != null and
+             .client_id_metadata_document_supported == true' \
+            <<<"$as_metadata" >/dev/null
+
+          echo "Educational authorization server must not be public (expect 404)..."
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "$BASE_URL/.well-known/oauth-authorization-server/auth")
+          [ "$code" = "404" ] || { echo "::error::expected 404, got $code"; exit 1; }
 
           echo "All smoke tests passed. MCP endpoint: $MCP_URL"

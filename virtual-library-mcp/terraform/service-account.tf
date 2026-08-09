@@ -1,8 +1,8 @@
 # Dedicated least-privilege service account for the Cloud Run service.
 #
 # Deliberately NOT the default compute SA (which carries Editor on many
-# projects). This account can write logs/metrics and read one secret —
-# nothing else.
+# projects). This account can write logs/metrics, access Firestore OAuth
+# records, and read only the four service-specific secrets — nothing else.
 
 resource "google_service_account" "run_service" {
   account_id   = "${var.service_name}-sa"
