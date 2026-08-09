@@ -66,6 +66,7 @@ import jsonschema
 from fastmcp.exceptions import ResourceError, ToolError
 from fastmcp.tools import Tool as FastMCPTool
 from fastmcp.tools import ToolResult as FastMCPToolResult
+from prefab_ui.app import PrefabApp
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy import select
 
@@ -639,12 +640,16 @@ class ModernRegistry:
             content = [_dump(block) for block in value.content]
             structured = value.structured_content
             is_error = value.is_error
+        elif isinstance(value, PrefabApp):
+            # PrefabApp is a Pydantic model, but its model_dump() is only the
+            # Python construction graph.  The renderer consumes Prefab's wire
+            # protocol, which to_json() builds by recursively serializing every
+            # component and adding the required $prefab version marker.
+            structured = value.to_json()
+            content = [{"type": "text", "text": "[Rendered Prefab UI]"}]
         elif isinstance(value, BaseModel):
             structured = value.model_dump(mode="json", by_alias=True)
-            if "$prefab" in structured:
-                content = [{"type": "text", "text": "[Rendered Prefab UI]"}]
-            else:
-                content = [{"type": "text", "text": json.dumps(structured, indent=2, default=str)}]
+            content = [{"type": "text", "text": json.dumps(structured, indent=2, default=str)}]
         elif isinstance(value, str):
             content = [{"type": "text", "text": value}]
             if entry.wrap_result:
