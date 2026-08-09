@@ -24,6 +24,9 @@ classifiers = [
 dependencies = [
     # MCP framework (v3, targets protocol revision 2025-11-25)
     "fastmcp[apps,tasks]>=3.4,<4",
+    # Used directly for protocol types; keep the security-fixed WebSocket
+    # origin-validation release even though this demo does not expose WS.
+    "mcp>=1.28.1,<2",
     # Cloud Run recycles instances, so FastMCP's OAuth proxy needs a shared
     # registration/token store instead of its Linux in-memory default.
     "py-key-value-aio[firestore]>=0.4.5",
@@ -33,11 +36,14 @@ dependencies = [
 
     # MCP 2026-07-28 modern-protocol implementation (modern/ package)
     "pyjwt[crypto]>=2.9",
+    "cryptography>=50",
     "pyyaml>=6.0",
     "jsonschema>=4.21",
     # Data validation and serialization - critical for MCP protocol compliance
     "pydantic>=2.13",
-    "pydantic-settings>=2.10",
+    "pydantic-settings>=2.14.2",
+    # Imported directly by the dual-era HTTP/auth routing layer.
+    "starlette>=1.3.1",
     # Database ORM for persistent data storage
     "sqlalchemy>=2.0.50",
     # Test data generation for realistic library data (patrons, circulation)

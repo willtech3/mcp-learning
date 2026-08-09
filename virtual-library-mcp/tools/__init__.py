@@ -40,6 +40,7 @@ from .bulk_import import bulk_import_books
 from .catalog_maintenance import regenerate_catalog
 from .circulation import checkout_book, reserve_book, return_book
 from .membership import renew_membership
+from .patrons import find_patron
 from .search import search_catalog
 
 
@@ -77,13 +78,26 @@ TOOL_SPECS: list[ToolSpec] = [
         tags=frozenset({"catalog"}),
     ),
     ToolSpec(
+        fn=find_patron,
+        name="find_patron",
+        annotations=ToolAnnotations(
+            title="Find Patron Account",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+        icons=[CARD_ICON],
+        tags=frozenset({"patrons"}),
+    ),
+    ToolSpec(
         fn=checkout_book,
         name="checkout_book",
         annotations=ToolAnnotations(
             title="Check Out Book",
             readOnlyHint=False,
             destructiveHint=False,  # additive: creates a loan, destroys nothing
-            idempotentHint=False,  # same call twice = two loans
+            idempotentHint=True,  # same patron + ISBN reconciles to the active loan
             openWorldHint=False,
         ),
         icons=[CARD_ICON],
@@ -96,7 +110,7 @@ TOOL_SPECS: list[ToolSpec] = [
             title="Return Book",
             readOnlyHint=False,
             destructiveHint=False,
-            idempotentHint=False,
+            idempotentHint=True,  # repeat returns reuse the immutable return record
             openWorldHint=False,
         ),
         icons=[CARD_ICON],
@@ -109,7 +123,7 @@ TOOL_SPECS: list[ToolSpec] = [
             title="Reserve Book",
             readOnlyHint=False,
             destructiveHint=False,
-            idempotentHint=False,
+            idempotentHint=True,  # an existing active hold is returned on retry
             openWorldHint=False,
         ),
         icons=[CARD_ICON],

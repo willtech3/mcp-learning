@@ -41,9 +41,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: "virtual-library-mcp/uv.lock"
@@ -75,7 +75,7 @@ jobs:
       TF_VAR_auth_allowed_emails: ${{ secrets.AUTH_ALLOWED_EMAILS }}
       TF_VAR_image_tag: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check required configuration
         run: |
@@ -222,9 +222,23 @@ jobs:
             -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}}')
           [ "$code" = "401" ] || { echo "::error::expected 401, got $code"; exit 1; }
 
-          echo "OAuth discovery documents..."
-          curl --fail --silent "$BASE_URL/.well-known/oauth-protected-resource/mcp" >/dev/null
-          curl --fail --silent "$BASE_URL/.well-known/oauth-authorization-server" >/dev/null
-          curl --fail --silent "$BASE_URL/.well-known/oauth-authorization-server/auth" >/dev/null
+          echo "Shared Google-backed OAuth discovery documents..."
+          prm=$(curl --fail --silent \
+            "$BASE_URL/.well-known/oauth-protected-resource/mcp")
+          as_metadata=$(curl --fail --silent \
+            "$BASE_URL/.well-known/oauth-authorization-server")
+          jq -e --arg resource "$MCP_URL" --arg issuer "$BASE_URL/" \
+            '.resource == $resource and .authorization_servers == [$issuer] and
+             .bearer_methods_supported == ["header"]' <<<"$prm" >/dev/null
+          jq -e --arg issuer "$BASE_URL/" \
+            '.issuer == $issuer and
+             (.code_challenge_methods_supported | index("S256")) != null and
+             .client_id_metadata_document_supported == true' \
+            <<<"$as_metadata" >/dev/null
+
+          echo "Educational authorization server must not be public (expect 404)..."
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "$BASE_URL/.well-known/oauth-authorization-server/auth")
+          [ "$code" = "404" ] || { echo "::error::expected 404, got $code"; exit 1; }
 
           echo "All smoke tests passed. MCP endpoint: $MCP_URL"

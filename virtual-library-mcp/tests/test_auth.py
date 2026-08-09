@@ -15,7 +15,12 @@ from fastmcp.server.auth.providers.google import GoogleProvider
 from key_value.aio.stores.memory import MemoryStore
 from pydantic import ValidationError
 
-from auth import build_auth_provider, build_oauth_client_storage
+from auth import (
+    FastMCPModernVerifier,
+    ModernIdentityForbiddenError,
+    build_auth_provider,
+    build_oauth_client_storage,
+)
 from config import ServerConfig
 
 FAKE_AUTH = {
@@ -190,6 +195,64 @@ class TestProviderConstruction:
         assert authorized.status_code == 302
         assert authorized.headers["location"].startswith("https://library.example.app/consent?")
         assert "Client Not Registered" not in authorized.text
+
+
+class TestFastMCPModernVerifier:
+    """The modern path shares FastMCP's production token verifier."""
+
+    class _AccessToken:
+        def __init__(self, *, email="owner@example.com", scopes=None):
+            self.client_id = "downstream-client"
+            self.scopes = scopes if scopes is not None else ["openid", "email"]
+            self.claims = {"sub": "google-subject", "email": email} if email else {}
+
+    class _Provider:
+        def __init__(self, result):
+            self.result = result
+            self.seen_tokens = []
+
+        async def verify_token(self, token):
+            self.seen_tokens.append(token)
+            return self.result
+
+    async def test_valid_allowlisted_identity_maps_to_modern_principal(self):
+        provider = self._Provider(self._AccessToken(email=" Owner@Example.com "))
+        verifier = FastMCPModernVerifier(provider, ["OWNER@EXAMPLE.COM"])
+
+        principal = await verifier.verify("opaque-fastmcp-token")
+
+        assert provider.seen_tokens == ["opaque-fastmcp-token"]
+        assert principal.subject == "google-subject"
+        assert principal.email == "owner@example.com"
+        assert principal.scopes == frozenset({"openid", "email"})
+
+    async def test_invalid_or_expired_token_is_rejected(self):
+        verifier = FastMCPModernVerifier(self._Provider(None), [])
+
+        with pytest.raises(ValueError, match="invalid or expired"):
+            await verifier.verify("expired-token")
+
+    async def test_unlisted_identity_is_forbidden_without_logging_token(self, caplog):
+        raw_token = "must-not-appear-in-logs"
+        verifier = FastMCPModernVerifier(
+            self._Provider(self._AccessToken(email="intruder@example.com")),
+            ["owner@example.com"],
+        )
+
+        with caplog.at_level(logging.WARNING), pytest.raises(ModernIdentityForbiddenError):
+            await verifier.verify(raw_token)
+
+        assert "intruder@example.com" in caplog.text
+        assert raw_token not in caplog.text
+
+    async def test_missing_email_is_forbidden_when_allowlist_is_configured(self):
+        verifier = FastMCPModernVerifier(
+            self._Provider(self._AccessToken(email=None)),
+            ["owner@example.com"],
+        )
+
+        with pytest.raises(ModernIdentityForbiddenError):
+            await verifier.verify("valid-token-without-email")
 
 
 class TestOAuthDiscoveryEndpoints:

@@ -1,0 +1,8 @@
+[mcp_servers.virtual-library-local]
+command = "just"
+args = ["--justfile", "virtual-library-mcp/justfile", "dev"]
+enabled = true
+required = true
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "writes"

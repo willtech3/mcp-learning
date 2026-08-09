@@ -43,34 +43,40 @@ update:
 # Run the MCP server in development mode
 # This starts the server with stdio transport for testing with MCP clients
 dev:
-    @echo "🚀 Starting Virtual Library MCP Server..."
-    @echo "📖 The server will communicate via stdio (standard input/output)"
-    @echo "🔗 Connect your MCP client to test the protocol implementation"
-    .venv/bin/python server.py
+    @echo "🚀 Starting Virtual Library MCP Server..." >&2
+    @echo "📖 The server will communicate via stdio (standard input/output)" >&2
+    @echo "🔗 Connect your MCP client to test the protocol implementation" >&2
+    @FASTMCP_CHECK_FOR_UPDATES=off .venv/bin/python server.py
 
 # Run the server with debug logging
 dev-debug:
-    @echo "🐛 Starting server with debug logging..."
-    MCP_LOG_LEVEL=DEBUG .venv/bin/python server.py
+    @echo "🐛 Starting server with debug logging..." >&2
+    @FASTMCP_CHECK_FOR_UPDATES=off MCP_LOG_LEVEL=DEBUG .venv/bin/python server.py
 
 # Run the Streamable HTTP transport locally WITHOUT auth (localhost only)
 dev-http:
     @echo "🌐 Starting Streamable HTTP on http://127.0.0.1:8080/mcp (no auth - local dev only)"
-    VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true .venv/bin/python server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true .venv/bin/python server.py
 
 # Run the Streamable HTTP transport with OAuth 2.1 (requires Google creds in .env)
 dev-http-auth:
-    @echo "🔐 Starting Streamable HTTP with OAuth 2.1 on http://127.0.0.1:8080/mcp"
+    @echo "🔐 Starting dual-era Streamable HTTP with shared Google OAuth on http://127.0.0.1:8080/mcp"
     @echo "   Requires VIRTUAL_LIBRARY_BASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET in .env"
-    VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_AUTH_ENABLED=true .venv/bin/python server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_AUTH_ENABLED=true VIRTUAL_LIBRARY_MODERN_AUTH_ENABLED=true VIRTUAL_LIBRARY_DISCOVERY_ERA=legacy .venv/bin/python server.py
+
+# Run the educational OAuth stack entirely on loopback (never public)
+dev-http-demo-auth:
+    @echo "🧪 Starting dual-era HTTP with the localhost-only educational authorization server"
+    @echo "   Modern auth is exercised; the legacy path remains loopback-only and unauthenticated"
+    @FASTMCP_CHECK_FOR_UPDATES=off VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true VIRTUAL_LIBRARY_MODERN_AUTH_ENABLED=true VIRTUAL_LIBRARY_DEMO_AS_ENABLED=true .venv/bin/python server.py
 
 # Preview MCP App tools in FastMCP's local AppBridge host
 dev-apps:
-    uv run fastmcp dev apps apps_server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off uv run fastmcp dev apps apps_server.py --mcp-port 8002 --dev-port 8081
 
 # Run only the read-only MCP App tools for temporary HTTPS tunneling
 dev-apps-http:
-    uv run python apps_server.py
+    @FASTMCP_CHECK_FOR_UPDATES=off uv run python apps_server.py
 
 # === CODE QUALITY ===
 
@@ -164,11 +170,11 @@ db-init-empty:
 # Show database location and status
 db-info:
     @echo "🗄️ Database Information:"
-    @echo "Location: src/virtual_library_mcp/data/library.db"
-    @ls -lh src/virtual_library_mcp/data/library.db 2>/dev/null && echo "✅ Database exists" || echo "❌ Database not found"
-    @if [ -f src/virtual_library_mcp/data/library.db ]; then \
-        echo "Size: $(du -h src/virtual_library_mcp/data/library.db | cut -f1)"; \
-        echo "Tables: $(sqlite3 src/virtual_library_mcp/data/library.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "Unable to read")"; \
+    @echo "Location: data/library.db"
+    @ls -lh data/library.db 2>/dev/null && echo "✅ Database exists" || echo "❌ Database not found"
+    @if [ -f data/library.db ]; then \
+        echo "Size: $(du -h data/library.db | cut -f1)"; \
+        echo "Tables: $(sqlite3 data/library.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "Unable to read")"; \
     fi
 
 # Seed database with the curated catalog + simulated circulation
@@ -203,19 +209,60 @@ check-all: lint typecheck test
 
 # === MCP PROTOCOL TESTING ===
 
+# Launch the official MCP Inspector web UI with explicit dual-era connections
+inspector-web:
+    uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --web --config mcp-inspector.json
+
+# Run an Inspector CLI method against the stable 2025-11-25 protocol path
+inspector-legacy method="tools/list" *args:
+    uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --cli --config mcp-inspector.json --server virtual-library-legacy --method {{method}} {{args}}
+
+# Exercise the quiet stdio launch used by local desktop clients such as Claude
+inspector-stdio method="initialize" *args:
+    uv run -- npx --yes @modelcontextprotocol/inspector@2.1.0 --cli just dev --cwd {{justfile_directory()}} --method {{method}} {{args}}
+
+# Verify the checked-in project server as a fresh Claude Code workspace sees it
+client-claude-list:
+    cd .. && claude mcp list
+
+# Open an interactive Claude Code session to review project trust and MCP approval
+client-claude:
+    cd .. && claude
+
+# Verify the checked-in project server with the Codex binary bundled by ChatGPT
+client-codex-list codex_bin="/Applications/ChatGPT.app/Contents/Resources/codex":
+    cd .. && "{{codex_bin}}" mcp list
+
+# Show the effective Codex MCP entry after project/user config layering
+client-codex-get server="virtual-library-local" codex_bin="/Applications/ChatGPT.app/Contents/Resources/codex":
+    cd .. && "{{codex_bin}}" mcp get "{{server}}"
+
+# Prove a new Codex run can discover and call the read-only project server
+client-codex-smoke codex_bin="/Applications/ChatGPT.app/Contents/Resources/codex":
+    cd .. && "{{codex_bin}}" exec "Use only the virtual-library-local MCP server. Search the catalog for Murderbot without modifying anything. Return the matching titles and the MCP tool name used."
+
 # Test MCP protocol compliance
 # Validates that our server correctly implements the MCP specification
 test-mcp-protocol:
     @echo "🔌 Testing MCP protocol compliance..."
-    uv run python scripts/test_mcp_compliance.py
+    uv run pytest -q \
+        tests/modern \
+        tests/test_auth.py \
+        tests/test_resources_books.py \
+        tests/tools \
+        tests/prompts \
+        tests/test_sampling.py
     @echo "✅ MCP protocol compliance verified!"
 
 # Start server and run MCP client test
 # Integration test to verify client-server communication
 test-mcp-integration:
     @echo "🔗 Running MCP integration tests..."
-    @echo "This will start the server and test client communication..."
-    uv run python scripts/integration_test.py
+    @echo "Exercising both transports and the MCP Apps protocol bridge..."
+    uv run pytest -q \
+        tests/modern/test_http.py \
+        tests/modern/test_stdio.py \
+        tests/tools/test_apps.py
 
 # === DEVELOPMENT UTILITIES ===
 
@@ -264,7 +311,7 @@ docker-build:
 # Run the container locally (no auth, localhost only)
 docker-run: docker-build
     @echo "🐳 Running on http://127.0.0.1:8080/mcp (insecure local mode)"
-    docker run --rm -p 8080:8080 \
+    docker run --rm -p 127.0.0.1:8080:8080 \
         -e VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true \
         virtual-library-mcp:local
 
@@ -318,9 +365,15 @@ build:
 prod-check:
     @echo "🚀 Running production readiness checks..."
     @just check-all
-    @echo "🔒 Security check..."
+    @just security-audit
     @echo "📊 Performance baseline..."
     @echo "✅ Production readiness validated!"
+
+# Audit every locked runtime and development dependency against OSV
+security-audit:
+    @echo "🔒 Auditing locked dependencies for known vulnerabilities..."
+    uv audit --preview-features audit --locked
+    @echo "✅ Dependency security audit complete!"
 
 # === HELP ===
 

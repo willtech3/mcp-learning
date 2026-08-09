@@ -47,13 +47,18 @@ variable "deploy_service" {
 
 variable "max_instances" {
   description = <<-EOT
-    Maximum Cloud Run instances. Keep small: MCP sessions are stateful
-    (sampling/elicitation ride a session SSE stream) and the SQLite catalog
-    is per-instance, so this deployment relies on session affinity rather
-    than wide horizontal scale.
+    Maximum Cloud Run instances. This must remain 1 while the service uses
+    per-instance SQLite: session affinity is only best-effort and cannot make
+    mutations consistent across replicas. Move catalog state to a shared
+    database before raising this limit.
   EOT
   type        = number
-  default     = 2
+  default     = 1
+
+  validation {
+    condition     = var.max_instances == 1
+    error_message = "max_instances must remain 1 while the deployment uses per-instance SQLite."
+  }
 }
 
 variable "modern_auth_enabled" {
@@ -69,22 +74,20 @@ variable "modern_auth_enabled" {
 
 variable "demo_as_enabled" {
   description = <<-EOT
-    Mount the EDUCATIONAL built-in authorization server under /auth. The
-    modern era's bearer validation only accepts tokens from this AS, so it
-    must be on whenever modern_auth_enabled is. Caveat, documented in
-    DEPLOYMENT.md: the demo AS has no user identity — anyone completing
-    the PKCE flow gets a token for the modern era. Acceptable for a demo
-    catalog; never for real data.
+    Mount the EDUCATIONAL built-in authorization server under /auth. It has
+    no user identity and is intentionally restricted by application startup
+    validation to loopback development. Cloud Run must keep this false: the
+    modern era shares the Google-backed OAuth proxy and email allowlist.
   EOT
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "demo_as_auto_approve" {
   description = <<-EOT
     Demo AS skips its consent page and immediately redirects with a code.
-    Convenient for headless local demos; on a public deployment keep the
-    consent step (false) so token issuance at least requires a human click.
+    Convenient for headless local demos. The demo AS cannot be enabled on a
+    public deployment, irrespective of this setting.
   EOT
   type        = bool
   default     = false
@@ -96,7 +99,8 @@ variable "discovery_era" {
     well-known paths. "legacy" is right for a deployment that interactive
     chat clients (Claude, ChatGPT) connect to — they speak the legacy era
     and walk PRM -> AS metadata -> PKCE from those paths. The modern
-    (2026-07-28) era keeps its path-inserted metadata form either way.
+    (2026-07-28) resource server follows the same discovery chain and
+    validates tokens through the same Google-backed OAuth proxy.
   EOT
   type        = string
   default     = "legacy"

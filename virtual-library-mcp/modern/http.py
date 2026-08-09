@@ -83,6 +83,7 @@ cancellation, basic/versioning (dual-era matrix).
 """
 
 import asyncio
+import inspect
 import json
 import logging
 import re
@@ -668,10 +669,12 @@ def create_modern_asgi(
         require_auth: enforce Bearer authentication on the MCP endpoint.
         verifier: bearer-token verifier — either an object exposing
             ``verify(token) -> principal`` (modern/auth/bearer.TokenVerifier)
-            or a plain callable ``token -> principal``.  Any exception it
-            raises means "invalid token" (401); an exception whose
-            ``http_status`` attribute equals 403 means "authenticated but
-            insufficient" and produces a 403 challenge instead.
+            or a plain callable ``token -> principal``. Sync and async
+            verifiers are both supported so the modern path can share an
+            OAuth proxy whose validation consults encrypted durable storage.
+            Any exception it raises means "invalid token" (401); an exception
+            whose ``http_status`` attribute equals 403 means "authenticated
+            but insufficient" and produces a 403 challenge instead.
         challenge_401 / challenge_403: zero-argument builders returning the
             ``WWW-Authenticate`` header value for the respective status
             (modern/auth/metadata.py provides them; the integrator binds
@@ -699,7 +702,7 @@ def create_modern_asgi(
         value = builder() if builder is not None else "Bearer"
         return Response(status_code=status, headers={"WWW-Authenticate": value})
 
-    def _authenticate(request: Request) -> Any | Response:
+    async def _authenticate(request: Request) -> Any | Response:
         """Bearer auth per the draft resource-server model (401/403 challenges)."""
         header = request.headers.get("authorization") or ""
         scheme, _, token = header.partition(" ")
@@ -709,11 +712,16 @@ def create_modern_asgi(
             return _challenge_response(401, challenge_401)
         try:
             verify = getattr(verifier, "verify", None)
-            if callable(verify):
-                return verify(token.strip())
-            return verifier(token.strip())  # type: ignore[misc]
+            outcome = (
+                verify(token.strip()) if callable(verify) else verifier(token.strip())  # type: ignore[misc]
+            )
+            if inspect.isawaitable(outcome):
+                return await outcome
+            return outcome
         except Exception as exc:
             if getattr(exc, "http_status", 401) == 403:
+                if getattr(exc, "omit_auth_challenge", False):
+                    return Response(status_code=403)
                 # Token is valid but lacks scope: 403 challenge (step-up).
                 return _challenge_response(403, challenge_403)
             return _challenge_response(401, challenge_401)
@@ -734,7 +742,7 @@ def create_modern_asgi(
         # --- 2. Authorization ----------------------------------------------
         principal: Any | None = None
         if require_auth:
-            outcome = _authenticate(request)
+            outcome = await _authenticate(request)
             if isinstance(outcome, Response):
                 return outcome
             principal = outcome

@@ -864,12 +864,27 @@ class _Forbidden(Exception):
     http_status = 403
 
 
+class _IdentityForbidden(Exception):
+    http_status = 403
+    omit_auth_challenge = True
+
+
 class StubVerifier:
     def verify(self, token: str) -> dict[str, Any]:
         if token == "good-token":
             return {"subject": "demo-user", "scopes": {"library:read"}}
         if token == "narrow-token":
             raise _Forbidden("insufficient scope")
+        raise ValueError("invalid token")
+
+
+class AsyncStubVerifier:
+    async def verify(self, token: str) -> dict[str, Any]:
+        await asyncio.sleep(0)
+        if token == "async-good-token":
+            return {"subject": "google-user", "scopes": {"openid", "email"}}
+        if token == "unlisted-identity":
+            raise _IdentityForbidden("identity is not allowlisted")
         raise ValueError("invalid token")
 
 
@@ -928,6 +943,36 @@ class TestAuth:
         env = dispatcher.envs[0]
         assert env.transport == "http"
         assert env.principal == {"subject": "demo-user", "scopes": {"library:read"}}
+
+    async def test_async_verifier_dispatches_with_principal(self):
+        app, dispatcher = make_modern(
+            require_auth=True,
+            verifier=AsyncStubVerifier(),
+        )
+        async with make_client(app) as client:
+            response = await client.post(
+                "/mcp",
+                json=make_request("tools/list"),
+                headers=modern_headers("tools/list", Authorization="Bearer async-good-token"),
+            )
+        assert response.status_code == 200
+        assert dispatcher.envs[0].principal["subject"] == "google-user"
+
+    async def test_identity_denial_is_bare_403_not_scope_step_up(self):
+        app, dispatcher = make_modern(
+            require_auth=True,
+            verifier=AsyncStubVerifier(),
+            challenge_403=lambda: 'Bearer error="insufficient_scope"',
+        )
+        async with make_client(app) as client:
+            response = await client.post(
+                "/mcp",
+                json=make_request("tools/list"),
+                headers=modern_headers("tools/list", Authorization="Bearer unlisted-identity"),
+            )
+        assert response.status_code == 403
+        assert "www-authenticate" not in response.headers
+        assert dispatcher.messages == []
 
     async def test_auth_disabled_passes_none_principal(self):
         app, dispatcher = make_modern()

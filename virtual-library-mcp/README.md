@@ -12,7 +12,8 @@ This server now speaks **two MCP protocol eras on one endpoint**: the legacy
 revision**, implemented from scratch in [`modern/`](modern/) for teaching —
 `server/discover`, per-request `_meta`, MRTR, `subscriptions/listen`,
 CacheableResult, the SEP-2640 skills extension, the tasks extension, and the
-draft authorization model (with a built-in demo authorization server).
+draft authorization model (shared Google OAuth in production; a built-in
+authorization server restricted to localhost teaching exercises).
 
 - **What changed and where it lives:** [docs/mcp/11-protocol-2026-07-28.md](docs/mcp/11-protocol-2026-07-28.md)
 - **Spec:** <https://modelcontextprotocol.io/specification/draft> ·
@@ -23,7 +24,7 @@ draft authorization model (with a built-in demo authorization server).
 
 ```bash
 # Dual-era Streamable HTTP (serves both protocol eras on :8080/mcp)
-VIRTUAL_LIBRARY_TRANSPORT=http VIRTUAL_LIBRARY_ALLOW_INSECURE_HTTP=true uv run python server.py
+just dev-http
 ```
 
 Pairs with [mcp-client-learning](https://github.com/willtech3/mcp-client-learning),
@@ -35,7 +36,7 @@ OAuth 2.1 flow against the deployed server).
 | MCP feature | Where to see it |
 |---|---|
 | Resources + RFC 6570 templates | `library://books/list`, `library://books/{isbn}`, stats and recommendations |
-| Tools with real input/output schemas | all 8 tools — typed signatures, structured content |
+| Tools with real input/output schemas | all 9 tools — typed signatures, structured content |
 | Tool annotations + icons (SEP-973) | read-only/idempotent hints, data-URI SVG icons |
 | **Elicitation** (approval + enum select) | `checkout_book` (fines confirmation), `renew_membership` (term choice) |
 | **Sampling** (server-initiated LLM calls) | `generate_book_insights` |
@@ -70,14 +71,17 @@ mcp-client demo --server http://127.0.0.1:8080/mcp --anonymous
 
 ## MCP Apps demo
 
-The FastMCP protocol path includes two read-only MCP App tools:
+The FastMCP protocol path includes three read-only MCP App tools:
 
 - `browse_catalog_app` renders a searchable, sortable catalog with inventory
   metrics and selectable book details.
 - `library_dashboard_app` renders circulation metrics, genre activity, and a
   popular-books table.
+- `patron_account_app` finds a simulated patron by name or familiar contact
+  details, masks private fields, and shows membership and current loans without
+  requiring the patron to know an internal card number.
 
-Preview both tools in FastMCP's local AppBridge host:
+Preview all three tools in FastMCP's local AppBridge host:
 
 ```bash
 just dev-apps
@@ -96,9 +100,26 @@ In ChatGPT, enable **Settings → Security and login → Developer mode**, then 
 **Plugins** and use the plus button to create a developer-mode app. Set its MCP
 server URL to the tunnel's HTTPS URL followed by `/mcp`, for example
 `https://example.ngrok.app/mcp`. Refresh the app in ChatGPT after changing tool
-metadata. The app-only endpoint is stateless and contains only the two read-only
+metadata. The app-only endpoint is stateless and contains only the three read-only
 UI tools; it still serves simulated data and is intended for short-lived
 development tunnels rather than permanent hosting.
+
+## Fresh Codex and Claude Code sessions
+
+The repository root includes project-scoped configuration for both clients:
+
+- `.codex/config.toml` lets a trusted Codex project start the server over
+  stdio and prompts for write-capable tools while allowing read-only discovery.
+- `.mcp.json` lets Claude Code offer the same local server after its required
+  project-server approval.
+
+Open the repository root in either client and approve the checked-in project
+configuration when prompted. No endpoint, token, or patron number needs to be
+copied. This is intentionally a local stdio flow: the operating-system user and
+project trust boundary provide isolation, and MCP OAuth does not apply to stdio.
+Remote product clients still require a configured HTTPS endpoint with OAuth or
+a private product tunnel; MCP `server/discover` discovers capabilities after a
+client knows the endpoint, not the endpoint's network location.
 
 ## Transports & security
 

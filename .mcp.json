@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "virtual-library-local": {
+      "type": "stdio",
+      "command": "just",
+      "args": ["--justfile", "virtual-library-mcp/justfile", "dev"]
+    }
+  }
+}

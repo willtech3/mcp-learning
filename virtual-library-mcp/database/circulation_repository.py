@@ -119,6 +119,78 @@ class CirculationRepository:
         self.book_repo = BookRepository(session)
         self.patron_repo = PatronRepository(session)
 
+    def get_active_checkout_for_book(self, patron_id: str, book_isbn: str) -> CheckoutModel | None:
+        """Return the patron's current loan for a title, if one exists.
+
+        This gives checkout retries a stable reconciliation path after a
+        transport timeout. A real library also avoids lending a second copy of
+        the same title to the same patron while the first copy is still out.
+        """
+        checkout = mcp_safe_query(
+            self.session,
+            lambda s: (
+                s.execute(
+                    select(CheckoutDB)
+                    .where(
+                        and_(
+                            CheckoutDB.patron_id == patron_id,
+                            CheckoutDB.book_isbn == book_isbn,
+                            CheckoutDB.status.in_(
+                                [CirculationStatusEnum.ACTIVE, CirculationStatusEnum.OVERDUE]
+                            ),
+                        )
+                    )
+                    .order_by(desc(CheckoutDB.checkout_date))
+                )
+                .scalars()
+                .first()
+            ),
+            "Failed to reconcile an existing checkout",
+        )
+        return self._checkout_to_model(checkout) if checkout else None
+
+    def get_return_for_checkout(self, checkout_id: str) -> ReturnModel | None:
+        """Return the immutable result of an already-processed return."""
+        record = mcp_safe_query(
+            self.session,
+            lambda s: (
+                s.execute(
+                    select(ReturnDB)
+                    .where(ReturnDB.checkout_id == checkout_id)
+                    .order_by(ReturnDB.return_date)
+                )
+                .scalars()
+                .first()
+            ),
+            "Failed to reconcile an existing return",
+        )
+        return self._return_to_model(record) if record else None
+
+    def get_active_reservation_for_book(
+        self, patron_id: str, book_isbn: str
+    ) -> ReservationModel | None:
+        """Return an existing pending or available hold for retry safety."""
+        reservation = mcp_safe_query(
+            self.session,
+            lambda s: (
+                s.execute(
+                    select(ReservationDB).where(
+                        and_(
+                            ReservationDB.patron_id == patron_id,
+                            ReservationDB.book_isbn == book_isbn,
+                            ReservationDB.status.in_(
+                                [ReservationStatusEnum.PENDING, ReservationStatusEnum.AVAILABLE]
+                            ),
+                        )
+                    )
+                )
+                .scalars()
+                .first()
+            ),
+            "Failed to reconcile an existing reservation",
+        )
+        return self._reservation_to_model(reservation) if reservation else None
+
     def checkout_book(self, checkout_data: CheckoutCreateSchema) -> CheckoutModel:
         """
         Process a book checkout.
@@ -155,6 +227,12 @@ class CirculationRepository:
 
         if not patron:
             raise NotFoundError(f"Patron {checkout_data.patron_id} not found")
+
+        existing_checkout = self.get_active_checkout_for_book(
+            checkout_data.patron_id, checkout_data.book_isbn
+        )
+        if existing_checkout is not None:
+            return existing_checkout
 
         if not patron.can_checkout:
             if not patron.is_active:
@@ -271,6 +349,10 @@ class CirculationRepository:
         # cancelled, lost) has already left circulation.
         returnable = (CirculationStatusEnum.ACTIVE, CirculationStatusEnum.OVERDUE)
         if checkout.status not in returnable:
+            if checkout.status == CirculationStatusEnum.COMPLETED:
+                existing_return = self.get_return_for_checkout(checkout.id)
+                if existing_return is not None:
+                    return existing_return, self._checkout_to_model(checkout)
             raise RepositoryException(
                 f"Return failed - checkout is not active (current status: {checkout.status})"
             )
@@ -403,9 +485,7 @@ class CirculationRepository:
         )
 
         if existing:
-            raise RepositoryException(
-                "Reservation denied - patron already has an active reservation for this book"
-            )
+            return self._reservation_to_model(existing)
 
         # Get next queue position
         max_position = (

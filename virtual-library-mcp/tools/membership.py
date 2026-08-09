@@ -22,6 +22,8 @@ from database.patron_repository import PatronRepository, PatronUpdateSchema
 from database.session import get_session
 from models.patron import PatronStatus
 
+from .interaction import ElicitationUnavailableError, elicit_with_timeout
+
 logger = logging.getLogger(__name__)
 
 RenewalTerm = Literal["6 months", "12 months", "24 months"]
@@ -50,6 +52,15 @@ async def renew_membership(
         ),
     ],
     ctx: Context,
+    term: Annotated[
+        RenewalTerm | None,
+        Field(
+            description=(
+                "Renewal term when the user already chose one. Leave unset only "
+                "when using a client that supports elicitation."
+            )
+        ),
+    ] = None,
 ) -> RenewalResult:
     """Renew a patron's library membership interactively.
 
@@ -64,35 +75,43 @@ async def renew_membership(
 
     current_expiration = patron.expiration_date
 
-    try:
-        answer = await ctx.elicit(
-            f"Renew membership for {patron.name} "
-            f"(current expiration: {current_expiration or 'none on file'}). "
-            "Which term should be applied?",
-            response_type=RenewalTerm,
-        )
-    except Exception as e:
-        # No elicitation capability on this client: the term genuinely
-        # cannot be collected, so surface a actionable tool error.
-        raise ToolError(
-            "This client does not support elicitation; call the tool from a "
-            "client that does, or update the patron's expiration directly."
-        ) from e
+    chosen_term = term
+    if chosen_term is None:
+        try:
+            answer = await elicit_with_timeout(
+                ctx,
+                f"Renew membership for {patron.name} "
+                f"(current expiration: {current_expiration or 'none on file'}). "
+                "Which term should be applied?",
+                response_type=RenewalTerm,
+            )
+        except ElicitationUnavailableError as exc:
+            raise ToolError(
+                "A renewal term is required. Ask the user to choose 6 months, "
+                "12 months, or 24 months, then retry with the term argument. "
+                "No account change was made."
+            ) from exc
+        except Exception as exc:
+            raise ToolError(
+                "This client could not complete renewal-term elicitation. Ask the "
+                "user to choose 6 months, 12 months, or 24 months, then retry "
+                "with the term argument. No account change was made."
+            ) from exc
 
-    if answer.action != "accept":
-        logger.info("Renewal %s by user for %s", answer.action, patron_id)
-        return RenewalResult(
-            patron_id=patron_id,
-            patron_name=patron.name,
-            renewed=False,
-            status=str(patron.status),
-            message=f"Renewal {answer.action}ed by the user — no changes made.",
-        )
+        if answer.action != "accept":
+            logger.info("Renewal %s by user for %s", answer.action, patron_id)
+            return RenewalResult(
+                patron_id=patron_id,
+                patron_name=patron.name,
+                renewed=False,
+                status=str(patron.status),
+                message=f"Renewal {answer.action}ed by the user — no changes made.",
+            )
+        chosen_term = cast("RenewalTerm", answer.data)
 
-    term = cast("RenewalTerm", answer.data)
     today = datetime.now().date()
     base: date = max(current_expiration, today) if current_expiration else today
-    new_expiration = base + timedelta(days=TERM_DAYS[term])
+    new_expiration = base + timedelta(days=TERM_DAYS[chosen_term])
 
     update_fields: dict = {"expiration_date": new_expiration}
     if patron.status == PatronStatus.EXPIRED:
@@ -103,14 +122,15 @@ async def renew_membership(
         updated = repo.update(patron_id, PatronUpdateSchema(**update_fields))
 
     message = (
-        f"Renewed {updated.name}'s membership for {term}: now expires {new_expiration.isoformat()}."
+        f"Renewed {updated.name}'s membership for {chosen_term}: "
+        f"now expires {new_expiration.isoformat()}."
     )
-    logger.info("renew_membership_success | patron=%s term=%s", patron_id, term)
+    logger.info("renew_membership_success | patron=%s term=%s", patron_id, chosen_term)
     return RenewalResult(
         patron_id=patron_id,
         patron_name=updated.name,
         renewed=True,
-        term=term,
+        term=chosen_term,
         previous_expiration=current_expiration.isoformat() if current_expiration else None,
         new_expiration=new_expiration.isoformat(),
         status=str(updated.status),

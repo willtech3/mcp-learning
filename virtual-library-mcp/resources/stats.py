@@ -157,7 +157,7 @@ async def get_popular_books_handler(days: str, limit: str) -> dict[str, Any]:
                 "analysis_end_date": datetime.now().date().isoformat(),
                 "total_results": len(popular_books),
                 "min_checkouts_threshold": 1,
-                "books": [book.model_dump() for book in popular_books],
+                "books": [book.model_dump(mode="json") for book in popular_books],
             }
 
     except Exception as e:
@@ -245,7 +245,7 @@ async def get_genre_distribution_handler(days: str) -> dict[str, Any]:
                 "analysis_start_date": start_date.date().isoformat(),
                 "analysis_end_date": datetime.now().date().isoformat(),
                 "total_checkouts_analyzed": total_checkouts,
-                "genres": [entry.model_dump() for entry in distribution],
+                "genres": [entry.model_dump(mode="json") for entry in distribution],
             }
 
     except Exception as e:
@@ -406,7 +406,7 @@ async def get_circulation_stats_handler() -> dict[str, Any]:
                 avg_loan_duration_days=avg_loan_duration,
             )
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except Exception as e:
         logger.exception("Error in stats/circulation resource")

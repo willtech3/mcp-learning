@@ -17,6 +17,7 @@ from typing import Any
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, Field
 
+from database.book_repository import BookRepository
 from database.circulation_repository import CirculationRepository
 from database.patron_repository import PatronRepository, PatronSearchParams
 from database.repository import PaginationParams
@@ -111,7 +112,9 @@ async def get_patron_history_handler(patron_id: str) -> dict[str, Any]:
 
             # Get circulation history
             circ_repo = CirculationRepository(session)
+            book_repo = BookRepository(session)
             history_entries = []
+            book_titles: dict[str, str] = {}
 
             # Calculate date range
             cutoff_date = datetime.now() - timedelta(days=params.days)
@@ -126,13 +129,16 @@ async def get_patron_history_handler(patron_id: str) -> dict[str, Any]:
 
             # Convert checkouts to history entries
             for checkout in checkouts:
+                if checkout.book_isbn not in book_titles:
+                    book = book_repo.get_by_isbn(checkout.book_isbn)
+                    book_titles[checkout.book_isbn] = book.title if book else "Unknown title"
                 entry = PatronHistoryEntry(
                     transaction_type="checkout",
                     transaction_id=checkout.id,
                     book_isbn=checkout.book_isbn,
-                    book_title=checkout.book.title if hasattr(checkout, "book") else "Unknown",
+                    book_title=book_titles[checkout.book_isbn],
                     date=checkout.checkout_date.isoformat(),
-                    status=checkout.status.value,
+                    status=str(checkout.status),
                     details={
                         "due_date": checkout.due_date.isoformat(),
                         "renewal_count": checkout.renewal_count,
@@ -160,7 +166,7 @@ async def get_patron_history_handler(patron_id: str) -> dict[str, Any]:
                 history=history_entries,
             )
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except ResourceError:
         raise
@@ -265,8 +271,8 @@ patron_resources: list[dict[str, Any]] = [
         "uri_template": "library://patrons/{patron_id}/history",
         "name": "Patron Borrowing History",
         "description": (
-            "Get the borrowing history for a specific patron, including active checkouts, "
-            "returns, and fines. Supports filtering by date range and transaction type."
+            "Get a patron's recent loan history, including active and returned checkouts, "
+            "book titles, due dates, renewals, overdue state, and assessed fines."
         ),
         "mime_type": "application/json",
         "handler": get_patron_history_handler,

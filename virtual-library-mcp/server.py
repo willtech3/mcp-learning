@@ -11,8 +11,9 @@ MAY serve both eras concurrently on the same endpoint/process"):
   server/discover, MRTR (SEP-2322), subscriptions/listen, CacheableResult
   (SEP-2549), required Mcp-Method/Mcp-Name headers (SEP-2243), the SEP-2640
   skills extension, the io.modelcontextprotocol/tasks extension (SEP-2663),
-  and the draft authorization model (RFC 9728 PRM + bearer validation, with
-  a built-in educational authorization server).
+  and the draft authorization model (RFC 9728 PRM + bearer validation). HTTP
+  deployments share the Google-backed OAuth proxy across both protocol eras;
+  the built-in educational authorization server is localhost-only.
 
 Spec: https://modelcontextprotocol.io/specification/draft (2026-07-28)
 
@@ -38,7 +39,7 @@ from starlette.responses import JSONResponse
 import prompts
 import resources
 import tools
-from auth import EmailAllowlistMiddleware, build_auth_provider
+from auth import EmailAllowlistMiddleware, FastMCPModernVerifier, build_auth_provider
 from config import get_config
 from observability import LOGFIRE_AVAILABLE, initialize_observability
 from observability import get_config as get_obs_config
@@ -57,16 +58,21 @@ logger = logging.getLogger(__name__)
 config = get_config()
 initialize_observability()
 
+auth_provider = build_auth_provider(config)
+
 mcp = FastMCP(
     name=config.server_name,
     version=config.server_version,
-    auth=build_auth_provider(config),
+    auth=auth_provider,
     instructions=(
         "Virtual Library MCP Server - A comprehensive library management system "
         "demonstrating the full MCP feature surface. Browse the catalog through "
         "resources, perform circulation actions through tools, and use prompts "
-        "for AI-assisted recommendations. Some tools ask follow-up questions "
-        "(elicitation) or generate content via your LLM (sampling)."
+        "for AI-assisted recommendations. Questions such as 'Can I check this "
+        "out?' are read-only: use checkout_readiness_app and never checkout_book "
+        "until the user explicitly asks to complete the loan. Some tools ask "
+        "follow-up questions (elicitation) or generate content via your LLM "
+        "(sampling)."
     ),
 )
 
@@ -154,8 +160,11 @@ def build_modern_stack():
             "Virtual Library MCP Server (dual-era). Browse the catalog through "
             "resources, perform circulation actions through tools, and use "
             "prompts for AI-assisted recommendations. Agent skills live at "
-            "skill://index.json (SEP-2640). Some tools need follow-up input "
-            "and will answer with resultType 'input_required' (MRTR)."
+            "skill://index.json (SEP-2640). Treat questions such as 'Can I check "
+            "this out?' as read-only and use checkout_readiness_app; call "
+            "checkout_book only after an explicit request to complete the loan. "
+            "Some tools need follow-up input and will answer with resultType "
+            "'input_required' (MRTR)."
         ),
         broker=broker,
         cache_policy=ListCachePolicy(
@@ -167,9 +176,9 @@ def build_modern_stack():
             # After these tools mutate a book, subscribers watching that
             # exact URI get notifications/resources/updated on their
             # listen stream.
-            "checkout_book": lambda a: f"library://books/{a['book_isbn']}",
-            "return_book": lambda a: f"library://books/{a['book_isbn']}",
-            "reserve_book": lambda a: f"library://books/{a['book_isbn']}",
+            "checkout_book": lambda a, _r: f"library://books/{a['book_isbn']}",
+            "return_book": lambda _a, r: f"library://books/{r['structuredContent']['book_isbn']}",
+            "reserve_book": lambda a, _r: f"library://books/{a['book_isbn']}",
         },
         task_runner=tasks_ext.maybe_run_as_task,
         task_tool_names={"regenerate_catalog"},
@@ -215,6 +224,20 @@ def build_modern_stack():
         challenge_401_fn = partial(challenge_401, prm_url)
         challenge_403_fn = partial(challenge_403, "library:write", prm_url)
         logger.info("Educational authorization server mounted (issuer=%s)", issuer)
+    elif config.modern_auth_enabled:
+        if auth_provider is None:  # config validation should make this unreachable
+            raise RuntimeError("modern OAuth requires the shared FastMCP auth provider")
+        from modern.auth import challenge_401, challenge_403, prm_url_for
+
+        prm_url = prm_url_for(config.canonical_url)
+        verifier = FastMCPModernVerifier(auth_provider, config.auth_allowed_emails)
+        challenge_401_fn = partial(challenge_401, prm_url)
+        challenge_403_fn = partial(
+            challenge_403,
+            " ".join(config.auth_required_scopes),
+            prm_url,
+        )
+        logger.info("Modern bearer validation shares the Google OAuth proxy and allowlist")
 
     modern_asgi = create_modern_asgi(
         dispatcher,
@@ -301,7 +324,9 @@ def main() -> None:
 
     try:
         if config.transport == "stdio":
-            mcp.run(transport="stdio")
+            # A desktop client needs a quiet stdio channel: no banner and no
+            # version-check network request before JSON-RPC begins.
+            mcp.run(transport="stdio", show_banner=False)
         elif config.transport == "stdio-modern":
             # The 2026-07-28 stateless protocol over newline-delimited
             # JSON-RPC. No handshake: the first request can be anything;

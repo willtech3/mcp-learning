@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "virtual-library-legacy": {
+      "type": "http",
+      "url": "http://127.0.0.1:8080/mcp",
+      "protocolEra": "legacy",
+      "connectionTimeout": 10000,
+      "requestTimeout": 30000,
+      "autoRefreshOnListChanged": true
+    },
+    "virtual-library-modern": {
+      "type": "http",
+      "url": "http://127.0.0.1:8080/mcp",
+      "protocolEra": "modern",
+      "modernLogLevel": "off",
+      "connectionTimeout": 10000,
+      "requestTimeout": 30000,
+      "autoRefreshOnListChanged": true
+    }
+  }
+}

@@ -158,6 +158,14 @@ class PatronRepository(
             except json.JSONDecodeError:
                 pass
 
+        # SQLAlchemy normally hydrates the enum, while freshly inserted rows can
+        # remain as their original string inside the session identity map.
+        status_value = (
+            db_obj.status.value
+            if isinstance(db_obj.status, PatronStatusEnum)
+            else str(db_obj.status)
+        )
+
         # Convert to model
         return PatronModel(
             id=db_obj.id,
@@ -167,7 +175,7 @@ class PatronRepository(
             address=db_obj.address,
             membership_date=db_obj.membership_date,
             expiration_date=db_obj.expiration_date,
-            status=PatronStatus(db_obj.status.value),
+            status=PatronStatus(status_value),
             borrowing_limit=db_obj.borrowing_limit,
             current_checkouts=db_obj.current_checkouts,
             total_checkouts=db_obj.total_checkouts,
@@ -414,7 +422,10 @@ class PatronRepository(
         # Get active checkouts
         active_checkouts = []
         for checkout in patron.checkouts:
-            if checkout.status == CirculationStatusEnum.ACTIVE:
+            if checkout.status in {
+                CirculationStatusEnum.ACTIVE,
+                CirculationStatusEnum.OVERDUE,
+            }:
                 active_checkouts.append(
                     {
                         "checkout_id": checkout.id,
@@ -422,6 +433,7 @@ class PatronRepository(
                         "checkout_date": checkout.checkout_date,
                         "due_date": checkout.due_date,
                         "renewal_count": checkout.renewal_count,
+                        "status": checkout.status.value,
                     }
                 )
 

@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.orm import joinedload
 
+from database.schema import Author as AuthorDB
 from database.schema import Book as BookDB
 from database.schema import CheckoutRecord as CheckoutDB
 from database.schema import Patron as PatronDB
@@ -126,6 +127,9 @@ class RecommendationEngine:
         else:  # hybrid
             recommendations = self._hybrid_recommendations(favorite_genres, favorite_authors)
 
+        for recommendation in recommendations:
+            recommendation.score = max(0, min(100, recommendation.score))
+
         # Sort by score and limit
         recommendations.sort(key=lambda x: x.score, reverse=True)
         recommendations = recommendations[: self.params.limit]
@@ -190,7 +194,7 @@ class RecommendationEngine:
         author_counts = Counter()
         for checkout in self.patron_history:
             if checkout.book and checkout.book.author:
-                author_counts[checkout.book.author] += 1
+                author_counts[checkout.book.author.name] += 1
 
         return [author for author, _ in author_counts.most_common()]
 
@@ -214,7 +218,7 @@ class RecommendationEngine:
                             else True,
                         )
                     )
-                    .order_by(desc(BookDB.average_rating))
+                    .order_by(desc(BookDB.publication_year), BookDB.title)
                     .limit(5)
                 )
                 .scalars()
@@ -222,24 +226,21 @@ class RecommendationEngine:
             )
 
             for book in genre_books:
-                if book.average_rating >= self.params.min_rating:
-                    recommendations.append(
-                        RecommendationEntry(
-                            rank=0,  # Will be set later
-                            isbn=book.isbn,
-                            title=book.title,
-                            author=book.author,
-                            genre=book.genre,
-                            reason=f"Popular in your favorite genre: {genre}",
-                            score=80
-                            - (i * 10)
-                            + (book.average_rating * 2),  # Genre rank affects score
-                            available=book.available_copies > 0,
-                            avg_rating=book.average_rating,
-                            checkout_count=book.total_checkouts,
-                            similar_patrons_borrowed=0,  # Not applicable for genre-based recommendations
-                        )
+                recommendations.append(
+                    RecommendationEntry(
+                        rank=0,  # Will be set later
+                        isbn=book.isbn,
+                        title=book.title,
+                        author=book.author.name,
+                        genre=book.genre,
+                        reason=f"A strong match for your interest in {genre}",
+                        score=80 - (i * 10),
+                        available=book.available_copies > 0,
+                        avg_rating=None,
+                        checkout_count=len(book.checkouts),
+                        similar_patrons_borrowed=0,
                     )
+                )
 
         return recommendations
 
@@ -257,9 +258,10 @@ class RecommendationEngine:
             author_books = (
                 self.session.execute(
                     select(BookDB)
+                    .join(AuthorDB, BookDB.author_id == AuthorDB.id)
                     .where(
                         and_(
-                            BookDB.author == author,
+                            AuthorDB.name == author,
                             BookDB.isbn.notin_(self.borrowed_isbns)
                             if self.params.exclude_read
                             else True,
@@ -278,13 +280,13 @@ class RecommendationEngine:
                         rank=0,
                         isbn=book.isbn,
                         title=book.title,
-                        author=book.author,
+                        author=book.author.name,
                         genre=book.genre,
                         reason=f"New book by {author}, one of your favorite authors",
                         score=85 - (i * 10),  # Author rank affects score
                         available=book.available_copies > 0,
-                        avg_rating=book.average_rating,
-                        checkout_count=book.total_checkouts,
+                        avg_rating=None,
+                        checkout_count=len(book.checkouts),
                         similar_patrons_borrowed=0,  # Not applicable for author-based recommendations
                     )
                 )
@@ -312,22 +314,21 @@ class RecommendationEngine:
         ).all()
 
         for book, checkout_count in recent_popular:
-            if book.average_rating >= self.params.min_rating:
-                recommendations.append(
-                    RecommendationEntry(
-                        rank=0,
-                        isbn=book.isbn,
-                        title=book.title,
-                        author=book.author,
-                        genre=book.genre,
-                        reason=f"Trending now with {checkout_count} recent checkouts",
-                        score=70 + min(checkout_count, 30),  # Cap bonus at 30
-                        available=book.available_copies > 0,
-                        avg_rating=book.average_rating,
-                        checkout_count=book.total_checkouts,
-                        similar_patrons_borrowed=0,  # Not applicable for trending recommendations
-                    )
+            recommendations.append(
+                RecommendationEntry(
+                    rank=0,
+                    isbn=book.isbn,
+                    title=book.title,
+                    author=book.author.name,
+                    genre=book.genre,
+                    reason=f"Trending now with {checkout_count} recent checkouts",
+                    score=70 + min(checkout_count, 30),  # Cap bonus at 30
+                    available=book.available_copies > 0,
+                    avg_rating=None,
+                    checkout_count=len(book.checkouts),
+                    similar_patrons_borrowed=0,
                 )
+            )
 
         return recommendations
 
@@ -374,22 +375,21 @@ class RecommendationEngine:
         ).all()
 
         for book, similar_count in collaborative_books:
-            if book.average_rating >= self.params.min_rating:
-                recommendations.append(
-                    RecommendationEntry(
-                        rank=0,
-                        isbn=book.isbn,
-                        title=book.title,
-                        author=book.author,
-                        genre=book.genre,
-                        reason=f"Borrowed by {similar_count} patrons with similar tastes",
-                        score=60 + (similar_count * 5),  # More similar patrons = higher score
-                        available=book.available_copies > 0,
-                        avg_rating=book.average_rating,
-                        checkout_count=book.total_checkouts,
-                        similar_patrons_borrowed=similar_count,
-                    )
+            recommendations.append(
+                RecommendationEntry(
+                    rank=0,
+                    isbn=book.isbn,
+                    title=book.title,
+                    author=book.author.name,
+                    genre=book.genre,
+                    reason=f"Borrowed by {similar_count} patrons with similar tastes",
+                    score=60 + (min(similar_count, 15) * 2),
+                    available=book.available_copies > 0,
+                    avg_rating=None,
+                    checkout_count=len(book.checkouts),
+                    similar_patrons_borrowed=similar_count,
                 )
+            )
 
         return recommendations
 
@@ -458,7 +458,7 @@ async def get_patron_recommendations_handler(patron_id: str) -> dict[str, Any]:
             engine = RecommendationEngine(session, patron_id, params)
             response = engine.generate_recommendations()
 
-            return response.model_dump()
+            return response.model_dump(mode="json")
 
     except ResourceError:
         raise

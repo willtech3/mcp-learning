@@ -10,9 +10,46 @@ client. Each step names the protocol feature on display.
 # Terminal 1 - server (this repo)
 just db-seed && just dev-http
 
-# Terminal 2 - client (sibling repo)
-export ANTHROPIC_API_KEY=...   # for the sampling steps
+# Terminal 2 - official Inspector (this repo)
+just inspector-web
+
+# Terminal 3 - client (sibling repo)
+just discover
 ```
+
+Inspector has two explicit connections in `mcp-inspector.json`:
+`virtual-library-legacy` negotiates stable MCP `2025-11-25`, while
+`virtual-library-modern` negotiates the stateless `2026-07-28` path. Use the
+Inspector web UI for the modern path. Inspector 2.1.0's CLI currently sends the
+removed `logging/setLevel` method during modern startup; the web UI does not.
+The legacy path can also be smoke-tested non-interactively with
+`just inspector-legacy`.
+
+To verify the same quiet stdio process launch used by local desktop clients,
+run `just inspector-stdio`. This confirms that startup writes no banner or
+version-check output into the JSON-RPC channel. Add `--app-info` after
+`tools/list` to probe the three UI resources without invoking them:
+
+```bash
+just inspector-stdio tools/list --app-info
+```
+
+For the visual Apps walkthrough, run `just dev-apps` in another terminal. It
+opens the catalog, library dashboard, and patron-account experiences without
+exposing any write tools.
+
+Inspector 2.1.0 can validate each App tool, UI resource, and capability. Its
+published npm bundle currently omits `clients/web/static/sandbox_proxy.html`,
+so use the FastMCP host above for the visual portion if Inspector reports
+"Sandbox not loaded". Do not work around that packaging defect by disabling
+the App CSP or editing the installed package.
+
+For a fresh coding-agent walkthrough, open the repository root in Codex or
+Claude Code. The checked-in `.codex/config.toml` and `.mcp.json` start the
+stdio server after the client's project-trust approval. This is the strongest
+zero-fiddle flow MCP currently permits: `server/discover` selects versions and
+capabilities only after a client knows the server process or URL. Remote hosts
+still need a stable HTTPS URL plus OAuth, or a supported private tunnel.
 
 For the OAuth variant, run against the Cloud Run deployment instead and
 drop `--anonymous` — the browser sign-in IS the demo of the
@@ -94,10 +131,10 @@ Point out: progress across four stages, and the recommendations resource
 disappears/reappears (`resources/list_changed`) during the rebuild. The
 tool is also task-capable (SEP-1686) for clients that poll.
 
-**Or run it all at once:**
+**Or run the modern companion client flow all at once (from the sibling repo):**
 
 ```bash
-mcp-client demo --server http://127.0.0.1:8080/mcp --anonymous
+just demo-modern
 ```
 
 ## Talking points if asked
@@ -110,3 +147,7 @@ mcp-client demo --server http://127.0.0.1:8080/mcp --anonymous
   (`mcp_client/oauth.py` in the sibling repo is heavily annotated).
 - **Is the data real?** 201 real authors, 393 real books, simulated
   circulation with verified invariants (`tests/test_seed_data.py`).
+- **Why are there two protocol choices?** The stable path remains exactly
+  `2025-11-25`; the explicit modern path implements the stateless
+  `2026-07-28` specification. The demo never silently substitutes one for the
+  other.
